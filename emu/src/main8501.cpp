@@ -11,28 +11,10 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/select.h>
+#include "host/tty.h"
 
-static termios g_saved;
-static bool g_raw = false;
-static void tty_raw(bool on)
-{
-	if (!isatty(0)) return;
-	if (on && !g_raw) {
-		tcgetattr(0, &g_saved);
-		termios t = g_saved; cfmakeraw(&t); t.c_oflag |= OPOST | ONLCR;
-		tcsetattr(0, TCSANOW, &t); g_raw = true;
-	} else if (!on && g_raw) { tcsetattr(0, TCSANOW, &g_saved); g_raw = false; }
-}
-static int poll_key()
-{
-	fd_set fs; FD_ZERO(&fs); FD_SET(0, &fs); timeval tv{0, 0};
-	if (select(1, &fs, nullptr, nullptr, &tv) > 0) { u8 c; if (read(0, &c, 1) == 1) return c; return -2; }
-	return -1;
-}
+using host::tty_raw;
+using host::poll_key;
 
 static std::string dasm(tek8501 &m, u16 pc, int *len = nullptr)
 {

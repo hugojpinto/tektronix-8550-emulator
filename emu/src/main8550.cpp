@@ -1,0 +1,144 @@
+// tek8550: the complete 8550 MDL -- 8301 MDU + 8501 DMU joined by the HSI link.
+// Your terminal is the 8301 system terminal port (where DOS/50 talks).
+//   tek8550 [-0..-3 DISK] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE]
+// Ctrl-] enters the monitor ('h' for help).
+#include "machine/tek8301.h"
+#include "machine/tek8501.h"
+#include "cpu/s2650/2650dasm.h"
+#include "cpu/t11/t11dasm.h"
+#include "host/tty.h"
+#include <cstdio>
+#include <string>
+#include <sstream>
+#include <chrono>
+#include <thread>
+#include <memory>
+#include <vector>
+
+struct cfg_t : s2650_disassembler::config { bool get_z80_mnemonics_mode() const override { return false; } } g_cfg;
+
+static std::string dasm2650(tek8301 &m, u16 pc)
+{
+	s2650_disassembler d(&g_cfg); data_buffer b; b.rd = [&](offs_t a) -> u8 { return m.read(a & 0x7fff); };
+	std::ostringstream s; d.disassemble(s, pc, b, b); return s.str();
+}
+static std::string dasm11(tek8501 &m, u16 pc)
+{
+	t11_disassembler d; data_buffer b;
+	b.rd = [&](offs_t a) -> u8 { u16 w = m.peek16(a & 0xfffe); return (a & 1) ? u8(w >> 8) : u8(w); };
+	std::ostringstream s; d.disassemble(s, pc, b, b); return s.str();
+}
+static void show(tek8301 &a, tek8501 &b)
+{
+	printf("8301: PC=%04x R0-3=%02x %02x %02x %02x PSU=%02x PSL=%02x LED=%02x  %s\r\n", a.cpu.pc(), a.cpu.reg(0), a.cpu.reg(1), a.cpu.reg(2), a.cpu.reg(3),
+		a.cpu.psu(), a.cpu.psl(), a.leds(), dasm2650(a, a.cpu.pc()).c_str());
+	printf("8501: PC=%06o R0-5=%06o %06o %06o %06o %06o %06o SP=%06o PSW=%03o LEDs=%02o %s  %s\r\n", b.cpu.reg(7),
+		b.cpu.reg(0), b.cpu.reg(1), b.cpu.reg(2), b.cpu.reg(3), b.cpu.reg(4), b.cpu.reg(5), b.cpu.reg(6), b.cpu.psw(), b.leds(),
+		b.cpu.halted() ? "HALTED" : "", dasm11(b, b.cpu.reg(7)).c_str());
+}
+
+int main(int argc, char **argv)
+{
+	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, disks[4];
+	long long max_cycles = -1; int sw = 0;
+	struct typed_t { double at; std::string text; };
+	std::vector<typed_t> typed;      // -type SECONDS "TEXT"  (\r = Return)
+	for (int i = 1; i < argc; i++) {
+		std::string a = argv[i];
+		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
+		if (a == "-roms") roms = next();
+		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
+		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
+		else if (a == "-cycles") max_cycles = atoll(next().c_str());
+		else if (a == "-log") logfile = next();
+		else if (a == "-hsilog") hsilog = next();
+		else if (a == "-auxlog") auxlog = next();
+		else if (a == "-dump") dumpfile = next();
+		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
+	}
+	auto mdu = std::make_unique<tek8301>();
+	auto dmu = std::make_unique<tek8501>();
+	std::string err;
+	if (!mdu->load_roms(roms + "/8301", err) || !dmu->load_roms(roms + "/8501", err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+	for (int d = 0; d < 4; d++)
+		if (!disks[d].empty() && !dmu->mount(d, disks[d], err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+
+	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
+	FILE *hsif = hsilog.empty() ? nullptr : fopen(hsilog.c_str(), "w");
+	FILE *auxf = auxlog.empty() ? nullptr : fopen(auxlog.c_str(), "wb");
+	mdu->term.on_tx = [&](u8 c) { c &= 0x7f; if (c) { fputc(c, stdout); fflush(stdout); } if (logf) { fputc(c, logf); fflush(logf); } };
+	dmu->aux.on_tx = [&](u8 c) { if (auxf) { fputc(c & 0x7f, auxf); fflush(auxf); } };
+
+	// the HSI cable
+	int last_dir = 0;
+	auto hlog = [&](int dir, u8 c) {
+		if (!hsif) return;
+		if (dir != last_dir) { fprintf(hsif, "\n%s", dir == 1 ? "8301>" : "8501>"); last_dir = dir; }
+		fprintf(hsif, " %02x", c); fflush(hsif);
+	};
+	mdu->hsi_connected = true;
+	mdu->hsi_tx = [&](u8 c) { hlog(1, c); dmu->hsi_rx(c); };
+	dmu->hsi_tx = [&](u8 c) { hlog(2, c); mdu->hsi_rx(c); };
+	mdu->hsi_cts = [&]() { return !dmu->hsi_ncts(); };
+	dmu->hsi_peer_ready = [&]() { return !mdu->hsi_rx_busy(); };
+
+	mdu->mode_switch = u8(sw);
+	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
+	mdu->power_on();
+	dmu->power_on();
+
+	bool interactive = isatty(0) && max_cycles < 0;
+	if (interactive) { host::tty_raw(true); fprintf(stderr, "[tek8550: Ctrl-] for monitor]\r\n"); }
+	using clk = std::chrono::steady_clock;
+	auto t0 = clk::now();
+	const double slice_s = 0.0001;   // run both machines in 100 us lockstep
+	u64 ticks = 0;
+	for (;;) {
+		if (max_cycles >= 0 && (long long)mdu->cycles() >= max_cycles) break;
+		int k;
+		while ((k = host::poll_key()) >= 0) {
+			if (k == 035) {
+				host::tty_raw(false);
+				printf("\n[monitor] c continue | q quit | r regs | R restart both\n"); show(*mdu, *dmu);
+				char line[64]; bool quit = false;
+				for (;;) { printf("mon> "); fflush(stdout); if (!fgets(line, sizeof line, stdin)) { quit = true; break; }
+					if (line[0] == 'q') { quit = true; break; } if (line[0] == 'c' || line[0] == '\n') break;
+					if (line[0] == 'r') show(*mdu, *dmu); if (line[0] == 'R') { mdu->restart(); dmu->restart(); } }
+				if (quit) goto done;
+				host::tty_raw(true); continue;
+			}
+			mdu->term.host_rx(u8(k == '\n' ? '\r' : k));
+		}
+		for (auto &t : typed)
+			if (!t.text.empty() && mdu->cycles() >= t.at * tek8301::CPU_HZ) {
+				for (size_t i = 0; i < t.text.size(); i++) {
+					char ch = t.text[i];
+					if (ch == '\\' && i + 1 < t.text.size() && t.text[i + 1] == 'r') { ch = '\r'; i++; }
+					mdu->term.host_rx(u8(ch));
+				}
+				t.text.clear();
+			}
+		mdu->run_slice(int(tek8301::CPU_HZ * slice_s));
+		dmu->run_slice(int(tek8501::CPU_HZ * slice_s));
+		if (dmu->cpu.halted()) dmu->cpu.set_halted(false);   // no ODT console here: resume (logged)
+		ticks++;
+		if (interactive && ticks % 10 == 0) {
+			auto want = t0 + std::chrono::microseconds(ticks * 100);
+			if (want > clk::now()) std::this_thread::sleep_until(want);
+		}
+	}
+done:
+	host::tty_raw(false);
+	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }
+	for (FILE *f : { logf, hsif, auxf }) if (f) fclose(f);
+	if (!dumpfile.empty()) {   // raw memory images: <file>.8501 (64 KB, LE words) and <file>.8301 (CPU view, 32 KB)
+		FILE *f = fopen((dumpfile + ".8501").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a += 2) { u16 w = dmu->peek16(a); fputc(w & 0xff, f); fputc(w >> 8, f); }
+		fclose(f);
+		f = fopen((dumpfile + ".8301").c_str(), "wb");
+		for (u32 a = 0; a < 0x8000; a++) fputc(mdu->read(a), f);
+		fclose(f);
+	}
+	return 0;
+}

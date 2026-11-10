@@ -3,6 +3,9 @@
 #include "machine/imd.h"
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+
+static const bool g_iotrace = getenv("TEK_IOTRACE") != nullptr;
 
 namespace {
 constexpr offs_t RAM_TOP      = 0170000;   // first non-RAM byte address (top of RAM = 167776)
@@ -78,7 +81,7 @@ void tek8501::bus_reset()
 	m_ltc &= ~0140;                  // INIT clears IE and PROM select (LEDs set on)
 	m_ltc &= 003777;
 	m_fd_busy = false; m_fd_irq = false;
-	memset(m_hsi, 0, sizeof m_hsi);
+	io_reset(true);
 	cpu.set_input(t11_device::VEC_LINE, CLEAR_LINE);
 }
 
@@ -94,7 +97,7 @@ u16 tek8501::read16(offs_t a, bool &nxm)
 	if (printer.decodes(a)) { u16 v = printer.read(a); update_irq(); return v; }
 	if (a == LTC_ADDR) return m_ltc & 0000341;     // LEDs are write-only
 	if (a == CBPR_ADDR) return m_cbpr;
-	if (a >= HSI_BASE && a < HSI_BASE + 16) return m_hsi[(a - HSI_BASE) >> 1];
+	if (a >= HSI_BASE && a < HSI_BASE + 16) { u16 v = io_read((a - HSI_BASE) >> 1); update_irq(); return v; }
 	nxm = true;
 	return 0;
 }
@@ -113,7 +116,7 @@ void tek8501::write16(offs_t a, u16 d, bool &nxm)
 		return;
 	}
 	if (a == CBPR_ADDR) { fd_start(d); return; }
-	if (a >= HSI_BASE && a < HSI_BASE + 16) { m_hsi[(a - HSI_BASE) >> 1] = d; return; }
+	if (a >= HSI_BASE && a < HSI_BASE + 16) { io_write((a - HSI_BASE) >> 1, d); update_irq(); return; }
 	nxm = true;
 }
 
@@ -168,7 +171,7 @@ void tek8501::poke16(offs_t a, u16 v)
 
 void tek8501::update_irq()
 {
-	bool any = m_fd_irq || aux.irq() || printer.irq();
+	bool any = m_fd_irq || io_irq() || aux.irq() || printer.irq();
 	cpu.set_input(t11_device::VEC_LINE, any ? ASSERT_LINE : CLEAR_LINE);
 }
 
@@ -176,6 +179,9 @@ int tek8501::iack()
 {
 	int v = -1;
 	if (m_fd_irq) { m_fd_irq = false; v = FD_VECTOR; }
+	else if (m_io.rx_req) { m_io.rx_req = false; v = m_io.vec & 0360; }
+	else if (m_io.tx_req) { m_io.tx_req = false; v = (m_io.vec & 0360) + 4; }
+	else if (m_io.dma_req) { m_io.dma_req = false; v = (m_io.vec & 0360) + 010; }
 	else if (aux.irq()) v = aux.ack();
 	else if (printer.irq()) v = printer.ack();
 	update_irq();
@@ -197,6 +203,7 @@ void tek8501::run_slice(int cycles)
 		m_cycles += c;
 		aux.tick(c);
 		printer.tick(c);
+		io_tick(c);
 		if (m_fd_busy && m_cycles >= m_fd_done_at) fd_execute();
 		if (m_cycles >= m_next_ltc) {
 			m_next_ltc = m_cycles + ltc_period;
@@ -374,5 +381,145 @@ void tek8501::odt_char(u8 c)
 		break;
 	default:
 		m_odt_buf.clear(); odt_out("?\r\n@");
+	}
+}
+
+// --------------------------------------------------------------------------
+// I/O board: HSI UART + DMA (Section 10 of 061-2355-00)
+//   +0 CSR: 15 DERR 14 TOR 13 AOF 12 ABORT 11 RBE 10 INIT(strobe) 8 RBEE 7 DONE 6 IE
+//           5-4 XBA17-16 3 SWAP 2 PACKED 1 OUT (1 = from memory, inferred) 0 GO
+//   +2 CTR (2's complement byte count)  +4 ADDR  +6 VEC (7-4)
+//   +10 RCSR: 7 DONE 6 IE 0 NCTS   +12 RBUF   +14 XCSR: 7 RDY 6 IE 0 BREAK   +16 XBUF
+
+void tek8501::io_reset(bool bus)
+{
+	m_io.csr = 0; m_io.rcsr = 0; m_io.xcsr = 0200;
+	m_io.tx_timer = 0; m_io.rx_req = m_io.tx_req = m_io.dma_req = false;
+	if (bus) { m_io.vec = 060; }
+}
+
+u16 tek8501::io_read(int reg)
+{
+	if (g_iotrace) fprintf(stderr, "[8501 %.3fs io rd %d pc=%06o]\n", m_cycles / CPU_HZ, reg, cpu.ppc());
+	switch (reg & 7) {
+	case 0: return m_io.csr;
+	case 1: return m_io.ctr;
+	case 2: return m_io.addr;
+	case 3: {
+		int code = m_io.rx_req ? 0 : m_io.tx_req ? 1 : m_io.dma_req ? 2 : 3;
+		return u16((m_io.vec & 0360) | (code << 2));
+	}
+	case 4: return m_io.rcsr;
+	case 5: { u16 v = m_io.rbuf; m_io.rcsr &= ~0201; if (!m_io.rxq.empty()) m_io.rcsr |= 1; m_io.rx_req = false; return v; }
+	case 6: {
+		bool rfd = !hsi_peer_ready || hsi_peer_ready();
+		return rfd ? m_io.xcsr : u16(m_io.xcsr & ~0200);
+	}
+	default: return 0;
+	}
+}
+
+void tek8501::io_write(int reg, u16 d)
+{
+	if (g_iotrace) fprintf(stderr, "[8501 %.3fs io wr %d <- %06o pc=%06o]\n", m_cycles / CPU_HZ, reg, d, cpu.ppc());
+	switch (reg & 7) {
+	case 0: {
+		if (d & 02000) { u16 v = m_io.vec, ctr = m_io.ctr, ad = m_io.addr; io_reset(false); m_io.vec = v; m_io.ctr = ctr; m_io.addr = ad; break; }
+		bool go = (d & 1) && !(m_io.csr & 1);
+		m_io.csr = u16((m_io.csr & 0174200) | (d & 0000577));
+		if (go) { m_io.csr &= ~0174200; }               // GO clears errors and DONE
+		if (!(m_io.csr & 0100)) m_io.dma_req = false;
+		break;
+	}
+	case 1: m_io.ctr = d; break;
+	case 2: m_io.addr = d; break;
+	case 3: m_io.vec = d & 0360; break;
+	case 4: {
+		bool was = m_io.rcsr & 0100;
+		m_io.rcsr = u16((m_io.rcsr & 0200) | (d & 0101));
+		if (!was && (m_io.rcsr & 0100) && (m_io.rcsr & 0200)) m_io.rx_req = true;
+		if (!(m_io.rcsr & 0100)) m_io.rx_req = false;
+		break;
+	}
+	case 6: {
+		bool was = m_io.xcsr & 0100;
+		m_io.xcsr = u16((m_io.xcsr & 0200) | (d & 0101));
+		if (!was && (m_io.xcsr & 0100) && (m_io.xcsr & 0200)) m_io.tx_req = true;
+		if (!(m_io.xcsr & 0100)) m_io.tx_req = false;
+		break;
+	}
+	case 7:
+		if (m_io.xcsr & 0200) {
+			m_io.xbuf = u8(d); m_io.xcsr &= ~0200; m_io.tx_req = false; m_io.tx_timer = hsi_char_cycles;
+		}
+		break;
+	default: break;
+	}
+}
+
+void tek8501::io_dma_byte_out()
+{
+	// fetch the next byte from memory for an OUT transfer
+	u32 page = u32((m_io.csr >> 4) & 3) << 16;
+	u8 b;
+	if (m_io.csr & 4) {             // packed: byte addressing
+		u16 w = mem_rd(page | (m_io.addr & 0xfffe));
+		bool hi = (m_io.addr & 1) ^ bool(m_io.csr & 010);
+		b = hi ? u8(w >> 8) : u8(w);
+		m_io.addr++;
+	} else {
+		b = u8(mem_rd(page | (m_io.addr & 0xfffe)));
+		m_io.addr += 2;
+	}
+	m_io.xbuf = b; m_io.xcsr &= ~0200; m_io.tx_timer = hsi_char_cycles;
+}
+
+void tek8501::io_tick(int c)
+{
+	// CSR<1> IN/OUT: the 8501 OS arms a 9-byte transfer with CSR=007 from a buffer it
+	// filled itself and times out waiting for the 8301's answer, so 1 = OUT (from memory).
+	const bool dma = m_io.csr & 1, in = !(m_io.csr & 2);
+	auto dma_count = [&]() {
+		if (++m_io.ctr == 0) {
+			m_io.csr = u16((m_io.csr & ~1) | 0200);
+			if (m_io.csr & 0100) m_io.dma_req = true;
+		}
+	};
+	// transmitter
+	if (m_io.tx_timer > 0 && (m_io.tx_timer -= c) <= 0) {
+		m_io.tx_timer = 0;
+		if (hsi_tx) hsi_tx(m_io.xbuf);
+		m_io.xcsr |= 0200;
+		if (m_io.xcsr & 0100 && !(dma && !in)) m_io.tx_req = true;
+	}
+	const bool rfd = !hsi_peer_ready || hsi_peer_ready();
+	if (dma && !in && (m_io.xcsr & 0200) && m_io.tx_timer == 0 && rfd) {
+		io_dma_byte_out();
+		dma_count();
+	}
+	// receiver: serial bytes always land in RBUF (DONE, NCTS); an active IN DMA
+	// drains RBUF, which -- like a program read of RBUF -- drops NCTS again.
+	if (m_io.rx_gap > 0) m_io.rx_gap -= c;
+	if (!m_io.rxq.empty() && m_io.rx_gap <= 0 && !(m_io.rcsr & 0200)) {
+		u8 b = m_io.rxq.front(); m_io.rxq.pop_front(); m_io.rx_gap = hsi_char_cycles;
+		if (g_iotrace) fprintf(stderr, "[8501 %.3fs hsi rx %03o%s ctr=%06o]\n", m_cycles / CPU_HZ, b, (dma && in) ? " (DMA)" : "", m_io.ctr);
+		m_io.rbuf = b; m_io.rcsr |= 0201;
+		if ((m_io.rcsr & 0100) && !(dma && in)) m_io.rx_req = true;
+	}
+	if (dma && in && (m_io.rcsr & 0200)) {
+		u8 b = u8(m_io.rbuf);
+		m_io.rcsr &= ~0200; m_io.rx_req = false;
+		if (m_io.rxq.empty()) m_io.rcsr &= ~1;
+		u32 page = u32((m_io.csr >> 4) & 3) << 16;
+		if (m_io.csr & 4) {
+			u32 wa = page | (m_io.addr & 0xfffe);
+			u16 w = mem_rd(wa);
+			bool hi = (m_io.addr & 1) ^ bool(m_io.csr & 010);
+			w = hi ? u16((w & 0x00ff) | (b << 8)) : u16((w & 0xff00) | b);
+			mem_wr(wa, w); m_io.addr++;
+		} else {
+			mem_wr(page | (m_io.addr & 0xfffe), b); m_io.addr += 2;
+		}
+		dma_count();
 	}
 }

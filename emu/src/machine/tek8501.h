@@ -13,6 +13,7 @@
 #include <deque>
 #include <string>
 #include <memory>
+#include <functional>
 
 class tek8501 : public t11_device::bus_interface
 {
@@ -34,6 +35,13 @@ public:
 
 	// LEDs: last value written to LTC<15:11> (1 = off)
 	u16 leds() const { return (m_ltc >> 11) & 037; }
+
+	// HSI link to the 8301 (I/O board). Bytes we transmit go to hsi_tx.
+	std::function<void(u8)> hsi_tx;
+	void hsi_rx(u8 b) { m_io.rxq.push_back(b); m_io.rcsr |= 1; }   // start bit detected -> NCTS
+	std::function<bool()> hsi_peer_ready;   // RFD: peer's receiver can take a byte
+	bool hsi_ncts() const { return m_io.rcsr & 1; }
+	int  hsi_char_cycles = 320;    // 153.6 kbaud, 11 bits/char at CPU_HZ
 	u64 cycles() const { return m_cycles; }
 	bool trace = false;
 	std::string log_unknown_io;  // collected for diagnostics
@@ -73,8 +81,20 @@ private:
 	u16  mem_rd(u32 a) { return a < m_ram.size() * 2 ? m_ram[a >> 1] : 0; }
 	void mem_wr(u32 a, u16 v) { if (a < m_ram.size() * 2) m_ram[a >> 1] = v; }
 
-	// ---- I/O board (HSI) stub ----
-	u16 m_hsi[8] = {};
+	// ---- I/O board: HSI serial port with DMA (176510-176526) ----
+	struct io_board {
+		u16 csr = 0, ctr = 0, addr = 0, vec = 060;
+		u16 rcsr = 0, rbuf = 0, xcsr = 0200; u8 xbuf = 0;
+		int tx_timer = 0, rx_gap = 0;
+		bool rx_req = false, tx_req = false, dma_req = false;
+		std::deque<u8> rxq;
+	} m_io;
+	void io_reset(bool bus);
+	u16  io_read(int reg);
+	void io_write(int reg, u16 d);
+	void io_tick(int c);
+	void io_dma_byte_out();
+	bool io_irq() const { return m_io.rx_req || m_io.tx_req || m_io.dma_req; }
 
 	// ---- ODT state ----
 	std::string m_odt_buf;
