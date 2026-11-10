@@ -29,7 +29,12 @@ class prom_programmer
 public:
 	bool present = true;
 	static constexpr int RESPONSE_CYCLES = 400;    // 2650 cycles (200 us) for the 8085 to answer
-	static constexpr u8 MODULE_DEVICES = 2;        // device types on the emulated characteristic module
+	// the emulated characteristic module: Intel-style UV EPROMs (erased = FF, 8-bit words).
+	// The real modules' contents are not known; this one reports part number 160-0000-00.
+	struct device_type { const char *name; u32 size; };
+	static const device_type DEVICES[];
+	static const int MODULE_DEVICES;
+	static std::vector<u8> module_info();
 	bool int13() const { return present && m_int13; }   // request lines to the 8301 (level),
 	bool int14() const { return present && m_int14; }   // cleared by the 0E/0D acknowledges or 0C
 

@@ -77,6 +77,7 @@ public:
 	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
 	bool ep_present = true;
 	prom_programmer prom;      // 8550F30 PROM programmer controller (ports D0/D1, ints 13/14)
+	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	bool slave_enabled() const { return ep_enabled() || (m_e7 & 0x80); }
@@ -96,6 +97,7 @@ public:
 	}
 
 	u8 peek(offs_t a) { return mem_rd(cpu_to_bus(a & 0x7fff, false), false); }
+	void poke(offs_t a, u8 d) { mem_wr(cpu_to_bus(a & 0x7fff, true), d); }   // debugging (-poke)
 
 private:
 	std::vector<u8> m_boot, m_diag, m_sysram, m_progmem;

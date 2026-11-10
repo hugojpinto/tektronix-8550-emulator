@@ -390,7 +390,17 @@ void tek8301::io_write(offs_t port, u8 d)
 		if (ep_trace) fprintf(stderr, "[%.3f E3 <- %02x]\n", m_cycles / CPU_HZ, d);
 		m_e3 = d;
 		break;
-	case 0xd0: prom.write(0, d); break;
+	case 0xd0:
+		if (prom_dos50_fix && prom.present) {
+			// PROM software V2.1 (1982) calls the DOS/50 scheduler wake-up at 03DE, which in
+			// DOS/50 V1.0 (18-AUG-80) is a data table; the routine is at 03D4 there. Redirect
+			// the driver's 'bsta,a $03de' calls (overlays load at 6000-6FFF) to 03D4.
+			if (peek(0x03d4) == 0x04 && peek(0x03d5) == 0xc0 && peek(0x03de) == 0x1e)
+				for (offs_t a = 0x6000; a < 0x6ffe; a++)
+					if (peek(a) == 0x3f && peek(a + 1) == 0x03 && peek(a + 2) == 0xde) poke(a + 2, 0xd4);
+		}
+		prom.write(0, d);
+		break;
 	case 0xd1: prom.write(1, d); break;
 	case 0xfa: m_fa = d; break;
 	case 0xfb: m_fb = d; break;

@@ -141,6 +141,25 @@ std::vector<u8> prom_programmer::sense_record(int r, u8 dac)
 	return { p.id, dac, u8(adc), vlo, vhi, u8(adc), vlo, vhi, u8(r == 4 ? 1 : 0), p.psc };
 }
 
+const prom_programmer::device_type prom_programmer::DEVICES[] = { {"2708", 0x400}, {"2716", 0x800}, {"2732", 0x1000} };
+const int prom_programmer::MODULE_DEVICES = 3;
+
+// Module information (DOS/50 PTYPE overlay, PROM.TST option 13): a 10-byte header
+// (bytes 3-5 = the module's part number 160-xxxx-yy in BCD, byte 9 = number of device
+// types), then the device names each ended by 0D, FF, a 3-byte maximum address per
+// device, '!' (21), and a flags byte per device (high nibble nonzero = erased state
+// high, low bits 01/02/04 = word length 4/8/16).
+std::vector<u8> prom_programmer::module_info()
+{
+	std::vector<u8> v = {0, 0, 0, 0x00, 0x00, 0x00, 0, 0, 0, u8(MODULE_DEVICES)};
+	for (int i = 0; i < MODULE_DEVICES; i++) { for (const char *c = DEVICES[i].name; *c; c++) v.push_back(u8(*c)); v.push_back(0x0d); }
+	v.push_back(0xff);
+	for (int i = 0; i < MODULE_DEVICES; i++) { u32 m = DEVICES[i].size - 1; v.push_back(u8(m >> 16)); v.push_back(u8(m >> 8)); v.push_back(u8(m)); }
+	v.push_back(0x21);
+	for (int i = 0; i < MODULE_DEVICES; i++) v.push_back(0x12);   // erased high, 8-bit words
+	return v;
+}
+
 // the command set (as far as reverse-engineered). Status: bit 0 = OK, bits 6-5 = next
 // phase (60 parameters, 40 sends data, 20 accepts data, 00 done), bit 7 = unrecognized
 // command, bits 1-2 = failure reasons when bit 0 is clear.
@@ -250,11 +269,10 @@ void prom_programmer::command(u8 c)
 		then_send({0x00, 0x00, 0x00, 0, 0, 0, 0, 0, 0, 0, 0});
 		then_status(0x01);
 		break;
-	case 0xd0:                                     // characteristic module information: 10 bytes
-		// only the last byte is known: the number of device types the module supports
-		// (PROM.TST option 13 asks for an index 1..n). The host may end early with B0.
+	case 0xd0:                                     // characteristic module information (see module_info)
+		// PROM.TST option 13 reads the 10-byte header only and ends with B0.
 		then_status(0x41);
-		then_send({0x01, 0, 0, 0, 0, 0, 0, 0, 0, MODULE_DEVICES});
+		then_send(module_info());
 		then_status(0x01);
 		break;
 	case 0x38:                                     // write-PROM diagnostic for device index n
