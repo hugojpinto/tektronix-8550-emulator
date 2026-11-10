@@ -36,6 +36,8 @@ public:
 
 	// plain-text dump of the visible page (testing)
 	std::string text() const;
+	// full visible state for screenshots: header line, 25 text rows, 25 attribute rows (hex)
+	std::string state() const;
 	mode_t mode() const { return m_mode; }
 
 private:

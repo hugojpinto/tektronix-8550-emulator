@@ -46,6 +46,7 @@ int main(int argc, char **argv)
 	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
+	std::vector<typed_t> snaps;      // -snap SECONDS FILE: CT8500 screen state at a machine time
 	double trace_at = -1; std::string tracefile;
 	double trace11_at = -1, trace11_len = 0; std::string trace11file;   // -trace8501 START SECONDS FILE   // -trace8301 SECONDS FILE (2650 + Z80 instruction trace)      // -type SECONDS "TEXT"  (\r = Return)
 	for (int i = 1; i < argc; i++) {
@@ -63,6 +64,7 @@ int main(int argc, char **argv)
 		else if (a == "-dump") dumpfile = next();
 		else if (a == "-term") termmode = next();
 		else if (a == "-target") targetspec = next();
+		else if (a == "-snap") { double t = atof(next().c_str()); snaps.push_back({ t, next() }); }
 		else if (a == "-screen") screenfile = next();
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
@@ -88,7 +90,7 @@ int main(int argc, char **argv)
 	ct.send = [&](u8 b) { mdu->term.host_rx(b); };
 	mdu->term.on_tx = [&](u8 c) {
 		c &= 0x7f;
-		if (ct_mode || !screenfile.empty()) { ct.feed(c); ct_dirty = true; }
+		if (ct_mode || !screenfile.empty() || !snaps.empty()) { ct.feed(c); ct_dirty = true; }
 		if (!ct_mode && c) { fputc(c, stdout); fflush(stdout); }
 		if (logf) { fputc(c, logf); fflush(logf); }
 	};
@@ -189,6 +191,11 @@ int main(int argc, char **argv)
 					mdu->term.host_rx(u8(ch));
 				}
 				t.text.clear();
+			}
+		for (auto &sn : snaps)
+			if (!sn.text.empty() && mdu->cycles() >= sn.at * tek8301::CPU_HZ) {
+				FILE *f = fopen(sn.text.c_str(), "w"); if (f) { fputs(ct.state().c_str(), f); fclose(f); }
+				sn.text.clear();
 			}
 		mdu->run_slice(int(tek8301::CPU_HZ * slice_s));
 		dmu->run_slice(int(tek8501::CPU_HZ * slice_s));

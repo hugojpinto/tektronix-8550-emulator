@@ -256,3 +256,20 @@ std::string ct8500::text() const
 		m_mode == HOST ? "host" : m_mode == LOCAL ? "local" : "power-up");
 	return s + buf;
 }
+
+std::string ct8500::state() const
+{
+	char buf[64];
+	snprintf(buf, sizeof buf, "CT8500 %d %d %d %d %d\n", COLS, VIEW, r - top, c, cursor_on ? 1 : 0);
+	std::string s = buf;
+	for (int i = 0; i < VIEW; i++) {
+		for (int j = 0; j < COLS; j++) { uint8_t v = ch[top + i][j]; s += (v >= 0x20 && v < 0x7f && !(at[top + i][j] & A_BLANK)) ? char(v) : ' '; }
+		s += '\n';
+	}
+	static const char hx[] = "0123456789abcdef";
+	for (int i = 0; i < VIEW; i++) {
+		for (int j = 0; j < COLS; j++) s += hx[at[top + i][j] & 0x0f];
+		s += '\n';
+	}
+	return s;
+}
