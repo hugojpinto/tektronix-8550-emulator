@@ -34,14 +34,15 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - [x] P3.2 8257 DMA + 8251 HSI.
 
 ### P4 — The 8550
-- [ ] P4.0 Language Processor (Z80 on program memory) + minimal Emulator Controller (F2 pending register, "emulator halted" interrupt, F9 debug command) → get past DOS/50's LP probe to the command prompt.
-- [~] P4.1 Join 8301 and 8501 over HSI → **BOOT V2.1 loads `8301/RESIDENT` (diag disk)**, then DOS/50 from the system disk → **DOS/50 prompt**.
-- [ ] P4.2 Language Processor (Z80) + program memory → run ASM/LINK.
+- [x] P4.0 Language Processor (Z80 on program memory) + minimal Emulator Controller (F2 pending register, "emulator halted" interrupt, F9 debug command) → get past DOS/50's LP probe to the command prompt.
+- [x] P4.1 Join 8301 and 8501 over HSI → **BOOT V2.1 loads `8301/RESIDENT` (diag disk)**, then DOS/50 from the system disk → **DOS/50 prompt**.
+- [x] P4.2 Language Processor (Z80) + program memory → run ASM/LINK. (EDIT and ASM verified; LINK not yet tried)
 
 ### P5 — Extras
 - CT8500 terminal behaviour (for ACE), emulator-processor boards (8085/Z80), PROM programmer, upstreaming to MAME.
 
 ## Status log
+- 2026-11-10: **DOS/50 is usable.** Z80 Language Processor (superzazu/z80, MIT, verified with zexall) and the Emulator Controller subset are in. DOS/50 passes its LP probe and gives the `>` prompt. LDIR/USER/DATE/HELP work, the line editor (EDIT 4.0) creates a file, and the **Z80 assembler (ASM V4.0B) assembles it with a correct listing**. Bug found on the way: SVC n is OUT (F8h−n), i.e. the numbering is reversed.
 - 2026-11-10: **8301 + full system.** The 8301 diag ROM passes all power-up tests (needed parity-error modelling and per-instruction IRQ sampling). The boot ROM prints "BOOT V2.1". `tek8550` joins both machines over the HSI (byte-level NCTS/RFD flow control, 100 µs lockstep). The real 8301 boot ROM and 8501 OS complete the file-server protocol, load `/VOL/SYSTEM/8301/RESIDENT`, and the terminal shows **"DOS/50 V1.0   18-AUG-80"**. DOS/50 then probes the Language Processor (a Z80 HALT test), which is not emulated yet.
 - 2026-11-10: **8501 milestone.** Power-up diagnostics pass after calibrating the CPU budget to 4.5 M T11-cycles/s against the LTC test window. With no disk, the bootstrap sits at "waiting for a disc" (LEDs 30). With `System.imd` it boots DOS/50's 8501 side (LEDs "OS running") into its idle/scheduler loop, presumably waiting for the 8301 on HSI. ODT works.
 - 2026-11-10: plan written; MAME clone started.

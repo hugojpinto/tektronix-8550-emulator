@@ -42,7 +42,8 @@ int main(int argc, char **argv)
 	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, disks[4];
 	long long max_cycles = -1; int sw = 0;
 	struct typed_t { double at; std::string text; };
-	std::vector<typed_t> typed;      // -type SECONDS "TEXT"  (\r = Return)
+	std::vector<typed_t> typed;
+	double trace_at = -1; std::string tracefile;   // -trace8301 SECONDS FILE (2650 + Z80 instruction trace)      // -type SECONDS "TEXT"  (\r = Return)
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
@@ -54,6 +55,7 @@ int main(int argc, char **argv)
 		else if (a == "-hsilog") hsilog = next();
 		else if (a == "-auxlog") auxlog = next();
 		else if (a == "-dump") dumpfile = next();
+		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
 		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
 	}
@@ -85,6 +87,17 @@ int main(int argc, char **argv)
 
 	mdu->mode_switch = u8(sw);
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
+	FILE *trf = tracefile.empty() ? nullptr : fopen(tracefile.c_str(), "w");
+	if (trf) {
+		mdu->cpu.trace_hook = [&](u16 pc) {
+			if (mdu->cycles() < trace_at * tek8301::CPU_HZ) return;
+			fprintf(trf, "%04x: %-20s ee=%02x\n", pc, dasm2650(*mdu, pc).c_str(), 0);
+		};
+		mdu->lp_trace_hook = [&](u16 pc) {
+			if (mdu->cycles() < trace_at * tek8301::CPU_HZ) return;
+			fprintf(trf, "  Z80 %04x\n", pc);
+		};
+	}
 	mdu->power_on();
 	dmu->power_on();
 
@@ -131,13 +144,16 @@ int main(int argc, char **argv)
 done:
 	host::tty_raw(false);
 	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }
-	for (FILE *f : { logf, hsif, auxf }) if (f) fclose(f);
+	for (FILE *f : { logf, hsif, auxf, trf }) if (f) fclose(f);
 	if (!dumpfile.empty()) {   // raw memory images: <file>.8501 (64 KB, LE words) and <file>.8301 (CPU view, 32 KB)
 		FILE *f = fopen((dumpfile + ".8501").c_str(), "wb");
 		for (u32 a = 0; a < 0x10000; a += 2) { u16 w = dmu->peek16(a); fputc(w & 0xff, f); fputc(w >> 8, f); }
 		fclose(f);
 		f = fopen((dumpfile + ".8301").c_str(), "wb");
 		for (u32 a = 0; a < 0x8000; a++) fputc(mdu->read(a), f);
+		fclose(f);
+		f = fopen((dumpfile + ".prog").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->progmem(u16(a)), f);
 		fclose(f);
 	}
 	return 0;

@@ -7,7 +7,7 @@ Build: `make` (C++17, no other dependencies). Produces:
 - `build/tek8550`: the full 8550, with the 8301 and 8501 joined by the HSI link; your terminal is the 8301 system terminal
 
 ```
-build/tek8550 -0 ../sources/bitsavers/disks/System.imd      # boots to "DOS/50 V1.0   18-AUG-80"
+build/tek8550 -0 ../sources/bitsavers/disks/System.imd      # boots DOS/50 to its > prompt
 build/tek8501 -0 ../sources/bitsavers/disks/System.imd
 ```
 tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (8501 AUX port), `-dump FILE` (memory images),
@@ -18,3 +18,14 @@ In a terminal, **Ctrl-]** opens the monitor (`h` for help: regs, dump, disasm, s
 When the CPU halts, the AUX port acts as the LSI-11 ODT console (`addr/`, `Rn/`, CR, LF, `addrG`, `P`).
 
 CPU cores are ported from MAME (BSD-3-Clause, see `../reference/mame/SOURCE.txt`); local changes are marked `[tek8550]`.
+
+## Example session (works)
+```
+> SEL Z80
+> EDIT T.ASM          ** EDIT VERSION 4.0 / ** NEW FILE
+*INPUT                (type lines, empty line ends input)
+*FILE
+> ASM T.OBJ T.LST T.ASM      Tektronix Z80 ASM V4.0B ... No assembly errors detected
+> COPY T.LST CONO
+```
+Disk writes stay in memory (the image file is not modified).

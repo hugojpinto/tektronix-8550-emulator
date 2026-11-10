@@ -45,9 +45,10 @@ void tek8301::lp_out(z80 *z, u8 port, u8 d)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
 	(void)d;
-	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7)
+	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
+	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
 	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4))
-		m->ec_interrupt(INT_SVC1 + (port & 7));
+		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
 }
 
 void tek8301::ec_interrupt(int n)
