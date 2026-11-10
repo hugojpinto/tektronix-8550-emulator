@@ -62,12 +62,13 @@ static bool monitor(tek8301 &m)
 int main(int argc, char **argv)
 {
 	std::string roms = "../roms/8550/8301", tracefile, logfile;
-	long long max_cycles = -1; int sw = 0; bool io = false;
+	long long max_cycles = -1; int sw = 0; bool pm_ext = false; bool io = false;
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
 		if (a == "-roms") roms = next();
 		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
+		else if (a == "-pm") pm_ext = next() == "ext";
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
 		else if (a == "-trace") tracefile = next();
 		else if (a == "-log") logfile = next();
@@ -77,7 +78,8 @@ int main(int argc, char **argv)
 	auto m = std::make_unique<tek8301>();
 	std::string err;
 	if (!m->load_roms(roms, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
-	m->mode_switch = u8(sw); m->trace_io = io;
+	m->mode_switch = u8(sw);
+	m->pm_ext_comparator = pm_ext; m->trace_io = io;
 	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
 	m->term.on_tx = [&](u8 c) { c &= 0x7f; if (c) { fputc(c, stdout); fflush(stdout); } if (logf) { fputc(c, logf); fflush(logf); } };
 	m->aux.on_tx = [&](u8 c) { if (logf) fprintf(logf, "[AUX %02x]", c); };

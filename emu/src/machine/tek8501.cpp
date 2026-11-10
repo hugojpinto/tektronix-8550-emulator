@@ -34,6 +34,7 @@ tek8501::tek8501()
 	, m_ltc(0)
 {
 	memset(m_prom, 0xff, sizeof m_prom);
+	aux.char_cycles = printer.char_cycles = int(CPU_HZ * 10 / 9600);   // 9600 baud, 10 bits/char
 }
 
 bool tek8501::load_roms(const std::string &dir, std::string &err)
@@ -110,6 +111,7 @@ void tek8501::write16(offs_t a, u16 d, bool &nxm)
 	if (aux.decodes(a)) { aux.write(a, d); if ((a & 6) == 4) aux.write(a, d, true); update_irq(); return; }
 	if (printer.decodes(a)) { printer.write(a, d); if ((a & 6) == 4) printer.write(a, d, true); update_irq(); return; }
 	if (a == LTC_ADDR) {
+		if (g_iotrace && ((d ^ m_ltc) & 0100)) fprintf(stderr, "[8501 %.3fs ltc ie=%d pc=%06o]\n", m_cycles / CPU_HZ, (d >> 6) & 1, cpu.ppc());
 		u16 mon = m_ltc & 0200;
 		if (!(d & 0200)) mon = 0;                      // writing 0 clears monitor, 1 doesn't set
 		m_ltc = (d & 0174140) | mon | (m_ltc & 1);
@@ -230,7 +232,7 @@ void tek8501::fd_start(u16 cbpr)
 		return;
 	}
 	m_fd_busy = true;
-	m_fd_done_at = m_cycles + 2000;   // ~1 ms; real seeks take longer
+	m_fd_done_at = m_cycles + u64(CPU_HZ / 1000);   // ~1 ms; real seeks take longer
 }
 
 void tek8501::fd_execute()

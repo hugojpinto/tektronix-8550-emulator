@@ -12,8 +12,9 @@ enum {
 	INT_PARITY = 1, INT_WP = 2, INT_HSIN = 4, INT_HSOUT = 5, INT_REMOTE = 6, INT_AUX = 7,
 	INT_TERM = 8, INT_TIMER = 9, INT_DMA = 10, INT_MTP = 11, INT_REFRESH = 15
 };
-constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_PARITY) | (1u << INT_WP) | 0xffff0000u;
-constexpr int INT_SVC1 = 16, INT_SLV_HALT = 27;
+// parity (int 1) is NOT edge: it stays until I/O port D2 is read, and so does the address latch
+constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_WP) | 0xffff0000u;
+constexpr int INT_SVC1 = 16, INT_BP1 = 24, INT_BP2 = 25, INT_SCY = 26, INT_SLV_HALT = 27, INT_DIAG = 28;
 }
 
 tek8301::tek8301()
@@ -51,9 +52,25 @@ void tek8301::lp_out(z80 *z, u8 port, u8 d)
 		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
 }
 
+void tek8301::bp_check(u16 a, bool write)
+{
+	// F8: D0 BP1 on read, D1 BP1 on write, D2 BP2 on read, D3 BP2 on write (0 = enable)
+	for (int i = 0; i < 2; i++)
+		if (a == m_bp[i] && !(m_f8 & (1 << (2 * i + (write ? 1 : 0)))))
+			m_bp_hit |= u8(1 << i);
+}
+
 void tek8301::ec_interrupt(int n)
 {
-	if (n == INT_SLV_HALT) m_ec_pend |= 0x10;
+	// F2 pending register bits (read active low): 7 BP1 6 BP2 5 S/CY 4 HALT 3 DIAG
+	switch (n) {
+	case INT_BP1: m_ec_pend |= 0x80; break;
+	case INT_BP2: m_ec_pend |= 0x40; break;
+	case INT_SCY: m_ec_pend |= 0x20; break;
+	case INT_SLV_HALT: m_ec_pend |= 0x10; break;
+	case INT_DIAG: m_ec_pend |= 0x08; break;
+	default: break;
+	}
 	m_lp_pc_next = lp.pc;
 	if (m_f9 & 0x08)                    // IM = 1: debug interrupts not masked
 		m_pending |= 1u << n;
@@ -62,6 +79,11 @@ void tek8301::ec_interrupt(int n)
 
 void tek8301::lp_run(int cycles2650)
 {
+	// Master halted but no slave able to run: the Emulator Controller reports the
+	// slave as halted at once ("Processor Inactive Test", 070-2976 §4).
+	// (Only when no slave is enabled at all -- not when an enabled slave is merely
+	// blocked by an outstanding SVC/debug interrupt.)
+	if (cpu.halted() && !(m_e7 & 0x80) && !(m_ec_pend & 0x10)) { ec_interrupt(INT_SLV_HALT); return; }
 	if (!lp_running()) return;
 	m_lp_frac += cycles2650 * ((m_e7 & 0x04) ? 1.25 : 2.0);   // Z80 at 2.5 or 4 MHz vs 2650 at 2 MHz
 	while (m_lp_frac > 0 && lp_running()) {
@@ -69,10 +91,16 @@ void tek8301::lp_run(int cycles2650)
 		m_lp_pc_last = lp.pc;
 		if (lp_trace_hook) lp_trace_hook(lp.pc);
 		u32 before = m_pending;
+		m_bp_hit = 0;
 		z80_step(&lp);
 		m_lp_frac -= double(lp.cyc - c0);
+		if (m_pending != before) break;         // SVC (immediate): master takes over
+		// "pending" debug interrupts are issued at the next fetch, after PC next is latched
+		// (priority SVC > BP1 > BP2 > S/CY > HALT)
+		if (m_bp_hit & 1) { ec_interrupt(INT_BP1); break; }
+		if (m_bp_hit & 2) { ec_interrupt(INT_BP2); break; }
+		if (!(m_f8 & 0x10)) { ec_interrupt(INT_SCY); break; }
 		if (lp.halted) { ec_interrupt(INT_SLV_HALT); break; }
-		if (m_pending != before) break;         // SVC raised: master takes over
 	}
 	if (m_lp_frac > 0) m_lp_frac = 0;
 }
@@ -102,7 +130,7 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
-	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff;
 	lp_reset();
 	cpu.reset();
 }
@@ -121,6 +149,7 @@ tek8301::busaddr tek8301::cpu_to_bus(offs_t a, bool)
 
 u8 tek8301::mem_rd(busaddr b, bool ovl)
 {
+	const u8 ext = b.dma ? PROG_BANK : m_f4;   // 16-bit bus masters (DMA) don't use F4
 	if (b.sys) {
 		u16 a = u16(b.a);
 		// System RAM parity: a byte written under one complement setting and read
@@ -132,13 +161,13 @@ u8 tek8301::mem_rd(busaddr b, bool ovl)
 		}
 		return m_sysram[a];
 	}
-	return m_progmem[b.a & 0xffff];
+	return prog_rd(ext, u16(b.a));
 }
 
 void tek8301::mem_wr(busaddr b, u8 d)
 {
 	if (b.sys) { m_sysram[b.a & 0xffff] = d; m_par[b.a & 0xffff] = (m_d2 >> 2) & 1; }
-	else m_progmem[b.a & 0xffff] = d;
+	else prog_wr(b.dma ? PROG_BANK : m_f4, u16(b.a), d);
 }
 
 u8 tek8301::read(offs_t a)
@@ -186,17 +215,17 @@ u8 tek8301::io_read(offs_t port)
 	case 0xfe: v = u8(m_lp_pc_last); break;
 	case 0xff: v = u8(m_lp_pc_last >> 8); break;
 	default:
-		if (port >= 0xf0) v = 0xff;
+		v = 0x00;                            // nothing decodes the port: reads 00 (diag config probe relies on it)
 		break;
 	}
-	if (trace_io) fprintf(stderr, "[io rd %02x = %02x @%04x]\r\n", port, v, cpu.ppc());
+	if (trace_io) fprintf(stderr, "[%.3f io rd %02x = %02x @%04x]\r\n", m_cycles / CPU_HZ, port, v, cpu.ppc());
 	update_irq();
 	return v;
 }
 
 void tek8301::io_write(offs_t port, u8 d)
 {
-	if (trace_io) fprintf(stderr, "[io wr %02x <- %02x @%04x]\r\n", port, d, cpu.ppc());
+	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
@@ -215,8 +244,17 @@ void tek8301::io_write(offs_t port, u8 d)
 		break;
 	case 0xf3: m_f3 = d; break;
 	case 0xf8: m_f8 = d; break;
+	case 0xf4: m_f4 = d; break;
+	case 0xf6: m_bp_ext[0] = u8(~d); break;
+	case 0xf7: m_bp_ext[1] = u8(~d); break;
+	// breakpoint registers are loaded with active-low data (diag writes FD=FF FC=F7 for 0008)
+	case 0xfc: m_bp[0] = u16((m_bp[0] & 0xff00) | u8(~d)); break;
+	case 0xfd: m_bp[0] = u16((m_bp[0] & 0x00ff) | (u8(~d) << 8)); break;
+	case 0xfe: m_bp[1] = u16((m_bp[1] & 0xff00) | u8(~d)); break;
+	case 0xff: m_bp[1] = u16((m_bp[1] & 0x00ff) | (u8(~d) << 8)); break;
 	case 0xf9:
 		m_f9 = d;
+		m_ec_pend = 0;                      // a new command releases the latched debug state
 		if (!(d & 0x01)) { lp_reset(); m_ec_pend = 0; m_lp_live = true; }          // FR: forced reset
 		if (!(d & 0x04)) { lp.pc = u16(m_fa | (m_fb << 8)); lp.halted = false; }  // FJ: forced jump
 		break;
@@ -295,11 +333,11 @@ void tek8301::dma_service()
 		bool sys = m_e9 & 0x80;
 		for (int guard = 0; guard < 4; guard++) {
 			if ((m_e9 & 0x10) && m_dma.is_read(2) && m_hsi_tbre && m_hsi_tx_timer == 0 && (!hsi_cts || hsi_cts())) {
-				u8 b = mem_rd({ m_dma.ch[2].addr, sys });
+				u8 b = mem_rd({ m_dma.ch[2].addr, sys, true });
 				m_hsi_thr = b; m_hsi_tbre = false; m_hsi_tx_timer = hsi_char_cycles;
 				if (m_dma.step(2) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			} else if ((m_e9 & 0x20) && m_dma.is_write(2) && m_hsi_da) {
-				mem_wr({ m_dma.ch[2].addr, sys }, m_hsi_rbr); m_hsi_da = false;
+				mem_wr({ m_dma.ch[2].addr, sys, true }, m_hsi_rbr); m_hsi_da = false;
 				if (m_dma.step(2) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			} else break;
 			if (!m_dma.enabled(2)) break;
@@ -309,8 +347,8 @@ void tek8301::dma_service()
 	if (m_dma.enabled(0) && m_dma.enabled(1)) {
 		bool src_sys = m_e9 & 0x01, dst_sys = m_e9 & 0x40;
 		for (int i = 0; i < 0x4000 && m_dma.enabled(0) && m_dma.enabled(1); i++) {
-			u8 b = mem_rd({ m_dma.ch[0].addr, src_sys });
-			mem_wr({ m_dma.ch[1].addr, dst_sys }, b);
+			u8 b = mem_rd({ m_dma.ch[0].addr, src_sys, true });
+			mem_wr({ m_dma.ch[1].addr, dst_sys, true }, b);
 			bool tc0 = m_dma.step(0), tc1 = m_dma.step(1);
 			if ((tc0 || tc1) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			if (tc0 || tc1) break;

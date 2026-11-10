@@ -1,0 +1,1501 @@
+         zao
+EMULATOR PROCESSOR
+          and
+PROTOTYPE CONTROL PROBE
+      INSTALLATION
+       SERVICE
+                                                                         COMMITTED ID EXCELLENCE
+
+
+
+
+                                                         WARNING
+                             THE FOLLOWING SERVICING INSTRUCTIONS
+                             ARE FOR USE BY QUALi Fl ED PERSONNEL ONLY.
+                             TO AVOID PERSONAL INJURY, DO NOT
+                             PERFORM ANY SERVICING OTHER THAN THAT
+                             CONTAINED IN OPERATING INSTRUCTIONS
+                             UNLESS YOU ARE QUALIFIED TO DO SO.
+
+
+
+
+                                                         PLEASE CHECK FOR CHANGE INFORMATION
+                                                              AT THE REAR OF THIS MANUAL
+
+
+This manual supports the following TEKTRONIX products:
+
+  8001   8002A    8550    8540
+ Options Options Options Options Products                                zao
+                     2C        2C   8300E04 Opt. 01          EMULATOR PROCESSOR
+                     30        30   8300P04
+                                                                         and
+                                                              PROTOTYPE CONTROL PROBE
+            18                      8002F18
+                                                                    INSTALLATION
+            33                      8002F33
+                                                                      SERVICE
+   03                               8001F03
+
+
+
+
+                                                          INSTRUCTION             MANUAL
+            Tektronix, Inc.
+            P.O. Box 500
+            Beaverton, Oregon          97077                          Serial N u m b e r - - - - - - -
+            070-3665-01                                                              First Printing SEP 1980
+            Product Group 61                                                         Revised AUG 1982
+Copyright ©1980, 1982Tektronix, Inc. All rights reserved.
+Contents of this publication may not be reproduced in
+any form without the written permission of Tektronix, Inc.
+
+Products of Tektronix, Inc. and its subsidiaries are
+covered by U.S. and foreign patents and/or pending
+patents.
+                                              ~
+TEKTRONIX, TEK, SCOPE-MOBILE, and ~ are
+registered trademarks of Tektronix, Inc. TELEQUIP-
+MENT is a registered trademark of Tektronix U.K.
+Limited.
+
+ There is no implied warranty of fitness for a particular
+·purpose. Tektrnnix, Inc. is not liable for consequential
+ damages.
+
+Specification and price change privileges are reserved.
+
+
+                    Printed in U.S.A.
+                                                                                                       Z80 E.P. Installation
+
+
+
+
+                                                    PREFACE
+
+                 About This Manual                                            Manual Organization
+This manual tells how to install the Z80 Emulator Processor    The Z80 Emulator Processor Installation Manual is divided
+module and Prototype Control Probe in TEKTRONIX micro-         into four sections:
+computer development systems utilizing 8300-series emula-
+tor processors.                                                • Section 1 contains general information about the
+                                                                 Emulator Processor module and Prototype Control Probe.
+
+This manual supports the ZBOA Emulator Processor and           • Section 2 contains information about jumper selection.
+Prototype Control Probe as well as the newer Z80B Emula-
+tor Processor and Prototype Control Probe. While the ZBOA      • Section 3 provides detailed installation procedures for the
+Emulator Processor can emulate only Z80 and Z80A                 Emulator Processor module and the Prototype Control
+microprocessors, the Z80B Emulator Processor can emu- ·          Probe.
+late the Z80, Z80A, and ZBOB microprocessors.
+
+                                                               • Section 4 describes procedures used to verify proper
+In this manual, the term "Z80 emulator" is used in present-      functional performance of the Emulator Processor module
+                                                                 and Prototype Control Probe.
+ing information that applies to both the older Z80A emulator
+and the newer Z80B emulator. The term "Z80A emulator" is
+used for information that applies only to the ZBOA Emulator
+Processor. The term "Z80B emulator" is used for informa-
+tion that applies only to the newer Z80B Emulator              Change Information
+Processor.                                                     Change information is located in the back of this manual in
+                                                               the CHANGE INFORMATION section. Change information
+                                                               should be entered into the body of the manual when the
+                                                               manual is received.
+
+
+
+
+REV AUG 1982
+                                                                                                                                          ZBO E.P. Installation
+
+
+
+
+                                                       TABLE OF CONTENTS
+                                                                               Page                        ILLUSTRATIONS
+OPERATORS SAFETY SUMMARY . . . . . . . . . . . . .                                 v    Fig.
+SERVICING SAFETY SUMMARY                            ..............                 v    No.                                                                     Page
+
+                                                                                        1-1     Emulation modes 0, 1, and 2 . . . . . . . . . . . 1-2
+Section 1           GENERAL INFORMATION                                                 1-2     Z80 Prototype Control Probe . . . . . . . . . . . 1-2
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      1-1     1-3     Mobile Microprocessor, emulation mode O
+    Emulator Processor Module . . . . . . . . . . . . . . . .                   1-1             only . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1-3
+    Modes of Operation . . . . . . . . . . . . . . . . . . . . . . .            1-1     1-4     Z80 Emulator Processor and Prototype
+    Prototype Control Probe . . . . . . . . . . . . . . . . . . .               1-2             Control Probe, emulation modes 0, 1, and 2 1-4
+    Mobile Microprocessor . . . . . . . . . . . . . . . . . . . .               1-3     2-1     Z80A Emulator Processor module
+Specifications . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      1-5             jumper locations . . . . . . . . . . . . . . . . . . . . . 2-1
+                                                                                        2-2     Z80B Emulator Processor module jumper
+Section 2           JUMPERS                                                                     locations ·. . . . . . . . . . . . . . . . . . . . . . . . . . . 2-1
+Z80A Jumpers            . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2-1   3-1     Removal/installation of top cover . . . . . . . . 3-1
+Z80B Jumpers            . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2-1   3-2     Recommended module arrangement . . . . . 3-2
+                                                                                        3-3     Ribbon cable installation and grounding . . 3-3
+Section 3           INSTALLATION PROCEDURES                                             3-4     Strain Relief/Cable Clamp Assembly details 3-4
+Introduction                                         3-1                                3-5     Pin identification and proper plug insertion       3-5
+Emulator Processor Module .................. . 3-1                                      3-6     Using a zero-insertion-force socket . . . . . . 3-6
+Prototype Control Probe . . . . . . .............. . 3-2                                3-7     Typical system grounding . . . . . . . . . . . . . 3-7
+Mobile Microprocessor Board ................ . 3-4                                      3-8     System ROM board socket locations . . . . 3-8
+Connecting to the Prototype . . . .............. . 3-5                                  3-9     Connecting the prototype clock input directly
+Grounding ................................ . 3-6                                                to the Prototype Control Probe . . . . . . . . . 3-9
+Installing 8540 Option ROM .................. . 3-6                                     4-1     Z80A Personality Card jumper and strap
+Reducing Delay Through the Prototype Control Probe                                              locations . . .. .. . . . . . . . . . . . . . . . . . . . . . 4-2
+(Z80B only) ............................... . 3-8                                       4-2     Z80B Personality Card jumper and strap
+                                                                                                locations . . . . . . . . . . . . . . . . . . . . . . . . . . . 4-2
+Section 4           PERFORMANCE VERIFICATION
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      4-1
+Performance Verification . . . . . . . . . . . . . . . . . . . . .              4-1
+    Equipment Required . . . . . . . . . . . . . . . . . . . . . .              4-1                                   TABLES
+   Test Procedures . . .. . . . . . . . . . . . .. . . . .. . ..                4-1
+                                                                                        Table
+      Equipment Setup . . . . . . . . . . . . . . . . . . . . . .               4-1
+                                                                                        No.                                                                     Page
+      Functional Test Procedure . . . . . . . . . . . . . . .                   4-2
+      No HELLO Display . . . . . . . . . . . . . . . . . . . . .                4-2     1-1     Electrical Characteristics . . . . . . . . . . . . . . 1-5
+      Processor Test Procedure . . . . . . . . . . . . . . .                    4-3     1-2     Environmental Characteristics . . . . . . . . . . 1-5
+Emulator Timing Verification . . . . . . . . . . . . . . . . . .                4-4
+    Measurement Considerations . . . . . . . . . . . . . . .                    4-4
+    Equipment Required . . . . . . . . . . . . . . . . . . . . . .              4-4
+   Controlling the Signal Lines Under Test . . . . . . .                        4-4
+
+
+
+CHANGE INFORMATION
+
+
+
+
+ADD AUG 1982                                                                                                                                                        iii
+                                                                                                        Z80 E.P. Installation
+
+
+
+
+                            OPERATORS SAFETY SUMMARY
+The general safety information in this part of the summary is   As Marked on Equipment
+for both operating and servicing personnel. Specific
+warnings and cautions will be found throughout the manual
+                                                                            DANGER high voltage.
+where they apply, but may not appear in this summary.
+                                                                            Protective ground (earth) terminal.
+
+                         TERMS                                              ATTENTION-refer to manual.
+In This Manual
+CAUTION statements identify conditions or practices that
+could result in damage to the equipment or other property.      Use the Proper Fuse
+                                                                To avoid fire hazard, use only the fuse specified in the parts
+                                                                list for your product, and which is identical in type, voltage
+WARNING statements identify conditions or practices that
+                                                                rating, and current rating.
+could result in personal injury or loss of life.
+
+
+                                                                Refer fuse replacement to qualified service personnel.
+As Marked on Equipment
+CAUTION indicates a personal injury hazard not immediate-
+ly accesible as one reads the marking, or a hazard to proP-     Do Not Operate
+erty including the equipment itself.                            In Explosive Atmospheres
+                                                                To avoid explosion, do not operate this product in an atmo-
+DANGER indicates a personal injury hazard immediately ac-       sphere of explosive gases unless it has been specifically
+cessible as one reads the marking.                              certified for such operation.
+
+
+                                                                Do Not Remove Covers or Panels
+                       SYMBOLS
+                                                                To avoid personal injury, do not remove the product covers
+In This Manual                                                  or panels. Do not operate the product without the covers
+            This symbol indicates where applicable caution-     and panels properly installed.
+            ary or other information is to be found.
+
+
+
+
+                             SERVICING SAFETY SUMMARY
+                              FOR QUALIFIED SERVICE PERSONNEL ONLY
+                                   Refer also to the preceding Operators Safety Summary.
+
+
+Do Not Service Alone                                             Use Care When Servicing With Power On
+Do not perform internal service or adjustment of this prod-      Dangerous voltages exist at several points in this product.
+uct unless another person capable of rendering first aid and     To avoid personal injury, do not touch exposed connections
+resuscitation is present.                                        and components while power is on.
+
+
+                                                                 Disconnect power before removing protective panels, sol-
+                                                                 dering, or replacing components.
+
+
+
+
+REV AUG 1982                                                                                                                v
+Z80 E.P. Installation
+
+
+
+
+                                                                                   3665 -1
+
+
+                        Z80 Emulator Processor and Prototype Control Probe.
+
+
+
+
+vi                                                                            ADD AUG 1982
+                                                                                                       ZBO E.P. Installation
+
+
+
+                                                      Section 1
+                                     GENERAL INFORMATION
+
+                     Introduction                               The Z80 Emulator Processor emulates the operation of a
+                                                                target Z80 or ZSOA microprocessor device that will be used
+The ZSOA Emulator Processor is an accessory designed to         in the final version of a prototype system. Similarly, the
+function as an integral part of your TEKTRONIX microcom-        Z808 Emulator Processor emulates a Z80, ZSOA, or Z808
+puter development system. The Z80 Emulator Processor            microprocessor device. The Emulator Processor responds
+module, in conjunction with its Prototype Control Probe,        to software in the same way as the target microprocessor,
+emulates the operation of a Z80 or ZSOA microprocessor.         and also allows software debugging.
+The Z808 Emulator Processor module, in conjunction with
+its Prototype Control Probe, emulates the operation of a
+Z80, ZSOA, or Z808 microprocessor. The Z80A Emulator
+Processor utilizes a ZSOA microprocessor device to perform      Modes of Operation
+the emulation function. The ZSOB Emulator Processor uti-        The Z80 Emulator Processor operates in one of three emu-
+lizes a ZSOB microprocessor device to perform the emula-        lation modes. The desired emulation mode is selected by the
+tion function.                                                  user and controlled by the System Controller. The three em-
+                                                                ulation modes are:                                         ·
+
+This manual contains procedures for installing a Z80 Emula-
+                                                                MODE O (System Mode). Used to develop software for a
+tor Processor module and its Prototype Control Probe in
+your TEKTRONIX microcomputer development system.                prototype Z80 microprocessor-based circuit. Mode 0 uses
+(The Prototype Control Probe is not required for operation in   your development system's Program Memory, 1/0 facilities,
+                                                                and clock to develop a software program. In emulation
+emulation Mode 0.) This manual also contains performance
+                                                                Mode 0, the development system acts as an independent
+verification procedures.
+                                                                Z80-based minicomputer. Prototype circuitry is not involved.
+                                                                Figure 1-1 A illustrates Mode 0 operation.
+For user information about the Z80 Emulator Processor, re-
+fer to your System User's Manual and its Z80 Emulator
+Specifics supplement. Service information about the proces-
+sor is provided in the optional Z80 Emulator Processor Ser-     MODE 1 (Partial Emulation Mode). Used to develop some
+vice Manual.                                                    of the hardware functions of the prototype circuit. The Pro-
+                                                                totype Control Probe is used with the Z80 Emulator Proces-
+                                                                sor module in Mode 1. Emulation Mode 1 allows the
+                                                                prototype circuit's memory, 1/0, and clock to be exercised.
+Emulator Processor Module
+                                                                Mode 1 operation is illustrated in Fig. 1-1 B.
+The Z80 Emulator Processor module is a single circuit board
+that plugs into the main interconnect board in the system
+mainframe.                                                      Another function available in emulation Mode 1 is memory
+                                                                mapping. Memory mapping allows execution of user pro-
+                                                                grams in combinations of prototype memory and Program
+The Emulator Processor serves two purposes in the micro-        Memory.
+computer development system. First, it has the ability to run
+a program written specifically for a Z80 microprocessor.
+With the help of other modules in the system, the Emulator
+Processor can check the program for run-time errors or pro-     MODE 2 (Full Emulation Mode). Similar to Mode 1, except
+gram logic errors. Second, by attaching a Prototype Control     that prototype memory is now the single source of operation
+Probe to the Emulator Processor module, a prototype circuit     code; Program Memory cannot be accessed. Mode 2 oper-
+can be debugged and stepped through the final design            ation is illustrated in Fig. 1-1 C.
+stages to completion.
+
+
+
+
+REV AUG 1982                                                                                                             1-1
+General lnformation-ZBO E.P. Installation
+
+                                                               Prototype Control Probe
+      A. Emulation Mode 0
+                                                               The Prototype Control Probe is the interface between the
+                                                               Emulator Processor module and the prototype circuitry. The
+         System                                                Prototype Control Probe consists of the following.
+         1/0
+         Devices
+
+                                                               1. A cable termination board.
+
+
+                                                               2. Two 6-foot ribbon cables.
+
+
+                                                               3. The interface assembly, containing the Driver/Receiver
+                                                                  circuit board and the Mobile Microprocessor board.
+
+
+                                                               4. Two 1.5-foot twisted-pair ribbon cables.
+
+
+
+      B. Emulation Mode 1                                      5. A 40-pin dual in-line (DIP) plug.
+
+
+                                             User
+                                             Prototype         Figure 1-2 illustrates the Prototype Control Probe.
+
+
+
+
+                                             Memory.
+                                             1/0, and                                                              Interface
+                                             Clock                                                                 Assembly
+
+
+
+      C. Emulation Mode 2
+
+
+       System       Emulator                 User                Termination
+       Processor    Processor                Prototype           Board
+
+
+
+
+                                                                                                             (2420-5)3665-2
+        System
+        Memory                               Memory,
+                                             1/0. and                     Fig. 1-2. Z80 Prototype Control Probe.
+                                             Clock
+
+                                                     2354 25
+
+
+            Fig. 1-1. Emulation Modes 0,1, and 2.
+
+
+
+
+1-2                                                                                                           REV AUG 1982
+                                                                            General lnformation-ZBO E.P. Installation
+
+Mobile Microprocessor
+The emulating ZBO microprocessor is located, along with                                       Mobile
+                                                                                              Microprocessor
+line buffers and bus control circuitry, on a small auxiliary
+circuit board called the Mobile Microprocessor board. The
+Mobile Microprocessor board is installed either on the Emu-
+lator Processor module (Mode 0 only), or on the
+Driver/Receiver board in the Prototype Control Probe's in-
+terface assembly (if the probe is used).
+
+
+When the Prototype Control Probe is not installed, the Mo-
+bile Microprocessor resides in connector J2 on the Emulator
+Processor module. This configuration is for emulation Mode
+0 only (see Fig. 1-3).
+
+
+When the Prototype Control Probe is attached to the Emu-
+lator Processor module, the Mobile Microprocessor board is
+installed in connector J3 on the Driver/Receiver board in the
+probe's interface assembly. All emulation modes are avail-
+able in this configuration (see Fig. 1-4).
+
+
+
+
+                                                                                                               .(2420-3)3665-3
+
+
+
+                                                                Fig. 1-3. Mobile Microprocessor, emulation Mode 0 only.
+
+
+
+
+REV AUG 1982                                                                                                               1-3
+General lnformation-Z80 E.P. Installation
+
+
+
+                                                      0
+
+                                        Mobile       i 11
+                                        Microprocessor
+
+
+
+
+                                                         D
+
+   Cable~
+   Termination
+   Board
+
+
+
+
+                                                                                                      40.pin
+                                                                                                       Plug
+
+
+
+
+    ;~f 1i 1li]f;IJ1~1                                          .
+    :. . :l:;~,it
+         I
+                  ~· t
+                 !tt>
+       ,_.. · <>.·.·, ·.
+                                                                                                                        (2420-4)3665-4
+
+
+                           Fig. 1-4. ZBO Emulator Processor and Prototype Control Probe, emulation Modes 0, 1, and 2.
+
+
+
+
+ 1-4                                                                                                                    REV AUG 1982
+                                                                      General lnformation-Z80 E.P. Installation
+
+
+
+                                         SPECIFICATIONS
+
+
+                                                Table 1·1
+                                        Electrical Characteristics
+
+            Characteristic           Performance Requirement                  Supplemental Information
+
+Supply Voltage                 +5.2 V de, ±5%
+Current (maximum)              Z80A, 1.6 A; Z80B, 2.3 A                     Without Prototype Control Probe
+                               Z80A, 2.0 A; Z80B, 3.25 A                    With Prototype Control Probe
+
+Power Dissipation              Z80A, 10 W (approx)
+                               Z80B, 17 W (approx)
+
+
+
+
+                                               Table 1-2
+                                      Environmental Characteristics
+
+           Characteristics                        Description                       Supplemental Information
+
+Temperature
+   Operating (Z80A)          0°c to +10°c (+32°F to +158°F)
+   Operating (Z80B)          +10°C to +40°C (+50°F to +104°F)
+   Storage (Z80A)                           c
+                             -30°C to +eo 0 (-22°F to +176°F)
+   Storage (Z80B)            -10°C to +65°C (+14°F to +149°F)
+
+Humidity (Z80A)              To 90% relative non-condensing (maximum)
+Humidity (Z80B)              20% to 80% relative non-condensing (maximum)
+
+Altitude
+   Operating (Z80A)          4 500 m (15,000 ft) maximum                            Derate maximum temperature
+   Operating (Z80B)          2 500 m (8,000 ft) maximum                             by 1 ° C for each 300 m above
+                                                                                    2400 m.
+   Storage (Z80A)            15 000 m (50,000 ft) maximum
+   Storage (Z80B)            12 200 m (40,000 ft) maximum
+
+
+
+
+REV AUG 1982                                                                                                  1-5
+                                                                                                           ZBO E.P. Installation
+
+
+
+
+                                                      Section 2
+                                                     JUMPERS
+
+                   ZSOA JUMPERS                                                    ZSOB JUMPERS
+The ZSOA emulator board contains two jumpers, J1 and J3.        The Z80B emulator board contains four jumpers, J3003,
+Jumper J1 selects between 2 MHz and 4 MHz as the sys-           J1059, J1061, and J1081. Figure 2-2 shows the locations of
+tem clock speed for emulation Mode 0. Jumper J3 is used to      these jumpers.
+delete wait states in Mode 1. Figure 2-1 shows the locations
+of these jumpers.
+                                                                Jumper J3003 selects between 4 MHz and 6 MHz as re-
+                                                                quired for the desired clock speed for emulation Mode O
+The ZSOA Driver/Receiver contains two jumpers. When you         (use only a clock speed of 4 MHz or below when used with a
+are mapped to system memory (Mode 1 only), jumper J1041         8002A system).
+in the right-hand position makes MREQ unavailable to the
+prototype. J1041 in the left-hand position makes MREQ
+available to the prototype whenever HOLDA is not asserted.      J1059 is placed in the normal position when the ZSOB pro-
+                                                                cessor is in interrupt Modes 1, 2, or Mode O single byte
+                                                                vectors. In this position, the interrupt data is gated in from
+When jumper J3051 is in the right-hand position, data           the probe only while the IOREQ line is asserted low by the
+fetched from program memory (Mode 1 only) does not ap-          emulator processor.
+pear at the probe tip. Jumper J3051 in the left-hand position
+causes data from program memory to be driven to the pro-
+totype. If jumper J3051 is to be used in the left-hand posi-    J1059 is placed in the IM 0 MULTI position when the pro-
+tion, jumper J1041 must also be in the left-hand position.      cessor is in interrupt Mode 0 and there is a possibility of
+                                                                multi-byte instruction vectors.
+
+                           NOTE
+                                                                                           NOTE
+   With jumper J3051 in the left-hand position, prototype
+   bus contentions may exist.                                      When J1059 is in the IM 0 MULTI position and if you
+                                                                   are mapped to program memory, it is possible to get
+                                                                   an additional short MEMREQ pulse at the probe tip
+Jumpers J1041 and J3051 are both shipped in the right-             during Mode 0 multi-byte interrupts and during emula-
+hand position.                                                     tion Mode 1 operation.
+
+
+
+
+                                                JUMPER
+                                                                                                              D
+                                                                                                 DOD DOD
+                                      JU~ro·\                                                  DOD~ ..___,,,
+                                           ~-                      B)JUMPER                    '--...,-I     J1061    JUMPER
+                                                                   D   J3003                   JUMPER
+                                                                                                J1059
+                                                                                                                       J1081
+
+
+
+
+                                                     3665-11                                                            3665-12
+
+
+ Fig. 2-1. Z80A Emulator Processor module jumper locations.     Fig. 2-2. Z80B Emulator Processor module jumper locations.
+
+
+
+
+REV AUG 1982                                                                                                                2-1
+Jumpers-Z80 E.P. Installation
+
+J1061 on the Emulator board controls the number of wait
+                                                                                             NOTE
+states. (The function selected with J1061 may interact with
+the function selected by J1081. See the discussion • 4 MHz          Additional wait states can be generated by the user in
+and Below", later in this section.) J1061 selects three             emulation Mode 2 or emulation Mode 1 when memory
+functions:                                                          is mapped to the prototype memory.
+
+• The WAITS position selects no wait state, and should be            1. J1081 in SLOW Position (used with 670-6542-00 and
+  used only with 8540 or 8550 systems at 4 MHz and                      up memory boards).
+  below.
+                                                                       a. One wait state inserted in emulation Modes 0
+                                                                          and 1.
+• The 85XX position selects one wait state, and should be
+  used only with 8540 or 8550 systems.                                  b. No wait states inserted in emulation Mode 2 ex-
+                                                                           cept during memswitch and forced jump operations
+• The 800X position selects two wait states, and should be                 when one wait state is inserted.
+  used only with 8001 or 8002A systems.
+                                                                     2. J1081 in FAST Position (not used with 670-6542-00
+                                                                        and up memory boards).
+J1081 controls thEf modes of operation under which wait
+states are inserted. The positions required for various con-            a. No wait states inserted in emulation Modes O
+fiaurations
+  ...,      of the svstems
+                     "      are described in the followina...,,
+                                     -   -   -   -   -                     and2.
+text.
+                                                                        b. One wait · state is added during forced jump,
+                                                                           memswitch operations, and Mode 1.
+8001 /8002A Systems Jumper Configurations
+• When J1081 is in the SLOW position, J1061 should be in
+  the 800X position and J3003 should be in the 4 MHz              The Z80B Driver/Receiver contains two jumpers. When you
+  position.                                                       are mapped to system memory (Mode 1 only), jumper J1041
+                                                                  in the right-hand position makes MREQ unavailable to the
+                                                                  prototype. J1041 in the right-hand position makes MREQ
+• Two wait states are inserted each time the program mem-
+                                                                  unavailable to the prototype. J1041 in the left-hand position
+  ory is accessed, or when running in emulation Mode 1.
+                                                                  makes MREQ available to the prototype whenever HOLDA
+                                                                  is not asserted.
+• No wait states are inserted in Mode 2 except when oper-
+  ating in debug mode, or memswitch mode during the jump
+  sequence. Two wait states are inserted in these modes.
+                                                                  When jumper J3051 is in the right-hand position, data
+                                                                  fetched from program memory (Mode 1 only) does not ap-
+                                                                  pear at the probe tip. Jumper J3051 in the left-hand position
+8500-Series Systems Jumper Configurations                         causes data from program memory to be driven to the pro-
+• 4 MHz and Below. With P1081 placed in the SLOW posi-            totype. If jumper J3051 is to be used in the left-hand posi-
+  tion and P1061 placed in the WAITS position, no wait            tion, jumper J1041 must also be in the left-hand position.
+  states are inserted in emulation Modes 0, 1, or 2. One
+  wait state is inserted during forced jump sequence.
+                                                                                             NOTE
+                                                                     With jumper J3051 in the left-hand position, prototype
+• 4 MHz to 6 MHz. When operating between 4 and 6 MHz,                bus contentions may exist.
+  the following conditions occur (J1061 in 85XX position). If
+  operating in emulation Mode 1 and all memory is mapped
+  to program memory, J1061 can be placed in WAITS posi-           Jumpers J1041 and J3051 are both shipped in the right-
+  tion with no wait states in Modes 0, 1, or 2.                   hand position.
+
+
+
+
+2-2                                                                                                              ADD AUG 1982
+                                                                                                          ZBO E.P. Installation
+
+
+
+
+                                                    Section 3
+                             INSTALLATION PROCEDURES
+
+                  INTRODUCTION                                                               NOTE
+                                                                     If a Prototype Control Probe is to be installed with the
+The following procedures tell how to install the Z80 Emula-          Emulator Processor, skip to the installation proce-
+tor Processor and its Prototype Control Probe in your                dures for the Prototype Control Probe. If your system
+TEKTRONIX microcomputer development system.                          is to be operated without a Prototype Control Probe,
+                                                                     continue to step 4.
+
+
+                                                                   4. Facing the front of the mainframe, hold the Emulator
+                                                                      Processor module by its upper edges and align it with
+   Under no circumstances can more than two Emulator                  other modules in the mainframe, with its component
+   Processor modules be installed in any TEKTRONIX                    side facing left.
+   microcomputer development system at one time. Ex-
+   cessive power supply loading will result.
+                                                                   5. Guide the module down the vertical channels at either
+                                                                      of positions J15 or J16 on the main interconnect board
+                                                                      (refer to Fig. 3-2).
+     EMULATOR PROCESSOR MODULE
+                                                                   6. When the module reaches the connector on the main
+                                                                      interconnect board, press down firmly and evenly on
+                                                                      the top edge of the module until it snaps into place.
+ 1. Verify that primary power (115 or 230 V ac) to the mi-
+    crocomputer development system is off.
+                                                                   7. Slide the top cover back into the guide tracks at the top
+                                                                      of the mainframe. Be sure the cover is properly seated
+ 2. Remove the cover retainers at the upper corners on the            in the slot at the front of the mainframe guide tracks.
+    rear of the mainframe (Fig. 3-1 ).
+                                                                   8. Install the cover retainers (removed in step 2) at the
+                                                                      upper corners on the rear of the mainframe (Fig. 3-1 ).
+ 3. Remove the top cover by sliding it straight back, then
+                                                                      Tighten the cover retainer screws securely.
+    set it aside.
+
+
+
+
+                                     Top Cover
+
+
+
+
+                                                                                                                         3665-6
+
+                                        Fig. 3·1. Removal/installation of top cover.
+
+
+
+REV AUG 1982                                                                                                                3-1
+Installation Procedures-ZBO E.P. Installation
+
+
+
+
+                                                                                                                  c0
+                                                                                                                   ·;::;
+
+                                     .. > 0.... ~ ..> ..>             2
+                                                                                                                    Q.
+                                                                                                                                       ..0
+                                                                                                                                                 ..
+                                                .!!
+                                                                                                                                                I
+                                    .. E0 .. ..fl E E
+                                    .!!                                                                             CD
+                                                                                                                    u                  ii
+                                    Ci           c                     0 f
+                                                                         ..
+                                                                      .....
+                                                                             0
+                                                                                                                                       ..u
+                                                                                                                                         0
+                                                                                                                                                ..u
+                                                                                                                                                  0
+
+
+                                                                                                                                       ...      ....
+                                                 0            0                                                                        a.       a.
+                                    c       u a. ::il! ::il!           CD    CD
+
+
+                                            ..
+                                          CD
+
+                                                                                                                                                 ..
+                                    0
+                                                                         E
+                      ..
+                       CD
+                              ~
+                                    u ::il! 0
+                                    .. !. E
+                                    E
+                                    CD
+                                        E       . ..
+                                                  E
+                                                ..!!!
+                                                 :J
+                                                        ..
+                                                        E
+                                                              CD
+                                                              Cll
+                                                                 ..
+                                                             . ! .. ! a:i
+                                                             :J
+                                                             Cl>
+                                                                             Ill
+                                                                                   CD
+                                                                                          CD       CD      CD
+                                                                                                                  j::
+                                                                                                                             ~
+                                                                                                                             Ill
+                                                                                                                                        0
+                                                                                                                                        Ill
+                                                                                                                                       :;
+                                                                                                                                                 0
+
+                                                                                                                                                :;
+                       Ill    Ill                             c        Cl>   Cl>
+                                                                                    Ill            Q.                        Cl.       E         E
+                       Q.     Q.    ~     >                            0     0      Cl.   II)     II)     II)              II)         w        w
+                                                w           .....Ill   it    it
+                      II)    II)    II)   II)                                      II)
+                                                                                                 ...
+                      ...... ... ... ..."=" ... ... ...,... ...                           ...... ...... ...... ......      ......"="   ......
+                                                                                                                                       Lil
+                                                                                                                                                ......
+                                                                                          C)              N       M                             (I)
+                             N                                               CXI
+                                    M           Lil         (I)
+                                                                                   ~
+
+                  I 1 2             3     4     5           6          7     8     9      10      11      12 13            14          15       16
+
+                    LsvsTEM
+                       SECTION
+                                          _J            l                                               PROGRAM
+                                                                                                        SECTION
+                                                                                                                                                         J
+               L                                                                                                                                             )
+                                                                                   Front Panel
+
+                                                                                                                                                                      2354-43
+
+
+                                                     Fig. 3-2. Recommended module anangement.
+
+
+
+       PROTOTYPE CONTROL PROBE
+ 1. Perform steps 1 through 3 of the installation proce-
+    dures for the Emulator Processor module.                                                        The microprocessor device on the Mobile
+                                                                                                    Microprocessor board is subject to damage by static
+                                                                                                    discharge when the board is not installed in its socket.
+ 2. Lay the Emulator Processor module (component side                                               Be velY careful when handling the Mobile
+    up) on a flat, static-free surface near the right side of                                       Microprocessor board. Hold the circuit board by its
+    the development system mainframe.                                                               edges only. When storing or shipping the Mobile
+                                                                                                    Microprocessor board, wrap the board in a conductive
+                                                                                                    material such as conductive foam or pink
+ 3. The Mobile Microprocessor is a small circuit board re-                                          polyethylene.
+    siding in J2 on the Emulator Processor module. Re-
+    move the two screws that secure the Mobile
+    Microprocessor board to the Emulator Processor
+    module.                                                                                       5. Lay the Mobile Microprocessor board on a conductive
+                                                                                                     material such as pink polyethylene. The Mobile
+                                                                                                     Microprocessor will be installed in the probe interface
+ 4. Remove the Mobile Microprocessor board from con-                                                 assembly in a later step.
+    nector J2. To remove the board, insert a small flat-blad-
+    ed screwdriver between the Mobile Microprocessor
+    board and one end of connector J2. Pry up gently until                                        6. Remove the two mounting screws at the top and bot-
+    the Mobile Microprocessor board disengages from con-                                             tom of the strain relief plate (Fig. 3-3), then remove the
+    nector J2.                                                                                       strain relief/cable clamp assembly from the rear panel.
+
+
+
+
+3-2                                                                                                                                                              REV AUG 1982
+                                                                             Installation Procedures-ZBO E.P. Installation
+
+
+7. Remove the three hex nuts (with lock washers) that           1O. Insert the termination board edge connector into con-
+   attach the cable clamp assembly to the strain relief             nector J2 on the Emulator Processor module. Ensure
+   plate (Fig. 3-4). Set the strain relief plate aside.             that pin 1 of the termination board is aligned with pin 1
+                                                                    of connector J2.
+
+                         NOTE
+                                                                11. Install the two screws (removed in step 3) through the
+  Each ribbon cable has a grounding plate bonded to it.             mounting holes of the termination board and into the
+  The grounding plate must make contact with the                    mounting posts on the Emulator Processor module.
+  grounding bar of the cable clamp assembly.
+                                                                    Tighten the screws securely.
+
+
+8. Mount the grounding plates of the long Prototype Con-
+                                                                 12. Facing the front of the mainframe, hold the Emulator
+   trol Probe ribbon cables on the cable clamp assembly;             Processor module by its upper edges and align it with
+   use one grounding bar for each ribbon cable. Secure
+                                                                     other modules in the mainframe, with its component
+   the cable clamps with hex nuts (with lock washers).
+                                                                     side facing left.
+   (Refer to Fig. 3-3).
+
+                                                                 13. Guide the module down the vertical channels at either
+9. A small termination board is located at the end of the
+                                                                     of positions J15 or J16 on the main interconect board
+   long Prototype Control Probe ribbon cable pair. Care-
+                                                                     (refer to Fig. 3-2).
+   fully guide this termination board through the cableway
+   opening from the rear of the mainframe, then pull
+   enough of the ribbon cable through the opening to al-
+                                                                 14. When the module reaches the connector on the main
+   low the termination board to reach the Emulator Pro-
+                                                                     interconnect board, press down firmly and evenly on
+   cessor module (near the right side of the mainframe,
+                                                                     the top edge of the module until it snaps into place.
+   step 2).
+
+
+
+
+                                                                                            Ribbon Cables
+
+
+
+
+                                                                                                                      2354-44
+
+
+                                      Fig. 3-3. Ribbon cable Installation and grounding.
+
+
+
+REV AUG 1982                                                                                                             3-3
+Installation Procedures-Z80 E.P. Installation
+
+
+
+
+                                                      Strain Relief Plate
+
+                                                           Cable Clamp Assembly
+                                                      --~~~-..,,...._-~~~---..
+                                                                                   '\
+                                                                                                 Hex Nut
+                                                                                                 w/Lockwasher
+
+
+
+
+                                               I
+
+                                              I
+                             ~               ~~
+                                ~               I   ~HexNut
+                                     ,~         J   /w/Lockwasher
+
+                                            ~~
+
+                           lJ                                                                                            2715-6
+
+
+                                      Fig. 3-4. Strain Relief/Cable Clamp Assembly details.
+
+
+
+15. Dress the probe cables along the cabieway, then guide          19. Install the cover retainers at the upper corners on the'
+    the cable clamp assembly through the cableway open-                rear of the mainframe (Fig. 3-1 ). Tighten the cover re-
+    ing in the rear panel of the mainframe until the assem-            tainer screws securely.
+    bly is clear of the rear panel.
+
+                                                                   20. Now install the Mobile Microprocessor board according
+16. Attach the strain relief plate to the cable clamp assem-           to the following procedure.
+    bly, using the three hex nuts (with lock washers) re-
+    moved in step 7 (Fig. 3-4).
+
+
+17. Guide the strain relief/cable clamp assembly into the              MOBILE MICROPROCESSOR BOARD
+    cableway opening, then attach the strain relief plate to
+    the rear panel, using the two screws removed in step 6        If you plan to use a Prototype Control Probe with your de-
+    (Fig. 3-3).                                                   velopment system, the Mobile Microprocessor board must
+                                                                  be installed in the probe's interface assembly. Your interface
+                                                                  assembly has either a plastic or a metal housing. Follow the
+                           NOTE                                   housing disassembly procedures that apply to your interface
+                                                                  assembly.
+   To ensure proper grounding of the ribbon cables, mat-
+   ing surfaces on the strain relief plate and the main-
+   frame rear panel must be free of paint and dirt, and
+   mounting screws must be tightened securely.                    Plastic Housing Disassembly
+
+                                                                    1. Remove the four screws at the corners on the bottom
+                                                                       of the interface assembly housing.
+ 18. Slide the mainframe top cover into the guide tracks at
+     the top of the mainframe. Be sure the cover is properly         2. Remove the top cover of the interface assembly and
+     seated in the slot at the front of the guide tracks.               set it aside.
+
+
+
+3-4                                                                                                               REV AUG 1982
+                                                                            Installation Procedures-ZBO E.P. Installation
+
+ 3. Remove the three mounting screws from each side of              CONNECTING TO THE PROTOTYPE
+    the Driver/Receiver circuit board.
+                                                                The 40-pin plug at the end of the 1.5-foot twisted-pair ca-
+                                                                bles fits into the ZBO microprocessor socket on the proto-
+                                                                type. Pin 1 on the plug must be mated with receptacle 1 on
+  4. Lift the circuit board slightly and unplug connectors P4   the socket. A notch is located near pin 1 on both the protee-
+     and P5.                                                    tive spring-loaded plate and the body of the plug, to aid in
+                                                                pin identification (see Fig. 3-5).
+
+  5. Tilt the circuit board upward as necessary to gain ae-
+     cess to connector J3 on the back side of the board.        If you are using a zero-insertion-force (ZIF) socket for the
+                                                                microprocessor on your prototype, you should insert a stan-
+                                                                dard low-profile 40-pin DIP socket between the probe plug
+                                                                and the prototype's ZIF socket, to ensure a secure mechan-
+                                                                ical and electrical connection (see Fig. 3-6).
+Metal Housing Disassembly
+
+  1. Remove the screws near the four rubber feet on the
+     bottom of the interface assembly housing.
+
+                                                                   If the Prototype Control Probe plug is inco"ectly in-
+  2. Remove the top cover of the interface assembly and            serted in the prototype socket, damage to the Proto-
+     set it aside.                                                 type Control Probe will result. Figures 3-5 and 3~6
+                                                                   show the proper method of plug insertion.
+
+  3. Unplug cable connectors P4 and P5 from              the
+     Driver/Receiver board.
+
+
+  4. Remove the three mounting screws from each side of
+     the Driver/Receiver circuit board.
+
+
+  5. Tilt the circuit board upward as necessary to gain ae-
+     cess to connector J3 on the back side of the board.
+                                                                                   ((lrrr r (( (\\\(
+Mobile Microprocessor Board Installation                                      I I I I I I I I I I I I I I I I I I I I
+                                                                                ~PIN         1 CAUTION
+ 6. Remove the two screws from the mounting posts on
+    the Driver/Receiver circuit board (Refer back to Fig.
+                                                                                ®       REVERSE INSERTION
+                                                                                                              el
+    1-4.)                                                                          CAN CAUSE EQUIPMENT DAMAGE
+                                                                              I I I I I I I I I I I I I I I I I I I I
+
+
+
+ 7. Insert the Mobile Microprocessor board into connector
+    J3. Be sure the component side of the Mobile Micro-
+    processor board faces away from the Driver/Receiver
+    circuit board.
+
+
+ 8. Using the two screws removed in step 6, secure the
+    Mobile Microprocessor board to the Driver/Receiver
+    circuit board.
+
+
+ 9. Reassemble the interface assembly in reverse order of                                                       (2468-3)3665, 7
+    steps 1 through 5 for the appropriate housing.
+                                                                     Fig. 3-5. Pin identification and proper plug Insertion.
+
+
+
+
+REV AUG 1982                                                                                                                   3-5
+Installation Procedures-ZBO E.P. Installation
+
+
+
+
+                                                                                Low-profile
+                                                                P.Y'i-.1------40-pin DIP
+                                                                                Socket
+
+
+
+
+                                                                                                                       3665-8
+
+                                           Fig. 3-6. Using a zero-insertion-force sock~t.
+
+
+                    GROUNDING                                              INSTALLING 8540 OPTION ROM
+A proper ground system is mandatory for satisfactory oper-        When you are installing a new 8540 option or installing an
+ation of your microcomputer development system. The Em-           8550 to 8540 Option Conversion Kit, it is necessary to in-
+ulator Processor module and its Prototype Control Probe,          stall Option ROM devices on the System ROM board. There
+as well as any other optional and peripheral equipment,           is no requirement for the ROM to be installed in specific
+must be properly grounded to eliminate ground loops and to        sockets. However, it is recommended that the option ROM
+reduce susceptibility to static discharge. Figure 3-7 illus-      be installed in the following locations.
+trates system grounding for a typical development system.
+The following grounding procedures are recommended.               • The Emulator Option ROM should be installed in the sock-
+                                                                    ets labeled CS82 through CS88 as shown in Fig. 3-8 (cir-
+• Ensure that primary power cords of all units (including           cuit numbers U1010 through U1070 and U3010 through
+  your protective system) are connected to outlets that are         U3070 on the System ROM board).
+  on the same ground system.
+                                                                  • Install the PROM Programmer Option ROM in locations
+• Attach all grounding strap lugs to the chassis of any unit        CS90 and CS91 as shown in Fig. 3-8 (circuit numbers
+  being grounded. Ensure that the lugs make good contact            U1110 and U1120 on the System ROM board).
+  with bare metal; remove any paint, protective coating, or
+  dirt from the metal before attaching the grounding lug.          • The Communications Option (COMM Option) ROM
+                                                                     should be installed in location CS8F as shown in Fig. 3-8
+• When installing a Prototype Control Probe, tighten the             (circuit number U4060 on the System ROM board).
+  two strain relief plate mounting screws (Fig. 3-3) securely
+  to ensure a good ground connection between the strain            • Install the Trigger Trace Analyzer Option ROM in loca-
+  relief/cable clamp assembly and the rear panel of the              tions CS8E, CS8D, and CS8C as shown in Fig. 3-8 (circuit
+  mainframe.                                                         numbers U4050, U4030, and U4010 on the System ROM
+                                                                     board).
+
+ 3-6                                                                                                            REV AUG 1982
+                                                                                    Installation Procedures-ZBO E.P. Installation
+
+
+
+
+                                Modem   I       RS-232-C
+
+                                             RS-232-C
+
+                                                _-_c..,
+                       Line Printer -t-R_s_-2_3_2
+
+                            RS-232-C                                            RS-422 High-Speed Interface
+
+
+
+
+                                                                                                              Data
+        System                                                                                                Management
+        Terminal                                                                                              Unit
+
+
+
+
+                                                          Microcomputer
+                                                          Development System
+
+
+
+
+               Grounding
+               Strap
+
+
+
+
+                           Trigger                    Data
+                                                      Acquisition
+                                                      Interface
+
+
+
+
+       Oscilloscope
+
+
+
+
+                                                      P6451 Logic Probe
+
+
+                                                              All unused leads~
+                                                              to logic ground   ~
+
+
+                                                                                                                   .(2717-32)3665-9
+
+                                               Fig. 3-7. Typical system grounding.
+
+
+
+
+REV AUG 1982                                                                                                                   3-7
+Installation Procedures-Z80 E.P. Installation
+
+The spare ROM sockets for options are limited. When you               clock test point, you must disconnect the prototype clock
+add or replace Emulator Processor Boards, it may be neces-            input pin from the prototype logic, ar;d reconnect it directly
+sary to remove unneeded ROM to allow installation of re-              to the clock test point in the Prototype Control Probe using
+quired ROM.                                                           a plug-on connector.
+
+Figure 3-8 shows the locations and the assigned labels for
+the 32 ROM sockets on the System ROM board.                           The clock test point is located on the output of U1050 (pin
+                                                                      18 through a 68 n resistor in series), and the output is within
+                                                                      10 ns of the actual CPU clock. When the prototype clock is
+      REDUCING DELAY THROUGH THE                                      connected directly to the clock source in the Prototype Con-
+                                                                      trol Probe, the 20 ns· delay through probe circuitry is circum-
+       PROTOTYPE CONTROL PROBE                                        vented. Figure 3-9 illustrates the standard configuration and
+              (Z80B ONLY)                                             the adapted configuration for the prototype circuitry when
+                                                                      implementing this clock test point user adaptation.
+The clock test point (on the Driver/Receiver board) can be
+used to obtain more accurate emulator timing under worst-
+case conditions above 4 MHz operation. In order to use the
+
+
+
+
+           DDDDD mn~·u·oDDDDDD
+            0000
+            0000
+            00000
+                    0000
+                    0000
+                    00000
+                             0000
+                             0000
+                             00000
+                                     0000
+                                     0000
+                                     00000
+                                             0000
+                                             0000
+                                             00000
+                                                              0000
+                                                              0000
+                                                              00000
+                                                                      0000
+                                                                      0000
+                                                                      00000
+                                                                              0000
+                                                                              0000
+                                                                              00000
+                                                                                       0000
+                                                                                       0000
+                                                                                       00000
+                                                                                               0000
+                                                                                               0000
+                                                                                               00000
+                                                                                                       oo.oo
+                                                                                                       0000
+                                                                                                       00000
+                                                                                                               0000
+                                                                                                               0000
+                                                                                                               00000
+                                                                                                                       0000
+                                                                                                                       0000
+                                                                                                                       00000
+
+
+
+
+           o·oooo oo·o·ooo·oo
+           ·ooo·o· · ····· uu ··
+            0000
+            0000
+            00000
+                     0000
+                     0000
+                     00000
+                             0000
+                             0000
+                             00000
+                                     0000
+                                     0000
+                                     00000
+                                             0000
+                                             0000
+                                             00000
+                                                              0000
+                                                              0000
+                                                              00000
+                                                                      0000
+                                                                      0000
+                                                                      00000
+                                                                              0000
+                                                                              0000
+                                                                              00000
+                                                                                       0000
+                                                                                       0000
+                                                                                       00000
+
+
+
+
+                                                                                     ·T;Vw.
+                                                                                                       0000
+                                                                                                       0000
+                                                                                                       00000
+                                                                                                               0000
+                                                                                                               0000
+                                                                                                               00000
+                                                                                                                       0000
+                                                                                                                       0000
+                                                                                                                       00000
+
+
+
+
+            0000     0000    0000    0000
+            0000    ·0000    0000    0000
+            00000   00000    00000   00000
+            00000000
+
+
+
+
+                                                                                                                        (3921-17)3665-15
+
+
+
+                                             Fig. 3-8. System ROM board socket locations.
+
+
+
+
+3-8                                                                                                                           REV AUG 1982
+                                                                          Installation Procedures-ZSO E.P. Installation
+
+
+
+
+                         PROBE INTERFACE                                               PROBE INTERFACE
+                            ASSEMBLY                                                      ASSEMBLY
+                                   j                                                           j
+
+                                       CLOCK                                                       CLOCK
+                                        LINE                                                        LINE     CLK
+                                                                                                            TEST
+    PROTOTYPE                                                     PROTOTYPE                                 POINT
+      CLOCK                       Z80B                              CLOCK                   Z80B
+                               PROBE PLUG                                                PROBE PLUG
+
+
+
+
+                          --
+                          a
+                                    USER
+                                PROTOTYPE
+                                                                       I~                                  \
+                                                                                                           (ADD THIS LINE)
+                                 CIRCUITRY                                                    USER
+                                                                                        - PROTOTYPE
+                                                                                           CIRCUITRY
+                                                              (BREAK THIS LINE)
+
+
+
+                  STANDARD                                                             ADAPTED
+                CONFIGURATION                                                        CONFIGURATION
+                                                                                                                    3665-14
+
+
+                Fig. 3-9. Connecting the prototype clock input directly to the Prototype Control Probe.
+
+
+
+
+ADD AUG 1982                                                                                                             3-9
+                                                                                                         ZSO E.P. Installation
+
+
+
+
+                                                       Section 4
+                               PERFORMANCE VERIFICATION
+
+                    INTRODUCTION                                  more information about this equipment, refer to the
+                                                                  MicroLab I Instruction Manual (with the Z80 Personality
+After you have installed the Z80 Emulator Processor and           Card supplement).
+Prototype Control Probe in your microcomputer develop-
+ment system, the Emulator Processor should be tested for
+proper operation. The first part of this section discusses        Test Procedures
+equipment necessary to verify functional operation of the
+Z80 Emulator Processor and Prototype Control Probe.               Equipment Setup
+Equipment necessary to verify timing relationships of sig-
+nals available at the Prototype Control Probe pins is dis-        1. Ensure that primary power (115 or 230 V ac) to the mi-
+cussed in the second part of this section.                           crocomputer development system and to the MicroLab I
+                                                                     is off.
+Each time you install the Z80 Emulator Processor in your
+development system, system verification checks should be
+performed. Emulator processor diagnostics are run auto-           2. Verify that jumper J1018 (Z80A card only) or J4015
+matically as a part of the system diagnostic test program.           (Z808 card only) is installed on the Z80 Personality Card
+Procedures for running this diagnostic test program are in-          (see Fig. 4-1 and Fig. 4-2).
+cluded in your System Installation Guide.
+
+This section explains details of operation that are specific to   3. Install the Z80 Personality Card in the MicroLab I.
+the Z80A and the Z808 Personality Card circuit boards. You
+are assumed to be familiar with the operation of the
+MicroLab I, as outlined in the MicroLab I Instruction Manual.
+You are also assumed to be familiar with the operation of
+the Z80A and Z808 microprocessors, as outlined in the                                        NOTE
+Zilog Z80A/Z808 Technical Manual.                                    To ensure a secure mechanical and electrical connec-
+                                                                     tion between the Prototype Control Probe's 40-pin
+                                                                     DIP plug and the zero-insertion-force (ZIF) socket on
+                                                                     the personality card, attach a standard 40-pin DIP cir-
+                                                                     cuit board socket to the probe plug, then plug the
+       PERFORMANCE VERIFICATION
+                                                                     socket pins into the ZIF socket.
+
+Equipment Required
+To verify functional performance of the installed Z80 Emula-      4. Plug the Z80 Prototype Control Probe's 40-pin DIP plug
+tor Processor, the following equipment is required:                  into the ZIF socket on the Z80 Personality Card.
+
+• TEKTRONIX MicroLab I (067-0892-00 and up)
+                                                                  Functional Test Procedure
+• Z80 Personality Card (018-0156-00 and up)
+                                                                  1. Turn on primary power to the microcomputer develop-
+The MicroLab I checks the Z80 Emulator Processor and                 ment system.
+Prototype Control Probe by providing a circuit with known
+characteristics. This circuit is monitored by MicroLab I cir-
+cuitry, and test results are indicated on the LED display. The    2. Turn on power to the MicroLab I test fixture.
+MicroLab I operating system also contains tests that func-
+tionally exercise the Emulator Processor and its Prototype
+Control Probe.
+                                                                                            NOTE
+                                                                    For detailed information on operating procedures for
+The information presented in this section assumes that you          your microcomputer development system, refer to
+are familiar with the MicroLab I and its characteristics. For       your System User's Manual.
+
+
+
+REV AUG 1982                                                                                                               4-1
+Performance Verification-ZBO E.P. Installation
+
+
+
+                         0   J1022
+                         0                                                                  DD J2021
+
+       DD
+       J1018
+                                                                                    o)
+                                                                                    B    J3017
+
+
+
+                                                                                    8)   J4015
+
+
+
+                                             W3041 0
+                                                     01
+
+                                                     0
+                                                                                    §)   J5025
+
+                                                     01                                                           03
+                                             W5042 0                                                     W7039 0 2
+                                                     0                                                            01
+                                                         1
+                                                                                                           03
+                                                                                                     W8038 0 2
+                                         W7042 000
+                                                                                                             01
+                                                               I
+                                                    2861-2A                     l                                 1      3665-13
+
+ Fig. 4-1. ZBOA Personality Card jumper and strap locations.        Fig. 4-2. Z80B Personality Card jumper and strap locations.
+
+
+                                                      -
+3. At the system terminal, enter the following command             Z80 Emulator Processor logic circuitry is functioning proper-
+   line:                                                           ly. However, several control lines are not checked during
+                                                                   initialization·and should be verified with the Processor Test.
+           >SEL Z80      <CR>
+
+   This identifies the Emulator Processor to be tested.
+                                                                   No HELLO Display
+4. Enter the desired emulation mode.
+                                                                   If the MicroLab I LEDs do not display HELLO, a problem in
+                                                                   the Z80 Emulator Processor module, the Prototype Control
+                                                                   Probe, or the MicroLab I is indicated. The following proce-
+  a.   To verify memory mapping capability, enter:
+                                                                   dure may be used to determine which unit is malfunctioning:
+           >EM l     <CR>
+
+       When the prompt character (>) is displayed, enter:          1. Turn off power to the MicroLab I and the microcomputer
+           >MAP U 0000 FFFF          <CR>                             development system.
+
+  b.   If only the functional operation of the Emulator Pro-
+       cessor is to be tested, enter:                              2. Disconnect the Prototype Control Probe from the ZIF
+                                                                      socket on the Z80 Personality Card.
+           >EM 2     <CR>
+
+5. To initiate program execution in the Emulator Processor,
+   enter:
+
+           >RESET  <CR>                                                                       NOTE
+           >GO 0  <CR>                                                The ZBO microprocessor device is subject to damage
+                                                                      by static discharge when not installed in its socket.
+                                                                      Be very careful when handling this device; hold it by
+If the Z80 Emulator Processor and Prototype Control Probe             its ends only and do not touch the pins. When the
+are operating properly, the Microlab I will operate normally          device is not in use, it should be stored in its conduc-
+and display HELLO. This display indicates that most of the            tive foam packing.
+
+
+
+4-2                                                                                                               REV AUG 1982
+                                                                         Performance Verification-ZBO E.P. Installation
+
+3. Obtain an Z80 microprocessor device that is known to           Processor Tests in order. While each test is being per-
+   be operating properly. Install the device in the ZIF sock-     formed, the display will show Proc x (where x is the num-
+   et on the Z80 Personality Card.                                ber of the test being performed).
+
+
+4. Turn on power to the MicroLab I test fixture.
+                                                                For the Z80 Emulator Processor and Prototype Control
+                                                                Probe, there are four Processor Tests:
+
+If the MicroLab I now displays HELLO, the problem is in
+                                                                PROC 0     Test of the BUSRQ and BUSAK lines. An Error
+either the Emulator Processor module or the Prototype Con-
+                                                                           PO display indicates a problem with either the
+trol Probe. Refer to the optional Z80 Emulator Processor
+                                                                           BUSRQ line or the BUSAK line.
+Service Manual for corrective maintenance information.
+                                                                PROC 1     Test of the RFSH line. Error P1 indicates a
+                                                                           problem with the RFSH line.
+If HELLO is not displayed, a malfunction of the MicroLab I is
+indicated. Refer to the MicroLab I Instruction Manual for       PROC 2     Test of the operation of the INT and HALT lines.
+corrective maintenance information.                                        AnY will appear on the MicroLab I display,
+                                                                           prompting you to press any key except SPE-
+                                                                           CIAL or RESET. Error P2 indicates a malfunc-
+                                                                           tion of either the INT line or the HALT line.
+Processor Test Procedure.
+                                                                PROC 3     Test of the WAIT line. There is no error mes-
+1. Press the RESET key on the MicroLab I keypad. This                      sage associated with this test; if the WAIT line
+   initializes the processor test hardware in the MicroLab I.              malfunctions, the behavior of the monitor is un-
+                                                                           predictable. When PROC 3 is completed, rEAdY
+                                                                           will be displayed on the MicroLab I.
+2. Press the PROC TEST (Shift 1) key to start the Proces-
+   sor Test. The display will show Pn.
+
+                                                                Successful completion of both the Functional Test and the
+3. Press the 0 key. The MicroLab I will begin the Proces-       Processor Test verifies that the Z80 Emulator Processor
+   sor Test sequence at PROC 0 and perform each of the          and Prototype Control Probe are operational.
+
+
+
+
+REV AUG 1982                                                                                                           4-3
+Performance Verification-Z80 E.P. Installation
+
+
+                           EMULATOR TIMING VERIFICATION
+You may occasionally wish to verify timing relationships be-       Equipment Required
+tween the signals available at the pins of the Prototype Con-
+trol Probe. The following paragraphs discuss equipment             The following equipment may be used to measure timing
+necessary to perform these timing verifications.                   relationships with the preferred accuracy and resolution:
+
+                                                                   • TEKTRONIX       7844    Dual   Beam     Oscilloscope,    or
+                                                                     equivalent;
+Specifics of these timing relationships are provided in the
+Z80 Emulator Specifics section of your System User's
+Manual.                                                            • TEKTRONIX 7A26 Vertical Amplifier, or equivalent; and
+
+                                                                   • TEKTRONIX 7B85 Delaying Time Base, or equivalent.
+Measurement Considerations
+Verifying the timing relationships of Emulator Processor sig-
+nals involves measurement of very small time increments.
+Test equipment used for these measurements should be               Controlling the Signal Lines Under Test
+able to resolve timing differences between two signals of          Some processor signal lines, such as interrupt lines, are
+5 ns or iess. A resoiution of 1 ns is piefeiied fo; ve;ification   non11aiiy connected to asynchionous circuits4 Timing rela-
+of the most critical timings.                                      tionships of these ~synchronous signals may be difficult to
+                                                                   measure with an oscilloscope. To exercise these signal
+                                                                   lines in a periodic manner, you may find it necessary to de-
+Be careful that errors are not introduced by the test equip-       velop software routines, or use an external test fixture such
+ment being used. Test equipment calibration should be              as the TEKTRONIX Microlab I.
+checked carefully. If you are using a dual trace oscillo-
+scope, rather than a dual beam model, be sure to account
+for any possible skew between the two input channels. In
+general, good laboratory measurement practices should be
+followed to ensure accurate measurement of these timing
+relationships.
+
+
+
+
+4-4                                                                                                               ADD AUG 1982
+

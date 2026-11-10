@@ -35,15 +35,17 @@ static void show(tek8301 &a, tek8501 &b)
 	printf("8501: PC=%06o R0-5=%06o %06o %06o %06o %06o %06o SP=%06o PSW=%03o LEDs=%02o %s  %s\r\n", b.cpu.reg(7),
 		b.cpu.reg(0), b.cpu.reg(1), b.cpu.reg(2), b.cpu.reg(3), b.cpu.reg(4), b.cpu.reg(5), b.cpu.reg(6), b.cpu.psw(), b.leds(),
 		b.cpu.halted() ? "HALTED" : "", dasm11(b, b.cpu.reg(7)).c_str());
+	printf("%s\r\n", a.lp_state().c_str());
 }
 
 int main(int argc, char **argv)
 {
 	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, disks[4];
-	long long max_cycles = -1; bool writeback = false; int sw = 0;
+	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
-	double trace_at = -1; std::string tracefile;   // -trace8301 SECONDS FILE (2650 + Z80 instruction trace)      // -type SECONDS "TEXT"  (\r = Return)
+	double trace_at = -1; std::string tracefile;
+	double trace11_at = -1, trace11_len = 0; std::string trace11file;   // -trace8501 START SECONDS FILE   // -trace8301 SECONDS FILE (2650 + Z80 instruction trace)      // -type SECONDS "TEXT"  (\r = Return)
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
@@ -51,12 +53,14 @@ int main(int argc, char **argv)
 		else if (a == "-rw") writeback = true;
 		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
 		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
+		else if (a == "-pm") pm_ext = next() == "ext";
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
 		else if (a == "-log") logfile = next();
 		else if (a == "-hsilog") hsilog = next();
 		else if (a == "-auxlog") auxlog = next();
 		else if (a == "-dump") dumpfile = next();
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
+		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
 		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
 	}
@@ -87,18 +91,25 @@ int main(int argc, char **argv)
 	dmu->hsi_peer_ready = [&]() { return !mdu->hsi_rx_busy(); };
 
 	mdu->mode_switch = u8(sw);
+	mdu->pm_ext_comparator = pm_ext;
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
 	FILE *trf = tracefile.empty() ? nullptr : fopen(tracefile.c_str(), "w");
 	if (trf) {
 		mdu->cpu.trace_hook = [&](u16 pc) {
 			if (mdu->cycles() < trace_at * tek8301::CPU_HZ) return;
-			fprintf(trf, "%04x: %-20s ee=%02x\n", pc, dasm2650(*mdu, pc).c_str(), 0);
+			auto &c = mdu->cpu;
+			fprintf(trf, "%04x: %-20s r0-3=%02x %02x %02x %02x psu=%02x t=%.4f\n", pc, dasm2650(*mdu, pc).c_str(), c.reg(0), c.reg(1), c.reg(2), c.reg(3), c.psu(), mdu->cycles() / tek8301::CPU_HZ);
 		};
 		mdu->lp_trace_hook = [&](u16 pc) {
 			if (mdu->cycles() < trace_at * tek8301::CPU_HZ) return;
 			fprintf(trf, "  Z80 %04x\n", pc);
 		};
 	}
+	FILE *trf11 = trace11file.empty() ? nullptr : fopen(trace11file.c_str(), "w");
+	if (trf11) dmu->cpu.trace_hook = [&](u16 pc) {
+		double t = dmu->cycles() / tek8501::CPU_HZ;
+		if (t >= trace11_at && t < trace11_at + trace11_len) fprintf(trf11, "%06o: %s\n", pc, dasm11(*dmu, pc).c_str());
+	};
 	mdu->power_on();
 	dmu->power_on();
 
@@ -128,7 +139,12 @@ int main(int argc, char **argv)
 			if (!t.text.empty() && mdu->cycles() >= t.at * tek8301::CPU_HZ) {
 				for (size_t i = 0; i < t.text.size(); i++) {
 					char ch = t.text[i];
-					if (ch == '\\' && i + 1 < t.text.size() && t.text[i + 1] == 'r') { ch = '\r'; i++; }
+					if (ch == '\\' && i + 1 < t.text.size()) {
+						char e = t.text[++i];
+						if (e == 'r') ch = '\r'; else if (e == 'n') ch = '\n'; else if (e == 'e') ch = 27;
+						else if (e == 'x' && i + 2 < t.text.size()) { ch = char(strtol(t.text.substr(i + 1, 2).c_str(), nullptr, 16)); i += 2; }
+						else ch = e;
+					}
 					mdu->term.host_rx(u8(ch));
 				}
 				t.text.clear();
@@ -147,7 +163,7 @@ done:
 	host::tty_raw(false);
 	{ std::string e; if (!dmu->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
 	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }
-	for (FILE *f : { logf, hsif, auxf, trf }) if (f) fclose(f);
+	for (FILE *f : { logf, hsif, auxf, trf, trf11 }) if (f) fclose(f);
 	if (!dumpfile.empty()) {   // raw memory images: <file>.8501 (64 KB, LE words) and <file>.8301 (CPU view, 32 KB)
 		FILE *f = fopen((dumpfile + ".8501").c_str(), "wb");
 		for (u32 a = 0; a < 0x10000; a += 2) { u16 w = dmu->peek16(a); fputc(w & 0xff, f); fputc(w >> 8, f); }

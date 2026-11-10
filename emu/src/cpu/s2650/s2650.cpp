@@ -474,7 +474,8 @@ inline uint8_t s2650_device::ARG()
 {                                                               \
 	if (cond)                                                   \
 	{                                                           \
-		m_icount -= 6;                                          \
+		/* [tek8550] no extra cycles: RETC is 3 cycles taken or not  \
+		   (8301 disk diag interval-timer test needs this) */    \
 		m_ea = m_ras[get_sp()];                                 \
 		set_sp(get_sp() - 1);                                   \
 		m_page = m_ea & PAGE;                                   \

@@ -18,9 +18,11 @@
 class tek8501 : public t11_device::bus_interface
 {
 public:
-	// MAME T11 cycle units per second. Calibrated so the diag LTC test loop runs
-	// ~1390 iterations per 60 Hz tick, like a real LSI-11/2 (window 776..3213).
-	static constexpr double CPU_HZ = 4'500'000.0;
+	// MAME T11 cycle units per second, calibrated against the 8501's own timing loops:
+	// the disk-based LTC test spins 28100 x (CMP @4(SP),(SP); BLOS; INC @4(SP); JMP)
+	// = 108 units/iteration for "one second" and accepts 58..62 ticks; the power-up
+	// test wants 776..3213 iterations of TST/BEQ/BMI/SOB per tick (~940 here).
+	static constexpr double CPU_HZ = 3'100'000.0;
 
 	tek8501();
 	bool load_roms(const std::string &dir, std::string &err);
@@ -44,7 +46,7 @@ public:
 	void hsi_rx(u8 b) { m_io.rxq.push_back(b); m_io.rcsr |= 1; }   // start bit detected -> NCTS
 	std::function<bool()> hsi_peer_ready;   // RFD: peer's receiver can take a byte
 	bool hsi_ncts() const { return m_io.rcsr & 1; }
-	int  hsi_char_cycles = 320;    // 153.6 kbaud, 11 bits/char at CPU_HZ
+	int  hsi_char_cycles = int(CPU_HZ * 11 / 153600);   // 153.6 kbaud, 11 bits/char
 	u64 cycles() const { return m_cycles; }
 	bool trace = false;
 	std::string log_unknown_io;  // collected for diagnostics
