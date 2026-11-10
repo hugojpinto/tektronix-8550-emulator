@@ -21,6 +21,7 @@ constexpr int INT_SVC1 = 16, INT_BP1 = 24, INT_BP2 = 25, INT_SCY = 26, INT_SLV_H
 tek8301::tek8301()
 	: cpu(*this), m_sysram(0x10000, 0), m_progmem(0x10000, 0), m_par(0x10000, 0)
 {
+	m_ep85_bus.m = this;
 	lp_reset();
 	prom.present = false;      // option; -prom on fits it
 	// -prom fix, part 2: the later DOS/50's 'post event' (0304 there) delivers the target
@@ -160,7 +161,7 @@ void tek8301::ec_interrupt(int n, bool latch_pc)
 	case INT_DIAG: m_ec_pend |= 0x08; break;
 	default: break;
 	}
-	if (latch_pc) m_lp_pc_next = slave().pc;
+	if (latch_pc) m_lp_pc_next = ep85_enabled() ? ep85.pc() : slave().pc;
 	if (m_f9 & 0x08)                    // IM = 1: debug interrupts not masked
 		m_pending |= 1u << n;
 	update_irq();
@@ -174,6 +175,7 @@ void tek8301::lp_run(int cycles2650)
 	// blocked by an outstanding SVC/debug interrupt.)
 	if (cpu.halted() && !slave_enabled() && !(m_ec_pend & 0x10)) { ec_interrupt(INT_SLV_HALT); return; }
 	if (!slave_enabled() || !cpu.halted()) return;
+	if (ep85_enabled()) { ep85_run(cycles2650); return; }
 	z80 &z = slave();
 	// forced reset / forced jump are latched by F9 and taken by the slave when it runs
 	if (m_fr_pending) { m_fr_pending = false; z80 keep = z; z80_setup(z); z.read_byte = keep.read_byte; m_ec_pend = 0; }
@@ -227,6 +229,123 @@ void tek8301::lp_run(int cycles2650)
 	if (m_lp_frac > 0) m_lp_frac = 0;
 }
 
+// --------------------------------------------------------------------------
+// 8085 emulator processor board (8300E06): the 8085 runs as the Emulator Controller's
+// slave like the Z80 board, with its own control port E5 (80 firmware call, 92 run in
+// mode 0, as DOS/50 V1.0 drives it) and firmware (not dumped) at the top of memory.
+
+u8 tek8301::ep85_bus_t::read(u16 a) { m->bp_check(a, false); return m->slave_rd(a, false); }
+u8 tek8301::ep85_bus_t::fetch(u16 a) { m->bp_check(a, false); return m->slave_rd(a, true); }
+void tek8301::ep85_bus_t::write(u16 a, u8 d) { m->bp_check(a, true); m->slave_wr(a, d); }
+u8 tek8301::ep85_bus_t::io_read(u8 port) { return 0xff; }
+void tek8301::ep85_bus_t::io_write(u8 port, u8 d)
+{
+	// SVC n = OUT (F8h-n) in the block selected by F3, as on the Z80 board
+	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
+		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
+		m->m_svc_stop = true;
+	}
+}
+
+// 8085 board firmware (high level). Register block: 14 bytes at program memory
+// 0000-000D (DOS/50 swaps it with its saved context around each call).
+// Entries (forced jump, FB:FA active low): FBEA restore, FBED dump (DOS/50 V1.0 GO / break);
+// FAEA / FAED are alternates DOS/50 picks by a flag. Block layout (found by filling the
+// dump with marker bytes and reading DS): 0 L 1 H 2 E 3 D 4 C 5 B 6 A 7 F 8 ? 9-10 SP
+// 11 RIM value (SID 80, I7.5 40, IE 08) 12 SIM masks (bits 2-0: M7.5 M6.5 M5.5, 1 = masked)
+// 13 ?; the PC comes from the PC latch. DOS/50's initial context has 11 = 07, 12 = 0F.
+void tek8301::ep85_firmware(u16 entry)
+{
+	auto pm = [&](int o) { return m_progmem[o & 0xffff]; };
+	if (ep_trace) {
+		fprintf(stderr, "[%.3f EP85 firmware entry %04x, block:", m_cycles / CPU_HZ, entry);
+		for (int i = 0; i < 14; i++) fprintf(stderr, " %02x", pm(i));
+		fprintf(stderr, "]\n");
+	}
+	// the firmware PROM is mirrored through F800-FBFF (8085 diag 06/00E1 calls the dump
+	// entry as F8ED; DOS/50 uses FBEx or FAEx): decode the entry by its low byte
+	u16 e = u16(0xfb00 | (entry & 0xff));
+	if (e == 0xfbea) {                               // restore registers from the block
+		ep85.set_hl(u16(pm(0) | pm(1) << 8)); ep85.set_de(u16(pm(2) | pm(3) << 8)); ep85.set_bc(u16(pm(4) | pm(5) << 8));
+		ep85.set_af(u16(pm(7) | pm(6) << 8)); ep85.set_sp(u16(pm(9) | pm(10) << 8));
+		ep85.set_im(u8((ep85.im() & 0xf0) | (pm(11) & 0x08) | (pm(12) & 0x07)));   // IE from the RIM byte, masks (SIM) from 12
+		ep85.set_pc(m_ep85_resume);                      // resumes the user program (a forced jump may follow)
+		ec_interrupt(INT_SVC1 + 6, false);               // Debug SVC 1 (as on the Z80 board)
+		m_svc_stop = true;
+	} else if (e == 0xfbed) {                        // dump registers into the block (after a break)
+		auto put = [&](int o, u8 v) { m_progmem[o] = v; };
+		put(0, u8(ep85.hl())); put(1, u8(ep85.hl() >> 8)); put(2, u8(ep85.de())); put(3, u8(ep85.de() >> 8));
+		put(4, u8(ep85.bc())); put(5, u8(ep85.bc() >> 8)); put(6, u8(ep85.af() >> 8)); put(7, u8(ep85.af()));
+		put(9, u8(ep85.sp())); put(10, u8(ep85.sp() >> 8));
+		put(11, u8((ep85.im() & 0x48) | (ep85.im() & 0x07)));     // RIM: I7.5 pending 40, IE 08, masks
+		put(12, u8((pm(12) & 0xf8) | (ep85.im() & 0x07)));        // SIM masks (DS M7/M6/M5)
+		ec_interrupt(INT_SVC1 + 6, false);
+		m_svc_stop = true;
+	} else {
+		if (ep_trace) fprintf(stderr, "[EP85 firmware entry %04x unknown: HLT]\n", entry);
+		ep85.set_pc(entry);
+	}
+}
+
+void tek8301::ep85_run(int cycles2650)
+{
+	if (m_fr_pending) { m_fr_pending = false; ep85.reset(); m_ec_pend = 0; }
+	if (m_fj_pending) {
+		m_fj_pending = false;
+		u16 target = u16(~(m_fa | (m_fb << 8)));
+		if (ep_trace) fprintf(stderr, "[%.3f forced jump %04x -> EP85]\n", m_cycles / CPU_HZ, target);
+		if (target >= 0xf800) {
+			// a jump into the firmware together with a forced interrupt (DOS/50's break:
+			// F9 = F9) is the firmware's TRAP-based entry: it saves the user's PC, which the
+			// restore entry later returns to (DOS/50 does not force a jump after restoring
+			// during TRACE). High level: remember that PC and consume the interrupt.
+			if (m_fi_pending || (target & 0xff) == 0xed) m_ep85_resume = ep85.pc();
+			m_fi_pending = false;
+			ep85.set_pc(target);
+			ep85_firmware(target);
+			return;
+		}
+		ep85.set_pc(target);
+	}
+	// forced interrupt: the 8085's TRAP (also wakes it from HLT). The line stays asserted
+	// until an instruction has run: MAME's core cancels a TRAP whose line drops first.
+	// Held until the processor can run.
+	bool trap = false;
+	if (m_fi_pending && cpu.halted() && m_lp_live && !m_ec_pend && !m_svc_stop) {
+		m_fi_pending = false;
+		ep85.set_input_line(I8085_TRAP_LINE, ASSERT_LINE);
+		trap = true;
+		if (ep85.halted()) {
+			ep85.run(1);                             // TRAP taken at the next M1 time, then one instruction
+			ep85.set_input_line(I8085_TRAP_LINE, CLEAR_LINE); trap = false;
+			m_lp_pc_last = ep85.pc();
+			if (ep_trace) fprintf(stderr, "[%.3f EP85 TRAP from HLT -> pc %04x halted %d]\n", m_cycles / CPU_HZ, ep85.pc(), int(ep85.halted()));
+			if (ep85.halted()) { ec_interrupt(INT_SLV_HALT); return; }
+		}
+	}
+	if (!lp_running()) return;
+	m_lp_frac += cycles2650 * 1.5;                  // 8085 at 3 MHz vs the 2650 at 2 MHz
+	while (m_lp_frac > 0 && lp_running()) {
+		m_lp_pc_last = ep85.pc();
+		if (ep_trace && m_ep85_steps++ < 40) fprintf(stderr, "[EP85 %04x]\n", ep85.pc());
+		u32 before = m_pending;
+		m_bp_hit = 0;
+		int c = ep85.run(1);                         // one instruction
+		if (trap) { ep85.set_input_line(I8085_TRAP_LINE, CLEAR_LINE); trap = false; }
+		m_lp_frac -= c;
+		if (m_pending != before) {
+			if (m_bp_hit & 1) ec_interrupt(INT_BP1);
+			if (m_bp_hit & 2) ec_interrupt(INT_BP2);
+			break;
+		}
+		if (m_bp_hit & 1) { ec_interrupt(INT_BP1); break; }
+		if (m_bp_hit & 2) { ec_interrupt(INT_BP2); break; }
+		if (!(m_f8 & 0x10)) { ec_interrupt(INT_SCY); break; }
+		if (ep85.halted()) { ec_interrupt(INT_SLV_HALT); break; }
+	}
+	if (m_lp_frac > 0) m_lp_frac = 0;
+}
+
 bool tek8301::load_roms(const std::string &dir, std::string &err)
 {
 	if (!read_file(dir + "/160-0728-01.u5040", m_boot) || m_boot.size() < 2048 ||
@@ -253,7 +372,7 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
-	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_e5 = 0; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
 	lp_reset();
 	cpu.reset();
 }
@@ -340,6 +459,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
 	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
+	case 0xe5: v = ep85_present ? u8((m_e5 & 0x80) && ep85.halted() ? 0x10 : 0x00) : 0x00; break;
 	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && ep.halted ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
@@ -396,6 +516,10 @@ void tek8301::io_write(offs_t port, u8 d)
 		if (!(d & 0x02) && (d & 0x01)) { m_fi_pending = true; m_lp_live = true; }
 		break;
 	case 0xf5: m_f5 = d; break;
+	case 0xe5:
+		if (ep_trace) fprintf(stderr, "[%.3f E5 <- %02x]\n", m_cycles / CPU_HZ, d);
+		m_e5 = d;
+		break;
 	case 0xe3:
 		if (ep_trace) fprintf(stderr, "[%.3f E3 <- %02x]\n", m_cycles / CPU_HZ, d);
 		m_e3 = d;
