@@ -1,7 +1,11 @@
 # 8550 session: edit, assemble, link, run (emulation mode 1, external target)
 
-Captured from the emulated CT8500 at its native 80×25 grid (10×20 px cells, 800×500 px).
-Regenerate with `tools/make_screenshots.sh`.
+Captured from the emulated CT8500 and drawn on its documented raster: 80×25 characters on a 6×8 dot matrix in an
+8×10 dot field, i.e. 640 dots × 250 scan lines, green on black (CT8500 Operators Manual 070-3737-00, "Display Features").
+Each scan line is doubled (second line dimmer) to give 640×500 px, close to the 12-inch tube's aspect ratio.
+The glyphs are a classic public-domain 5×7 dot-matrix font. The CT8500's own character ROM has never been dumped, so the
+letter shapes are a period-typical stand-in. Regenerate with `tools/make_screenshots.sh`
+(`tools/render_screens.py --style modern` gives the plain TrueType variant).
 
 1. ![boot](01_boot.png) Power-on: 8301 boot ROM, 8501 file server, **DOS/50 V1.0** prompt.
 2. ![ace new](02_ace_new.png) `SEL Z80`, `ACE HELLO.ASM`: a new, empty file in the full-screen editor.
