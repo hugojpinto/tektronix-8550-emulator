@@ -61,3 +61,16 @@ Key map (ACE's configurable commands in brackets, see ACE manual Fig. 4-2):
 | Shift-Tab | BACK TAB | (mark) |
 | Ctrl-J | LINE FEED | (cmd-esc) |
 | Esc | ESC | ends insert; `EX` saves & exits ACE |
+
+## Running and debugging Z80 programs (emulation mode 0)
+The Z80 emulator processor board is emulated (its firmware at high level, see `notes/8301.md`):
+```
+> SEL Z80
+> ASM P.OBJ P.LST P.ASM
+> LINK P.LOAD P.LNKL P.OBJ
+> LOAD P.LOAD
+> BK 106            breakpoint
+> TRACE ALL         single-step display (TRACE OFF to stop)
+> GO                run; ESC ESC breaks a free-running program
+> DS                display registers;  D 1000 100F  dump memory
+```

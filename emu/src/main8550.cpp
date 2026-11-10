@@ -108,6 +108,7 @@ int main(int argc, char **argv)
 	mdu->mode_switch = u8(sw);
 	mdu->pm_ext_comparator = pm_ext;
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
+	mdu->ep_trace = getenv("TEK_EPTRACE") != nullptr;
 	FILE *trf = tracefile.empty() ? nullptr : fopen(tracefile.c_str(), "w");
 	if (trf) {
 		mdu->cpu.trace_hook = [&](u16 pc) {

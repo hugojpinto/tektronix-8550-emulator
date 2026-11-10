@@ -1,6 +1,7 @@
 // Tektronix 8301 MDU -- see tek8301.h and notes/8301.md
 #include "machine/tek8301.h"
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 bool read_file(const std::string &p, std::vector<u8> &v)
@@ -26,14 +27,65 @@ tek8301::tek8301()
 // --------------------------------------------------------------------------
 // Language Processor (Z80A, slave) + Emulator Controller
 
+void tek8301::z80_setup(z80 &z)
+{
+	z80_init(&z);
+	z.read_byte = &tek8301::lp_read;
+	z.write_byte = &tek8301::lp_write;
+	z.port_in = &tek8301::lp_in;
+	z.port_out = &tek8301::lp_out;
+	z.userdata = this;
+}
+
 void tek8301::lp_reset()
 {
-	z80_init(&lp);
-	lp.read_byte = &tek8301::lp_read;
-	lp.write_byte = &tek8301::lp_write;
-	lp.port_in = &tek8301::lp_in;
-	lp.port_out = &tek8301::lp_out;
-	lp.userdata = this;
+	z80_setup(lp);
+	z80_setup(ep);
+}
+
+// Emulator processor firmware (not dumped): high-level emulation of what DOS/50
+// expects. DOS/50 lends program memory 0000-001A to the board as a register block
+//   0 IM  1 IFF1<7>/IFF2<6>  2 R  3 I  4..11 L' H' E' D' C' B' A' F'
+//   12-13 IY  14-15 IX  16..23 L H E D C B A F  24-25 SP  26 ?
+// and forces a jump to 00:F806 (written FF:07F9, active low) with E3<7> set; the firmware restores the registers
+// and must answer with an SVC (DOS/50 7138 waits for any SVC, error 45 on HALT).
+void tek8301::ep_firmware(u16 entry)
+{
+	auto pm = [&](int o) { return m_progmem[o & 0xffff]; };
+	if (ep_trace) {
+		fprintf(stderr, "[%.3f EP firmware entry %04x, block:", m_cycles / CPU_HZ, entry);
+		for (int i = 0; i < 27; i++) fprintf(stderr, " %02x", pm(i));
+		fprintf(stderr, "]\n");
+	}
+	if (entry == 0xf806) {                       // restore
+		ep.interrupt_mode = pm(0) & 3;
+		ep.iff1 = pm(1) & 0x80; ep.iff2 = pm(1) & 0x40;
+		ep.r = pm(2); ep.i = pm(3);
+		ep.l_ = pm(4); ep.h_ = pm(5); ep.e_ = pm(6); ep.d_ = pm(7); ep.c_ = pm(8); ep.b_ = pm(9); ep.a_ = pm(10); ep.f_ = pm(11);
+		ep.iy = u16(pm(12) | (pm(13) << 8)); ep.ix = u16(pm(14) | (pm(15) << 8));
+		ep.l = pm(16); ep.h = pm(17); ep.e = pm(18); ep.d = pm(19); ep.c = pm(20); ep.b = pm(21); ep.a = pm(22);
+		u8 f = pm(23);
+		ep.sf = f & 0x80; ep.zf = f & 0x40; ep.yf = f & 0x20; ep.hf = f & 0x10; ep.xf = f & 0x08; ep.pf = f & 0x04; ep.nf = f & 0x02; ep.cf = f & 0x01;
+		ep.sp = u16(pm(24) | (pm(25) << 8));
+		ep.halted = false;
+		ec_interrupt(INT_SVC1, false);           // "registers loaded"
+	} else if (entry == 0xf809) {                // dump (after a break)
+		auto put = [&](int o, u8 v) { m_progmem[o] = v; };
+		put(0, ep.interrupt_mode); put(1, u8((ep.iff1 ? 0x80 : 0) | (ep.iff2 ? 0x40 : 0)));
+		put(2, ep.r); put(3, ep.i);
+		put(4, ep.l_); put(5, ep.h_); put(6, ep.e_); put(7, ep.d_); put(8, ep.c_); put(9, ep.b_); put(10, ep.a_); put(11, ep.f_);
+		put(12, u8(ep.iy)); put(13, u8(ep.iy >> 8)); put(14, u8(ep.ix)); put(15, u8(ep.ix >> 8));
+		put(16, ep.l); put(17, ep.h); put(18, ep.e); put(19, ep.d); put(20, ep.c); put(21, ep.b); put(22, ep.a);
+		put(23, u8((ep.sf ? 0x80 : 0) | (ep.zf ? 0x40 : 0) | (ep.yf ? 0x20 : 0) | (ep.hf ? 0x10 : 0) |
+		           (ep.xf ? 0x08 : 0) | (ep.pf ? 0x04 : 0) | (ep.nf ? 0x02 : 0) | (ep.cf ? 0x01 : 0)));
+		put(24, u8(ep.sp)); put(25, u8(ep.sp >> 8));
+		ec_interrupt(INT_SVC1, false);           // "registers saved"
+	} else if (ep_trace) fprintf(stderr, "[EP firmware entry %04x unknown]\n", entry);
+	if (ep_trace) {
+		fprintf(stderr, "[   block now:");
+		for (int i = 0; i < 27; i++) fprintf(stderr, " %02x", pm(i));
+		fprintf(stderr, "]\n");
+	}
 }
 
 u8 tek8301::lp_in(z80 *z, u8 port)
@@ -60,7 +112,7 @@ void tek8301::bp_check(u16 a, bool write)
 			m_bp_hit |= u8(1 << i);
 }
 
-void tek8301::ec_interrupt(int n)
+void tek8301::ec_interrupt(int n, bool latch_pc)
 {
 	// F2 pending register bits (read active low): 7 BP1 6 BP2 5 S/CY 4 HALT 3 DIAG
 	switch (n) {
@@ -71,7 +123,7 @@ void tek8301::ec_interrupt(int n)
 	case INT_DIAG: m_ec_pend |= 0x08; break;
 	default: break;
 	}
-	m_lp_pc_next = lp.pc;
+	if (latch_pc) m_lp_pc_next = slave().pc;
 	if (m_f9 & 0x08)                    // IM = 1: debug interrupts not masked
 		m_pending |= 1u << n;
 	update_irq();
@@ -83,24 +135,39 @@ void tek8301::lp_run(int cycles2650)
 	// slave as halted at once ("Processor Inactive Test", 070-2976 §4).
 	// (Only when no slave is enabled at all -- not when an enabled slave is merely
 	// blocked by an outstanding SVC/debug interrupt.)
-	if (cpu.halted() && !(m_e7 & 0x80) && !(m_ec_pend & 0x10)) { ec_interrupt(INT_SLV_HALT); return; }
+	if (cpu.halted() && !slave_enabled() && !(m_ec_pend & 0x10)) { ec_interrupt(INT_SLV_HALT); return; }
+	if (!slave_enabled() || !cpu.halted()) return;
+	z80 &z = slave();
+	// forced reset / forced jump are latched by F9 and taken by the slave when it runs
+	if (m_fr_pending) { m_fr_pending = false; z80 keep = z; z80_setup(z); z.read_byte = keep.read_byte; m_ec_pend = 0; }
+	if (m_fj_pending) {
+		// jump address registers FA/FB/F5 are loaded active-low (DOS/50 writes FB:FA = FEFF
+		// to start a program at 0100, and FF:07F9 for the board firmware at 00:F806)
+		m_fj_pending = false;
+		u16 target = u16(~(m_fa | (m_fb << 8)));
+		u8 ext = u8(~m_f5);
+		if (ep_trace) fprintf(stderr, "[%.3f forced jump %02x:%04x -> %s]\n", m_cycles / CPU_HZ, ext, target, &z == &ep ? "EP" : "LP");
+		z.halted = false;
+		z.pc = target;
+		if (&z == &ep && target >= 0xf800) { ep_firmware(target); return; }   // board firmware space
+	}
 	if (!lp_running()) return;
-	m_lp_frac += cycles2650 * ((m_e7 & 0x04) ? 1.25 : 2.0);   // Z80 at 2.5 or 4 MHz vs 2650 at 2 MHz
+	m_lp_frac += cycles2650 * ((&z == &lp && (m_e7 & 0x04)) ? 1.25 : 2.0);   // Z80 at 2.5 or 4 MHz vs 2650 at 2 MHz
 	while (m_lp_frac > 0 && lp_running()) {
-		unsigned long c0 = lp.cyc;
-		m_lp_pc_last = lp.pc;
-		if (lp_trace_hook) lp_trace_hook(lp.pc);
+		unsigned long c0 = z.cyc;
+		m_lp_pc_last = z.pc;
+		if (lp_trace_hook) lp_trace_hook(z.pc);
 		u32 before = m_pending;
 		m_bp_hit = 0;
-		z80_step(&lp);
-		m_lp_frac -= double(lp.cyc - c0);
+		z80_step(&z);
+		m_lp_frac -= double(z.cyc - c0);
 		if (m_pending != before) break;         // SVC (immediate): master takes over
 		// "pending" debug interrupts are issued at the next fetch, after PC next is latched
 		// (priority SVC > BP1 > BP2 > S/CY > HALT)
 		if (m_bp_hit & 1) { ec_interrupt(INT_BP1); break; }
 		if (m_bp_hit & 2) { ec_interrupt(INT_BP2); break; }
 		if (!(m_f8 & 0x10)) { ec_interrupt(INT_SCY); break; }
-		if (lp.halted) { ec_interrupt(INT_SLV_HALT); break; }
+		if (z.halted) { ec_interrupt(INT_SLV_HALT); break; }
 	}
 	if (m_lp_frac > 0) m_lp_frac = 0;
 }
@@ -130,7 +197,7 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
-	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_fr_pending = m_fj_pending = false; m_f5 = 0xff;
 	lp_reset();
 	cpu.reset();
 }
@@ -209,6 +276,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
 	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
+	case 0xe3: v = ep_present ? u8((m_e3 & 0x80) && ep.halted ? 0x10 : 0x00) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
 	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
@@ -255,8 +323,14 @@ void tek8301::io_write(offs_t port, u8 d)
 	case 0xf9:
 		m_f9 = d;
 		m_ec_pend = 0;                      // a new command releases the latched debug state
-		if (!(d & 0x01)) { lp_reset(); m_ec_pend = 0; m_lp_live = true; }          // FR: forced reset
-		if (!(d & 0x04)) { lp.pc = u16(m_fa | (m_fb << 8)); lp.halted = false; }  // FJ: forced jump
+		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_e3);
+		if (!(d & 0x01)) { m_fr_pending = true; m_fj_pending = false; m_lp_live = true; }   // FR: forced reset (taken by the slave)
+		if (!(d & 0x04) && (d & 0x01)) { m_fj_pending = true; m_lp_live = true; }          // FJ: forced jump (FB:FA, F5); reset wins
+		break;
+	case 0xf5: m_f5 = d; break;
+	case 0xe3:
+		if (ep_trace) fprintf(stderr, "[%.3f E3 <- %02x]\n", m_cycles / CPU_HZ, d);
+		m_e3 = d;
 		break;
 	case 0xfa: m_fa = d; break;
 	case 0xfb: m_fb = d; break;
@@ -346,6 +420,14 @@ void tek8301::dma_service()
 	// channels 0 -> 1: memory to memory through a latch
 	if (m_dma.enabled(0) && m_dma.enabled(1)) {
 		bool src_sys = m_e9 & 0x01, dst_sys = m_e9 & 0x40;
+		static const bool dmatrace = getenv("TEK_DMATRACE") != nullptr;
+		if (dmatrace) {
+			u32 n = (m_dma.ch[0].count & 0x3fff) + 1;
+			fprintf(stderr, "[%.3f dma %s %04x -> %s %04x len %u:", m_cycles / CPU_HZ, src_sys ? "sys" : "prog", m_dma.ch[0].addr,
+				dst_sys ? "sys" : "prog", m_dma.ch[1].addr, n);
+			for (u32 i = 0; i < n && i < 64; i++) fprintf(stderr, " %02x", mem_rd({ u16(m_dma.ch[0].addr + i), src_sys, true }, false));
+			fprintf(stderr, "]\n");
+		}
 		for (int i = 0; i < 0x4000 && m_dma.enabled(0) && m_dma.enabled(1); i++) {
 			u8 b = mem_rd({ m_dma.ch[0].addr, src_sys, true });
 			mem_wr({ m_dma.ch[1].addr, dst_sys, true }, b);

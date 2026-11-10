@@ -66,9 +66,16 @@ public:
 	int sense() override { return int((m_cycles / u64(CPU_HZ * 0.020)) & 1); }
 
 	// Language Processor / Emulator Controller
-	z80 lp;
+	z80 lp;   // Language Processor (E7)
+	z80 ep;   // Z80 emulator processor board (E3), mode 0 -- firmware high-level emulated
+	bool ep_present = true;
+	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
+	bool slave_enabled() const { return ep_enabled() || (m_e7 & 0x80); }
+	z80 &slave() { return ep_enabled() ? ep : lp; }
+	const z80 &slave() const { return ep_enabled() ? ep : lp; }
 	// slave runs while the master is halted and no debug interrupt is outstanding
-	bool lp_running() const { return (m_e7 & 0x80) && cpu.halted() && !lp.halted && m_lp_live && !m_ec_pend && !(m_pending & 0x00ff0000u); }
+	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave().halted && m_lp_live && !m_ec_pend && !(m_pending & 0x00ff0000u); }
+	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
 	void progmem_w(u16 a, u8 d) { m_progmem[a] = d; }
@@ -84,6 +91,10 @@ private:
 	std::vector<u8> m_boot, m_diag, m_sysram, m_progmem;
 	std::vector<u8> m_par;        // per-byte: parity-complement state when written
 	u16 m_par_addr = 0;
+	u8 m_e3 = 0;
+	bool m_fr_pending = false, m_fj_pending = false;
+	u8 m_f5 = 0xff;
+	void ep_firmware(u16 entry);
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;
 	u8 m_b8 = 0, m_b9 = 0, m_eb_out = 0;
 	u8 m_f4 = 0xff;               // Emulator Controller extended bank (A16-A23) for system-side accesses
@@ -118,8 +129,9 @@ private:
 	bool m_lp_live = false;       // Z80 out of reset (forced reset / activation done)
 	double m_lp_frac = 0;
 	void lp_reset();
+	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
-	void ec_interrupt(int n);     // n = 16..31
+	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
 	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->prog_rd(PROG_BANK, a); }
 	static void lp_write(void *u, u16 a, u8 d) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true); m->prog_wr(PROG_BANK, a, d); }
 	static u8 lp_in(z80 *z, u8 port);
