@@ -16,6 +16,7 @@
 #include "cpu/s2650/s2650.h"
 #include "machine/mc6850.h"
 #include "machine/i8257.h"
+#include "machine/prototype.h"
 extern "C" {
 #include "cpu/z80/superzazu/z80.h"
 }
@@ -67,7 +68,12 @@ public:
 
 	// Language Processor / Emulator Controller
 	z80 lp;   // Language Processor (E7)
-	z80 ep;   // Z80 emulator processor board (E3), mode 0 -- firmware high-level emulated
+	z80 ep;   // Z80 emulator processor board (E3) -- firmware high-level emulated
+	prototype_bus *target = &m_no_target;   // probe side (modes 1/2)
+	// E3 (emulator board control), as DOS/50 V1.0 drives it: 80 firmware call / 92 run in mode 0,
+	// C0 firmware call / B2 run in modes 1-2 -> bit 6 or bit 5 selects the prototype
+	bool proto_mode() const { return ep_enabled() && (m_e3 & 0x60); }
+	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
 	bool ep_present = true;
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	bool slave_enabled() const { return ep_enabled() || (m_e7 & 0x80); }
@@ -78,6 +84,7 @@ public:
 	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
+	u8 sysmem(u16 a) const { return m_sysram[a]; }
 	void progmem_w(u16 a, u8 d) { m_progmem[a] = d; }
 	std::function<void(u16)> lp_trace_hook;
 	std::string lp_state() const {
@@ -132,8 +139,17 @@ private:
 	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
 	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
-	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->prog_rd(PROG_BANK, a); }
-	static void lp_write(void *u, u16 a, u8 d) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true); m->prog_wr(PROG_BANK, a, d); }
+	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->slave_rd(a); }
+	static void lp_write(void *u, u16 a, u8 d) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true); m->slave_wr(a, d); }
+	u8   slave_rd(u16 a);
+	void slave_wr(u16 a, u8 d);
+	// Memory map / write-protect RAM: 512 blocks x 128 bytes, D0 = U (prototype), D2 = write
+	// protect. The 2650 reaches it at system FE00-FFFF while MAPEN (EE<3>) is set:
+	// block = (addr<7:0> << 1) | addr<8>  (DOS/50 writes even blocks at FExx, odd at FFxx).
+	u8 m_map[512] = {};
+	bool m_wp_hit = false;
+	bool m_nmi_prev = false;
+	prototype_bus m_no_target;
 	static u8 lp_in(z80 *z, u8 port);
 	static void lp_out(z80 *z, u8 port, u8 d);
 

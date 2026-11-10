@@ -47,7 +47,11 @@ void tek8301::lp_reset()
 // expects. DOS/50 lends program memory 0000-001A to the board as a register block
 //   0 IM  1 IFF1<7>/IFF2<6>  2 R  3 I  4..11 L' H' E' D' C' B' A' F'
 //   12-13 IY  14-15 IX  16..23 L H E D C B A F  24-25 SP  26 ?
-// and forces a jump to 00:F806 (written FF:07F9, active low) with E3<7> set; the firmware restores the registers
+// and forces a jump to the entry (FB:FA/F5 written active low) with E3<7> set:
+//   F800 PUT byte to prototype memory   (4-byte block: 0 data, 1-2 address high first,
+//        3 status: firmware writes 0 after a good read-back -- DOS/50 MOV checks it)
+//   F803 GET byte from prototype memory (result in block 0, status in block 3)
+//   F806 restore registers, F809 dump registers. the firmware restores the registers
 // and must answer with an SVC (DOS/50 7138 waits for any SVC, error 45 on HALT).
 void tek8301::ep_firmware(u16 entry)
 {
@@ -80,6 +84,15 @@ void tek8301::ep_firmware(u16 entry)
 		           (ep.xf ? 0x08 : 0) | (ep.pf ? 0x04 : 0) | (ep.nf ? 0x02 : 0) | (ep.cf ? 0x01 : 0)));
 		put(24, u8(ep.sp)); put(25, u8(ep.sp >> 8));
 		ec_interrupt(INT_SVC1, false);           // "registers saved"
+	} else if (entry == 0xf800) {                // PUT: write block[0] at block[1]:block[2], verify -> block[3] = 0 ok
+		u16 a = u16((pm(1) << 8) | pm(2));
+		target->mem_write(a, pm(0));
+		m_progmem[3] = (target->mem_read(a) == pm(0)) ? 0x00 : 0x01;   // DOS/50 MOV: nonzero = error 3C
+		ec_interrupt(INT_SVC1, false);
+	} else if (entry == 0xf803) {                // GET: read prototype memory at block[1]:block[2] into block[0]
+		m_progmem[0] = target->mem_read(u16((pm(1) << 8) | pm(2)));
+		m_progmem[3] = 0x00;
+		ec_interrupt(INT_SVC1, false);
 	} else if (ep_trace) fprintf(stderr, "[EP firmware entry %04x unknown]\n", entry);
 	if (ep_trace) {
 		fprintf(stderr, "[   block now:");
@@ -90,18 +103,21 @@ void tek8301::ep_firmware(u16 entry)
 
 u8 tek8301::lp_in(z80 *z, u8 port)
 {
-	(void)z; (void)port;
+	tek8301 *m = static_cast<tek8301 *>(z->userdata);
+	if (z == &m->ep && m->proto_mode()) return m->target->io_read(port);
 	return 0xff;
 }
 
 void tek8301::lp_out(z80 *z, u8 port, u8 d)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
-	(void)d;
 	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
 	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
-	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4))
+	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
 		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
+		return;
+	}
+	if (z == &m->ep && m->proto_mode()) m->target->io_write(port, d);   // modes 1/2: target I/O
 }
 
 void tek8301::bp_check(u16 a, bool write)
@@ -159,9 +175,16 @@ void tek8301::lp_run(int cycles2650)
 		if (lp_trace_hook) lp_trace_hook(z.pc);
 		u32 before = m_pending;
 		m_bp_hit = 0;
+		if (&z == &ep && proto_mode()) {
+			target->poll();
+			bool n = target->nmi();
+			if (n && !m_nmi_prev) z80_gen_nmi(&z);
+			m_nmi_prev = n;
+			if (target->irq() && z.iff1) z80_gen_int(&z, target->irq_vector());
+		}
 		z80_step(&z);
 		m_lp_frac -= double(z.cyc - c0);
-		if (m_pending != before) break;         // SVC (immediate): master takes over
+		if (m_pending != before) break;         // SVC / write-protect violation (immediate): master takes over
 		// "pending" debug interrupts are issued at the next fetch, after PC next is latched
 		// (priority SVC > BP1 > BP2 > S/CY > HALT)
 		if (m_bp_hit & 1) { ec_interrupt(INT_BP1); break; }
@@ -219,6 +242,8 @@ u8 tek8301::mem_rd(busaddr b, bool ovl)
 	const u8 ext = b.dma ? PROG_BANK : m_f4;   // 16-bit bus masters (DMA) don't use F4
 	if (b.sys) {
 		u16 a = u16(b.a);
+		if (!b.dma && (m_ee & 0x08) && a >= 0xfe00)                        // memory map / WP RAM
+			return u8(m_map[((a & 0xff) << 1) | ((a >> 8) & 1)] | 0xfa);   // only D0/D2 exist
 		// System RAM parity: a byte written under one complement setting and read
 		// under the other fails the check (used by the power-up parity test).
 		if (ovl && (m_d2 & 2) && m_par[a] != ((m_d2 >> 2) & 1)) {
@@ -233,6 +258,10 @@ u8 tek8301::mem_rd(busaddr b, bool ovl)
 
 void tek8301::mem_wr(busaddr b, u8 d)
 {
+	if (b.sys && !b.dma && (m_ee & 0x08) && (b.a & 0xffff) >= 0xfe00) {
+		m_map[((b.a & 0xff) << 1) | ((b.a >> 8) & 1)] = d & 0x05;
+		return;
+	}
 	if (b.sys) { m_sysram[b.a & 0xffff] = d; m_par[b.a & 0xffff] = (m_d2 >> 2) & 1; }
 	else prog_wr(b.dma ? PROG_BANK : m_f4, u16(b.a), d);
 }
@@ -381,6 +410,31 @@ int tek8301::intack()
 		}
 	update_irq();
 	return 0x80;
+}
+
+// --------------------------------------------------------------------------
+// slave (Language Processor / emulator processor) memory accesses: memory map,
+// write protection and the prototype bus
+
+u8 tek8301::slave_rd(u16 a)
+{
+	if (proto_all() || (proto_mode() && (m_map[a >> 7] & 1))) return target->mem_read(a);
+	return prog_rd(PROG_BANK, a);
+}
+
+void tek8301::slave_wr(u16 a, u8 d)
+{
+	const u8 m = m_map[a >> 7];
+	const bool user = proto_all() || (proto_mode() && (m & 1));
+	// write protection covers program memory (and every block in mode 0); EA<3> enables it
+	if ((m_ea & 0x08) && (m & 4) && !user) {
+		if (m_ea & 0x80) { m_pending |= 1u << INT_WP; update_irq(); }   // EA<7>: interrupt
+		m_wp_hit = true;
+		return;                                                          // RAM INH: write suppressed
+	}
+	if (user) { target->mem_write(a, d); return; }
+	prog_wr(PROG_BANK, a, d);
+	if (proto_mode()) target->mem_write(a, d);   // mode 1: program-memory writes also reach the prototype
 }
 
 // --------------------------------------------------------------------------

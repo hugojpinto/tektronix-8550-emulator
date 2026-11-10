@@ -8,6 +8,7 @@
 #include "cpu/t11/t11dasm.h"
 #include "host/tty.h"
 #include "host/ct8500.h"
+#include "host/ipc_target.h"
 #include <cstdio>
 #include <string>
 #include <sstream>
@@ -41,7 +42,7 @@ static void show(tek8301 &a, tek8501 &b)
 
 int main(int argc, char **argv)
 {
-	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, termmode, screenfile, disks[4];
+	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, termmode, screenfile, targetspec, disks[4];
 	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
@@ -61,11 +62,12 @@ int main(int argc, char **argv)
 		else if (a == "-auxlog") auxlog = next();
 		else if (a == "-dump") dumpfile = next();
 		else if (a == "-term") termmode = next();
+		else if (a == "-target") targetspec = next();
 		else if (a == "-screen") screenfile = next();
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
-		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT]\n", argv[0]); return 1; }
 	}
 	auto mdu = std::make_unique<tek8301>();
 	auto dmu = std::make_unique<tek8501>();
@@ -105,6 +107,11 @@ int main(int argc, char **argv)
 	mdu->hsi_cts = [&]() { return !dmu->hsi_ncts(); };
 	dmu->hsi_peer_ready = [&]() { return !mdu->hsi_rx_busy(); };
 
+	ipc_target proto;
+	if (!targetspec.empty()) {
+		if (!proto.open(targetspec, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+		mdu->target = &proto;
+	}
 	mdu->mode_switch = u8(sw);
 	mdu->pm_ext_comparator = pm_ext;
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
@@ -207,6 +214,9 @@ done:
 		fclose(f);
 		f = fopen((dumpfile + ".8301").c_str(), "wb");
 		for (u32 a = 0; a < 0x8000; a++) fputc(mdu->read(a), f);
+		fclose(f);
+		f = fopen((dumpfile + ".sys").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->sysmem(u16(a)), f);
 		fclose(f);
 		f = fopen((dumpfile + ".prog").c_str(), "wb");
 		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->progmem(u16(a)), f);

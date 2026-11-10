@@ -74,3 +74,10 @@ The Z80 emulator processor board is emulated (its firmware at high level, see `n
 > GO                run; ESC ESC breaks a free-running program
 > DS                display registers;  D 1000 100F  dump memory
 ```
+
+## Memory map, write protection, and a target system (modes 1/2)
+- `MAP` / `MAP PRO 1000 10FF` etc.: the 8301 memory-map / write-protect RAM is emulated; a program writing into a
+  read-only block stops with `<BREAK MEMWR>`.
+- `EM 1` / `EM 2` plus `-target tcp:HOST:PORT` (or `unix:PATH`) connects a user "prototype" process over IPC: U-mapped
+  memory, I/O and interrupts go to it. A reference target with RAM and a console UART is `../tools/proto_target.py`.
+  Protocol and details: `../notes/prototype-link.md`.
