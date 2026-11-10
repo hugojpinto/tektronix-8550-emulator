@@ -12,12 +12,68 @@ enum {
 	INT_PARITY = 1, INT_WP = 2, INT_HSIN = 4, INT_HSOUT = 5, INT_REMOTE = 6, INT_AUX = 7,
 	INT_TERM = 8, INT_TIMER = 9, INT_DMA = 10, INT_MTP = 11, INT_REFRESH = 15
 };
-constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_PARITY) | (1u << INT_WP);
+constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_PARITY) | (1u << INT_WP) | 0xffff0000u;
+constexpr int INT_SVC1 = 16, INT_SLV_HALT = 27;
 }
 
 tek8301::tek8301()
 	: cpu(*this), m_sysram(0x10000, 0), m_progmem(0x10000, 0), m_par(0x10000, 0)
 {
+	lp_reset();
+}
+
+// --------------------------------------------------------------------------
+// Language Processor (Z80A, slave) + Emulator Controller
+
+void tek8301::lp_reset()
+{
+	z80_init(&lp);
+	lp.read_byte = &tek8301::lp_read;
+	lp.write_byte = &tek8301::lp_write;
+	lp.port_in = &tek8301::lp_in;
+	lp.port_out = &tek8301::lp_out;
+	lp.userdata = this;
+}
+
+u8 tek8301::lp_in(z80 *z, u8 port)
+{
+	(void)z; (void)port;
+	return 0xff;
+}
+
+void tek8301::lp_out(z80 *z, u8 port, u8 d)
+{
+	tek8301 *m = static_cast<tek8301 *>(z->userdata);
+	(void)d;
+	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7)
+	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4))
+		m->ec_interrupt(INT_SVC1 + (port & 7));
+}
+
+void tek8301::ec_interrupt(int n)
+{
+	if (n == INT_SLV_HALT) m_ec_pend |= 0x10;
+	m_lp_pc_next = lp.pc;
+	if (m_f9 & 0x08)                    // IM = 1: debug interrupts not masked
+		m_pending |= 1u << n;
+	update_irq();
+}
+
+void tek8301::lp_run(int cycles2650)
+{
+	if (!lp_running()) return;
+	m_lp_frac += cycles2650 * ((m_e7 & 0x04) ? 1.25 : 2.0);   // Z80 at 2.5 or 4 MHz vs 2650 at 2 MHz
+	while (m_lp_frac > 0 && lp_running()) {
+		unsigned long c0 = lp.cyc;
+		m_lp_pc_last = lp.pc;
+		if (lp_trace_hook) lp_trace_hook(lp.pc);
+		u32 before = m_pending;
+		z80_step(&lp);
+		m_lp_frac -= double(lp.cyc - c0);
+		if (lp.halted) { ec_interrupt(INT_SLV_HALT); break; }
+		if (m_pending != before) break;         // SVC raised: master takes over
+	}
+	if (m_lp_frac > 0) m_lp_frac = 0;
 }
 
 bool tek8301::load_roms(const std::string &dir, std::string &err)
@@ -45,6 +101,8 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false;
+	lp_reset();
 	cpu.reset();
 }
 
@@ -120,8 +178,14 @@ u8 tek8301::io_read(offs_t port)
 	case 0xec: restart(); return 0;            // programmed reset
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
+	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
+	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
+	case 0xfc: v = u8(m_lp_pc_next); break;
+	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
+	case 0xfe: v = u8(m_lp_pc_last); break;
+	case 0xff: v = u8(m_lp_pc_last >> 8); break;
 	default:
-		if (port >= 0xf0) v = 0xff;           // Emulator Controller: not present yet
+		if (port >= 0xf0) v = 0xff;
 		break;
 	}
 	if (trace_io) fprintf(stderr, "[io rd %02x = %02x @%04x]\r\n", port, v, cpu.ppc());
@@ -144,7 +208,19 @@ void tek8301::io_write(offs_t port, u8 d)
 		if (!(d & 1)) m_pending &= ~(1u << INT_REFRESH);
 		break;
 	case 0xd3: m_d3 = d; break;
-	case 0xe7: m_e7 = d; break;
+	case 0xe7:
+		if ((d & 0x80) && !(m_e7 & 0x80)) { m_lp_live = true; }
+		m_e7 = d;
+		break;
+	case 0xf3: m_f3 = d; break;
+	case 0xf8: m_f8 = d; break;
+	case 0xf9:
+		m_f9 = d;
+		if (!(d & 0x01)) { lp_reset(); m_ec_pend = 0; m_lp_live = true; }          // FR: forced reset
+		if (!(d & 0x04)) { lp.pc = u16(m_fa | (m_fb << 8)); lp.halted = false; }  // FJ: forced jump
+		break;
+	case 0xfa: m_fa = d; break;
+	case 0xfb: m_fb = d; break;
 	case 0xe8:
 		m_hsi_thr = d; m_hsi_tbre = false; m_hsi_tx_timer = hsi_char_cycles;
 		break;
@@ -253,6 +329,7 @@ void tek8301::run_slice(int cycles)
 		int chunk = std::min(cycles - used, 100);
 		int c = cpu.run(chunk);
 		if (c <= 0) c = chunk;
+		lp_run(c);
 		used += c; m_cycles += c;
 		remote.tick(c); aux.tick(c); term.tick(c);
 		hsi_tick(c);

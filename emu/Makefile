@@ -7,7 +7,7 @@ BUILD := build
 DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o
 T11_OBJ  := $(BUILD)/cpu/t11/t11.o
 M8501    := $(BUILD)/machine/tek8501.o
-M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/cpu/s2650/s2650.o
+M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
 
 all: $(BUILD)/dasm $(BUILD)/tek8501 $(BUILD)/tek8301 $(BUILD)/tek8550
 
@@ -28,6 +28,9 @@ $(BUILD)/cpu/t11/t11.o: OPT = -O1
 $(BUILD)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+$(BUILD)/%.o: src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) -std=c99 -O2 -g -Isrc -c $< -o $@
 $(BUILD)/tools/%.o: tools/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@

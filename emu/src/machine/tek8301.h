@@ -5,13 +5,20 @@
 //                       LEDs/mode switch, interrupt encoder
 //   System RAM        : 64 KB, paging of 2000-3FFF (D3), refresh/parity diag (D2)
 //   Program Memory    : 64 KB (two 32 KB boards, relocation regs B8/B9 stored)
-// Not yet: Emulator Controller (F0-FF), Language Processor (E7), memory map/WP.
+//   Language Processor: Z80A on program memory (the mode-0 "emulator")
+//   Emulator Controller (subset): master/slave switching, SVC detection,
+//                       slave-halted interrupt, F2 pending, PC next/last,
+//                       forced reset/jump. Not yet: breakpoints, single cycle,
+//                       memory map/write protect, external emulator boards.
 #ifndef TEK_TEK8301_H
 #define TEK_TEK8301_H
 #include "emu.h"
 #include "cpu/s2650/s2650.h"
 #include "machine/mc6850.h"
 #include "machine/i8257.h"
+extern "C" {
+#include "cpu/z80/superzazu/z80.h"
+}
 #include <vector>
 #include <deque>
 #include <string>
@@ -53,6 +60,14 @@ public:
 	void io_write(offs_t port, u8 d) override;
 	int intack() override;
 
+	// Language Processor / Emulator Controller
+	z80 lp;
+	bool lp_running() const { return (m_e7 & 0x80) && cpu.halted() && !lp.halted && m_lp_live; }
+	u16 lp_pc_last() const { return m_lp_pc_last; }
+	u8 progmem(u16 a) const { return m_progmem[a]; }
+	void progmem_w(u16 a, u8 d) { m_progmem[a] = d; }
+	std::function<void(u16)> lp_trace_hook;
+
 	u8 peek(offs_t a) { return mem_rd(cpu_to_bus(a & 0x7fff, false), false); }
 
 private:
@@ -63,6 +78,20 @@ private:
 	u8 m_b8 = 0, m_b9 = 0, m_eb_out = 0;
 	u64 m_cycles = 0, m_next_timer = 0, m_next_refresh = 0;
 	u32 m_pending = 0;            // latched interrupt flip-flops (bit n = int n)
+
+	// Emulator Controller state
+	u8  m_ec_pend = 0;            // F2 bits (1 = pending; read inverted): 7 BP1 6 BP2 5 S/CY 4 HALT 3 DIAG 2-0 INT29-31
+	u8  m_f3 = 0x0f, m_f8 = 0x1f, m_f9 = 0x1f, m_fa = 0, m_fb = 0;
+	u16 m_lp_pc_last = 0, m_lp_pc_next = 0;
+	bool m_lp_live = false;       // Z80 out of reset (forced reset / activation done)
+	double m_lp_frac = 0;
+	void lp_reset();
+	void lp_run(int cycles2650);
+	void ec_interrupt(int n);     // n = 16..31
+	static u8 lp_read(void *u, u16 a) { return static_cast<tek8301 *>(u)->m_progmem[a]; }
+	static void lp_write(void *u, u16 a, u8 d) { static_cast<tek8301 *>(u)->m_progmem[a] = d; }
+	static u8 lp_in(z80 *z, u8 port);
+	static void lp_out(z80 *z, u8 port, u8 d);
 
 	// HSI UART
 	u8 m_hsi_rbr = 0; bool m_hsi_da = false, m_hsi_oe = false; bool m_hsi_tbre = true;
