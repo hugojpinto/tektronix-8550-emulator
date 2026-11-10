@@ -7,8 +7,8 @@
   Glyphs: tools/ct8500_font.py -- Tek 308 ROM upper case + matching hand-drawn lower case
   with descenders (approximation; the CT8500 character ROM is not dumped).
 --style modern: a TrueType monospace font in --cell WxH cells (default 10x20 -> 800x500).
---crt: present the raster on a CRT -- overscan border, phosphor glow, rounded tube face,
-  edge vignette and a bezel (the raster itself is not rescaled).
+--crt: present the raster on a CRT -- overscan border, phosphor glow, rounded tube face with
+  a thin lip, edge vignette, faint reflection (the raster itself is not rescaled).
 usage: render_screens.py [--style ct8500|modern] [--crt] [--cell WxH] [--font TTF] INPUT OUTPUT.png
 INPUT is a .scr snapshot ("CT8500 ..." header) or a plain text file (last 25 lines).
 """
@@ -69,7 +69,7 @@ def render_ct8500(cols, rows, text, attr, cursor, out):
     img.save(out)
     print(out, img.size)
 
-def crt_frame(img, overscan=36, bezel=44, radius=48):
+def crt_frame(img, overscan=36, radius=48):
     """Place a rendered raster on a CRT face inside a bezel."""
     W, H = img.size
     sw, sh = W + 2 * overscan, H + 2 * overscan                 # glass incl. overscan
@@ -93,20 +93,20 @@ def crt_frame(img, overscan=36, bezel=44, radius=48):
     glass = Image.composite(glass, Image.new('RGB', (sw, sh), (0, 0, 0)), vig)
     # faint glass reflection in the upper left
     refl = Image.new('L', (sw, sh), 0)
-    ImageDraw.Draw(refl).ellipse([-sw * 0.25, -sh * 0.6, sw * 0.55, sh * 0.35], fill=14)
+    ImageDraw.Draw(refl).ellipse([-sw * 0.25, -sh * 0.6, sw * 0.55, sh * 0.35], fill=4)   # just a hint
     refl = refl.filter(ImageFilter.GaussianBlur(40))
     glass = ImageChops.add(glass, Image.merge('RGB', (refl, refl, refl)))
     # rounded tube face mask
     mask = Image.new('L', (sw, sh), 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, sw - 1, sh - 1], radius=radius, fill=255)
-    # bezel: dark plastic with a lighter inner lip
-    fw, fh = sw + 2 * bezel, sh + 2 * bezel
-    frame = Image.new('RGB', (fw, fh), (34, 33, 31))
+    # rounded lip around the glass only (no outer bezel); transparent outside
+    lip = 10
+    fw, fh = sw + 2 * lip, sh + 2 * lip
+    frame = Image.new('RGBA', (fw, fh), (0, 0, 0, 0))
     fd = ImageDraw.Draw(frame)
-    fd.rounded_rectangle([6, 6, fw - 7, fh - 7], radius=radius + 26, outline=(52, 50, 47), width=3)
-    fd.rounded_rectangle([bezel - 10, bezel - 10, bezel + sw + 9, bezel + sh + 9], radius=radius + 10, fill=(18, 18, 17))
-    fd.rounded_rectangle([bezel - 10, bezel - 10, bezel + sw + 9, bezel + sh + 9], radius=radius + 10, outline=(58, 56, 52), width=2)
-    frame.paste(glass, (bezel, bezel), mask)
+    fd.rounded_rectangle([0, 0, fw - 1, fh - 1], radius=radius + lip, fill=(18, 18, 17, 255))
+    fd.rounded_rectangle([0, 0, fw - 1, fh - 1], radius=radius + lip, outline=(58, 56, 52, 255), width=2)
+    frame.paste(glass, (lip, lip), mask)
     return frame
 
 def main():
