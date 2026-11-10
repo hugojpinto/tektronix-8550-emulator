@@ -35,6 +35,9 @@ args+=(-type $((t+2)) '\e' -type $((t+5)) '\e\x54' -type $((t+7)) '\e\x0d' -snap
        -type $((t+222)) 'DS\r' -snap $((t+228)) "$W/shots/07_run_mode1.scr")
 (cd "$ROOT/emu" && ./build/tek8550 -rw -target tcp:127.0.0.1:$PORT -0 "$W/demo.img" -cycles $(( (t+230)*2000000 )) "${args[@]}" < /dev/null > /dev/null 2> "$W/emu.log")
 sleep 1; kill $TPID 2>/dev/null || true
+mkdir -p "$ROOT/docs/screenshots/raw"
 for f in "$W"/shots/*.scr "$W/shots/08_target_console.txt"; do
-	n=$(basename "${f%.*}"); python3 -I "$ROOT/tools/render_screens.py" "$f" "$ROOT/docs/screenshots/$n.png"
+	n=$(basename "${f%.*}")
+	python3 -I "$ROOT/tools/render_screens.py" "$f" "$ROOT/docs/screenshots/raw/$n.png"        # bare raster
+	python3 -I "$ROOT/tools/render_screens.py" --crt "$f" "$ROOT/docs/screenshots/$n.png"     # on a CRT
 done

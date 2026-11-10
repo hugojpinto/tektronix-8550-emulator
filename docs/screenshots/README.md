@@ -8,7 +8,7 @@ below). Upper case, digits and punctuation come from a genuine Tektronix charact
 308 data analyzer's 160-0797-00 (TekWiki dump, CRC fd426d5f). Lower case was drawn to match, with descenders in the
 matrix's 8th row (the CT8500 uses 6×8 versus the 4023/CT8100's 5×7).
 
-![charset](charset.png) Regenerate with `tools/make_screenshots.sh`
+![charset](charset.png) Shown here on a simulated CRT face: overscan, phosphor glow, rounded tube, vignette and bezel. The raster itself is unscaled, and the bare rasters are in `raw/`. Regenerate with `tools/make_screenshots.sh`
 (`tools/render_screens.py --style modern` gives the plain TrueType variant).
 
 1. ![boot](01_boot.png) Power-on: 8301 boot ROM, 8501 file server, **DOS/50 V1.0** prompt.

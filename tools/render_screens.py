@@ -7,12 +7,14 @@
   Glyphs: tools/ct8500_font.py -- Tek 308 ROM upper case + matching hand-drawn lower case
   with descenders (approximation; the CT8500 character ROM is not dumped).
 --style modern: a TrueType monospace font in --cell WxH cells (default 10x20 -> 800x500).
-usage: render_screens.py [--style ct8500|modern] [--cell WxH] [--font TTF] INPUT OUTPUT.png
+--crt: present the raster on a CRT -- overscan border, phosphor glow, rounded tube face,
+  edge vignette and a bezel (the raster itself is not rescaled).
+usage: render_screens.py [--style ct8500|modern] [--crt] [--cell WxH] [--font TTF] INPUT OUTPUT.png
 INPUT is a .scr snapshot ("CT8500 ..." header) or a plain text file (last 25 lines).
 """
 import argparse, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 FG = (214, 230, 214)      # CT8500-style pale phosphor
 DIM = (130, 150, 130)
@@ -67,8 +69,49 @@ def render_ct8500(cols, rows, text, attr, cursor, out):
     img.save(out)
     print(out, img.size)
 
+def crt_frame(img, overscan=36, bezel=44, radius=48):
+    """Place a rendered raster on a CRT face inside a bezel."""
+    W, H = img.size
+    sw, sh = W + 2 * overscan, H + 2 * overscan                 # glass incl. overscan
+    glass = Image.new('RGB', (sw, sh), BG)                      # same black as the raster: no visible box
+    glass.paste(img, (overscan, overscan))
+    # phosphor bloom: blurred copy added back
+    bloom = glass.filter(ImageFilter.GaussianBlur(3)).point(lambda v: int(v * 0.55))
+    glass = ImageChops.add(glass, bloom)
+    halo = glass.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.25))
+    glass = ImageChops.add(glass, halo)
+    # vignette: darker towards the edges and corners of the tube
+    vig = Image.new('L', (sw, sh), 0)
+    vd = ImageDraw.Draw(vig)
+    steps = 40
+    for i in range(steps):
+        t = i / (steps - 1)
+        shade = int(150 + 105 * t)
+        inset_x, inset_y = int(sw * 0.16 * (1 - t)), int(sh * 0.16 * (1 - t))
+        vd.rounded_rectangle([inset_x, inset_y, sw - inset_x, sh - inset_y], radius=radius, fill=shade)
+    vig = vig.filter(ImageFilter.GaussianBlur(25))
+    glass = Image.composite(glass, Image.new('RGB', (sw, sh), (0, 0, 0)), vig)
+    # faint glass reflection in the upper left
+    refl = Image.new('L', (sw, sh), 0)
+    ImageDraw.Draw(refl).ellipse([-sw * 0.25, -sh * 0.6, sw * 0.55, sh * 0.35], fill=14)
+    refl = refl.filter(ImageFilter.GaussianBlur(40))
+    glass = ImageChops.add(glass, Image.merge('RGB', (refl, refl, refl)))
+    # rounded tube face mask
+    mask = Image.new('L', (sw, sh), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, sw - 1, sh - 1], radius=radius, fill=255)
+    # bezel: dark plastic with a lighter inner lip
+    fw, fh = sw + 2 * bezel, sh + 2 * bezel
+    frame = Image.new('RGB', (fw, fh), (34, 33, 31))
+    fd = ImageDraw.Draw(frame)
+    fd.rounded_rectangle([6, 6, fw - 7, fh - 7], radius=radius + 26, outline=(52, 50, 47), width=3)
+    fd.rounded_rectangle([bezel - 10, bezel - 10, bezel + sw + 9, bezel + sh + 9], radius=radius + 10, fill=(18, 18, 17))
+    fd.rounded_rectangle([bezel - 10, bezel - 10, bezel + sw + 9, bezel + sh + 9], radius=radius + 10, outline=(58, 56, 52), width=2)
+    frame.paste(glass, (bezel, bezel), mask)
+    return frame
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument('--crt', action='store_true')
     ap.add_argument('input'); ap.add_argument('output')
     ap.add_argument('--style', default='ct8500', choices=['ct8500', 'modern'])
     ap.add_argument('--cell', default='10x20')
@@ -76,7 +119,11 @@ def main():
     args = ap.parse_args()
     cols, rows, text, attr, cursor = load(args.input)
     if args.style == 'ct8500':
-        return render_ct8500(cols, rows, text, attr, cursor, args.output)
+        render_ct8500(cols, rows, text, attr, cursor, args.output)
+        if args.crt:
+            img = crt_frame(Image.open(args.output).convert('RGB'))
+            img.save(args.output); print(args.output, img.size, 'crt')
+        return
     cw, chh = (int(v) for v in args.cell.split('x'))
     font = ImageFont.truetype(args.font, int(chh * 0.8))
     img = Image.new('RGB', (cols * cw, rows * chh), BG)
