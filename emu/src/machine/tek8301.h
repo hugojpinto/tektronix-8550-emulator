@@ -21,6 +21,7 @@ extern "C" {
 #include "cpu/z80/superzazu/z80.h"
 }
 #include <vector>
+#include "machine/prom_programmer.h"
 #include <deque>
 #include <string>
 #include <functional>
@@ -75,6 +76,7 @@ public:
 	bool proto_mode() const { return ep_enabled() && (m_e3 & 0x60); }
 	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
 	bool ep_present = true;
+	prom_programmer prom;      // 8550F30 PROM programmer controller (ports D0/D1, ints 13/14)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	bool slave_enabled() const { return ep_enabled() || (m_e7 & 0x80); }

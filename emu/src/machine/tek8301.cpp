@@ -22,6 +22,7 @@ tek8301::tek8301()
 	: cpu(*this), m_sysram(0x10000, 0), m_progmem(0x10000, 0), m_par(0x10000, 0)
 {
 	lp_reset();
+	prom.present = false;      // option; -prom on fits it
 }
 
 // --------------------------------------------------------------------------
@@ -238,6 +239,7 @@ void tek8301::restart()
 {
 	m_ea = 0; m_ee = 0; m_e9 = 0; m_ec = 0; m_led = 0; m_e7 = 0;
 	m_pending = 0;
+	prom.reset();
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
@@ -308,6 +310,8 @@ u8 tek8301::io_read(offs_t port)
 	u8 v = 0xff;
 	if (port >= 0x90 && port <= 0x9f) v = m_dma.read(port & 0x0f);
 	else switch (port) {
+	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
+	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
 	case 0xb8: v = m_b8 & 0x5f; break;
 	case 0xb9: v = m_b9 & 0x5f; break;
 	case 0xca: case 0xcb: v = remote.read(port & 1); break;
@@ -386,6 +390,8 @@ void tek8301::io_write(offs_t port, u8 d)
 		if (ep_trace) fprintf(stderr, "[%.3f E3 <- %02x]\n", m_cycles / CPU_HZ, d);
 		m_e3 = d;
 		break;
+	case 0xd0: prom.write(0, d); break;
+	case 0xd1: prom.write(1, d); break;
 	case 0xfa: m_fa = d; break;
 	case 0xfb: m_fb = d; break;
 	case 0xe8:
@@ -416,6 +422,8 @@ u32 tek8301::level_irqs() const
 	if (remote.irq()) l |= 1u << INT_REMOTE;
 	if (aux.irq()) l |= 1u << INT_AUX;
 	if (term.irq()) l |= 1u << INT_TERM;
+	if (prom.int13()) l |= 1u << 13;          // PROM programmer: data step
+	if (prom.int14()) l |= 1u << 14;          // PROM programmer: status posted
 	return l;
 }
 
@@ -533,6 +541,7 @@ void tek8301::run_slice(int cycles)
 		used += c; m_cycles += c;
 		remote.tick(c); aux.tick(c); term.tick(c);
 		hsi_tick(c);
+		prom.tick(c);
 		if (m_cycles >= m_next_timer) {
 			m_next_timer = m_cycles + timer_period;
 			if (m_ec & 1) m_pending |= 1u << INT_TIMER;
