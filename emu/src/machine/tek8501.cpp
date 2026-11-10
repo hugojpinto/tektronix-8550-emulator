@@ -52,11 +52,11 @@ bool tek8501::load_roms(const std::string &dir, std::string &err)
 	return true;
 }
 
-bool tek8501::mount(int drive, const std::string &path, std::string &err)
+bool tek8501::mount(int drive, const std::string &path, std::string &err, bool writeback)
 {
 	drive_t &d = m_drive[drive & 3];
-	if (!load_imd_linear(path, d.data, err)) return false;
-	d.path = path; d.present = true; d.changed = true;
+	if (!load_imd_linear(path, d.data, err, &d.is_imd, &d.comment)) return false;
+	d.path = path; d.present = true; d.changed = true; d.writeback = writeback; d.dirty = false;
 	if (d.data.size() < size_t(DSDD_RECORDS) * 256) d.data.resize(size_t(DSDD_RECORDS) * 256, 0xe5);
 	return true;
 }
@@ -256,6 +256,7 @@ void tek8501::fd_execute()
 
 		switch (cmd) {
 		case 041: case 043: case 045: case 061: {   // read / write / verify / write control field
+			if (g_iotrace) fprintf(stderr, "[8501 %.3fs fd cmd %02o drv %d rec %u words %u dma %06o]\n", m_cycles / CPU_HZ, cmd, drv, da, wc, dma);
 			if (!need_ready() || (er & 2)) break;
 			u32 words = wc;                          // 0 = seek
 			if (cmd == 045 && wc == 0177777) words = (DSDD_RECORDS - da) * 128u;
@@ -266,11 +267,12 @@ void tek8501::fd_execute()
 				size_t off = size_t(da) * 256 + w * 2;
 				u32 ma = page | ((dma + w * 2) & 0xffff);
 				if (cmd == 041) mem_wr(ma, u16(d.data[off] | (d.data[off + 1] << 8)));
-				else if (cmd == 043 || cmd == 061) { u16 v = mem_rd(ma); d.data[off] = u8(v); d.data[off + 1] = u8(v >> 8); }
+				else if (cmd == 043 || cmd == 061) { u16 v = mem_rd(ma); d.data[off] = u8(v); d.data[off + 1] = u8(v >> 8); d.dirty = true; d.last_write = m_cycles; }
 			}
 			if ((cmd == 043 || cmd == 061) && (words % 128)) {   // zero-fill partial record
 				size_t off = size_t(da) * 256 + words * 2, end = size_t(da + recs) * 256;
 				for (; off < end; off++) d.data[off] = 0;
+				d.dirty = true; d.last_write = m_cycles;
 			}
 			if (cr & 020000) {
 				mem_wr(blk + 2, 0);
@@ -522,4 +524,18 @@ void tek8501::io_tick(int c)
 		}
 		dma_count();
 	}
+}
+
+bool tek8501::flush(std::string &err, bool force)
+{
+	bool ok = true;
+	for (auto &d : m_drive) {
+		if (!d.present || !d.writeback || !d.dirty) continue;
+		// unless forced, wait until writes have been quiet for ~2 s (a whole file save)
+		if (!force && m_cycles - d.last_write < u64(CPU_HZ * 2)) continue;
+		std::string e;
+		bool r = d.is_imd ? save_imd_8501(d.path, d.data, d.comment, e) : save_raw(d.path, d.data, e);
+		if (r) d.dirty = false; else { ok = false; err = e; }
+	}
+	return ok;
 }

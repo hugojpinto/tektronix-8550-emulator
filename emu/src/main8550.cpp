@@ -1,6 +1,6 @@
 // tek8550: the complete 8550 MDL -- 8301 MDU + 8501 DMU joined by the HSI link.
 // Your terminal is the 8301 system terminal port (where DOS/50 talks).
-//   tek8550 [-0..-3 DISK] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE]
+//   tek8550 [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE]
 // Ctrl-] enters the monitor ('h' for help).
 #include "machine/tek8301.h"
 #include "machine/tek8501.h"
@@ -40,7 +40,7 @@ static void show(tek8301 &a, tek8501 &b)
 int main(int argc, char **argv)
 {
 	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, disks[4];
-	long long max_cycles = -1; int sw = 0;
+	long long max_cycles = -1; bool writeback = false; int sw = 0;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
 	double trace_at = -1; std::string tracefile;   // -trace8301 SECONDS FILE (2650 + Z80 instruction trace)      // -type SECONDS "TEXT"  (\r = Return)
@@ -48,6 +48,7 @@ int main(int argc, char **argv)
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
 		if (a == "-roms") roms = next();
+		else if (a == "-rw") writeback = true;
 		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
 		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
@@ -57,14 +58,14 @@ int main(int argc, char **argv)
 		else if (a == "-dump") dumpfile = next();
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
-		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
 	}
 	auto mdu = std::make_unique<tek8301>();
 	auto dmu = std::make_unique<tek8501>();
 	std::string err;
 	if (!mdu->load_roms(roms + "/8301", err) || !dmu->load_roms(roms + "/8501", err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 	for (int d = 0; d < 4; d++)
-		if (!disks[d].empty() && !dmu->mount(d, disks[d], err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+		if (!disks[d].empty() && !dmu->mount(d, disks[d], err, writeback)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 
 	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
 	FILE *hsif = hsilog.empty() ? nullptr : fopen(hsilog.c_str(), "w");
@@ -136,6 +137,7 @@ int main(int argc, char **argv)
 		dmu->run_slice(int(tek8501::CPU_HZ * slice_s));
 		if (dmu->cpu.halted()) dmu->cpu.set_halted(false);   // no ODT console here: resume (logged)
 		ticks++;
+		if (ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
 		if (interactive && ticks % 10 == 0) {
 			auto want = t0 + std::chrono::microseconds(ticks * 100);
 			if (want > clk::now()) std::this_thread::sleep_until(want);
@@ -143,6 +145,7 @@ int main(int argc, char **argv)
 	}
 done:
 	host::tty_raw(false);
+	{ std::string e; if (!dmu->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
 	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }
 	for (FILE *f : { logf, hsif, auxf, trf }) if (f) fclose(f);
 	if (!dumpfile.empty()) {   // raw memory images: <file>.8501 (64 KB, LE words) and <file>.8301 (CPU view, 32 KB)

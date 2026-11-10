@@ -24,7 +24,10 @@ public:
 
 	tek8501();
 	bool load_roms(const std::string &dir, std::string &err);
-	bool mount(int drive, const std::string &path, std::string &err);
+	bool mount(int drive, const std::string &path, std::string &err, bool writeback = false);
+	// write modified, write-back drives to their image files; returns false on error
+	bool flush(std::string &err, bool force = false);
+	bool dirty(int drive) const { return m_drive[drive & 3].dirty; }
 	void power_on();
 	void restart();          // front-panel RESTART: PC = 173000, LTC<5> = 0
 	void run_slice(int cycles);
@@ -70,7 +73,7 @@ private:
 	void update_irq();
 
 	// ---- flexible disc controller (HLE) ----
-	struct drive_t { std::vector<u8> data; std::string path; bool present = false; bool changed = true; };
+	struct drive_t { std::vector<u8> data; std::string path, comment; bool present = false, changed = true, writeback = false, is_imd = false, dirty = false; u64 last_write = 0; };
 	drive_t m_drive[4];
 	u16  m_cbpr = 0;
 	bool m_fd_busy = false;

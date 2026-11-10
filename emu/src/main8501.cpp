@@ -74,12 +74,13 @@ int main(int argc, char **argv)
 {
 	std::string roms = "../roms/8550/8501", tracefile, logfile;
 	std::string disks[4];
-	long long max_cycles = -1;
+	long long max_cycles = -1; bool writeback = false;
 	bool odt_at_start = false;
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
 		if (a == "-roms") roms = next();
+		else if (a == "-rw") writeback = true;
 		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
 		else if (a == "-trace") tracefile = next();
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
@@ -92,7 +93,7 @@ int main(int argc, char **argv)
 	std::string err;
 	if (!m->load_roms(roms, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 	for (int d = 0; d < 4; d++)
-		if (!disks[d].empty() && !m->mount(d, disks[d], err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+		if (!disks[d].empty() && !m->mount(d, disks[d], err, writeback)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 
 	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
 	m->aux.on_tx = [&](u8 c) { c &= 0177; if (c) { fputc(c, stdout); fflush(stdout); } if (logf) { fputc(c, logf); fflush(logf); } };
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
 		}
 		if (k == -2 && !interactive) {}   // stdin closed
 		m->run_slice(slice);
+		{ std::string e; if (!m->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
 		if (m->cpu.halted() && !was_halted) m->odt_enter();
 		was_halted = m->cpu.halted();
 		// pace to real time (interactive only)
@@ -129,6 +131,7 @@ int main(int argc, char **argv)
 	}
 done:
 	tty_raw(false);
+	{ std::string e; if (!m->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
 	if (!interactive) { fprintf(stderr, "\n"); show_regs(*m); }
 	if (tf) fclose(tf);
 	if (logf) fclose(logf);
