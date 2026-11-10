@@ -1,4 +1,4 @@
 superzazu/z80 (MIT) -- https://github.com/superzazu/z80
 commit d64fe10a2274e5e40019b1086bf7d8990cbc5f23 (2021-11-10)
 Verified locally: prelim, zexdoc, zexall all OK; 46734978649 cycles (diff=0).
-Unmodified.
+Modified for tek8550 (marked [tek8550]): 16-bit port addresses; M1 flag on opcode fetches; OUTI/OUTD put B-1 on A8-A15.

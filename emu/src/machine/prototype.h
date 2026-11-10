@@ -12,13 +12,14 @@ public:
 	virtual ~prototype_bus() = default;
 	virtual bool connected() const { return false; }
 	virtual u8   mem_read(u16 a) { (void)a; return 0xff; }       // undriven bus
+	virtual u8   mem_fetch(u16 a) { return mem_read(a); }          // opcode fetch (M1)
 	virtual void mem_write(u16 a, u8 d) { (void)a; (void)d; }
-	virtual u8   io_read(u8 port) { (void)port; return 0xff; }
-	virtual void io_write(u8 port, u8 d) { (void)port; (void)d; }
+	virtual u8   io_read(u16 port) { (void)port; return 0xff; }
+	virtual void io_write(u16 port, u8 d) { (void)port; (void)d; }
 	virtual bool irq() { return false; }                           // INT line (level)
 	virtual bool nmi() { return false; }                           // NMI line (edge seen as level)
 	virtual u8   irq_vector() { return 0xff; }                     // data bus during INTA (mode 0/2)
 	virtual void reset() {}
-	virtual void poll() {}                                         // called regularly by the machine
+	virtual void poll(unsigned long z80_cycles) { (void)z80_cycles; }   // before each instruction; arg = Z80 T-state counter
 };
 #endif

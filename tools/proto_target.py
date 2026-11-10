@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Reference prototype (target system) for the 8550 emulator's Z80 probe.
 
-Protocol v1 (see notes/prototype-link.md): the emulator connects and sends
+Protocol v2 (see notes/prototype-link.md; v1 clients work unchanged): the emulator connects and sends
 4-byte requests  [op, addr_lo, addr_hi, data];  each gets a 2-byte reply
 [data, lines] where lines bit0 = INT asserted, bit1 = NMI asserted.
-  H hello (addr = client version) -> data = 1 (protocol version)
-  R/W memory read/write   I/O io read/write (port = addr_lo)
+  H hello (addr = client version) -> data = min(client, 2)
+  R/W memory read/write   F opcode fetch (M1 read, v2)
+  I/O io read/write (port = addr_lo; addr_hi = A8-A15, ignored here)
   V interrupt acknowledge -> data bus value (vector / RST opcode)
   T time advance, addr = microseconds      Z reset
 
@@ -69,8 +70,8 @@ def main():
         while len(buf) >= 4:
             op, lo, hi, d = buf[0], buf[1], buf[2], buf[3]; buf = buf[4:]
             a = lo | (hi << 8); res = 0xff
-            if op == ord('H'): res = 1
-            elif op == ord('R'): res = ram[a]
+            if op == ord('H'): res = max(1, min(a, 2))
+            elif op in (ord('R'), ord('F')): res = ram[a]
             elif op == ord('W'): ram[a] = d
             elif op == ord('I'):
                 if lo == 0x10: res = inq.pop(0) if inq else 0

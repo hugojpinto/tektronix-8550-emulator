@@ -9,8 +9,10 @@ typedef struct z80 z80;
 struct z80 {
   uint8_t (*read_byte)(void*, uint16_t);
   void (*write_byte)(void*, uint16_t, uint8_t);
-  uint8_t (*port_in)(z80*, uint8_t);
-  void (*port_out)(z80*, uint8_t, uint8_t);
+  // [tek8550] ports carry the full 16-bit address bus (A8-A15 = A for
+  // IN A,(n)/OUT (n),A, B for the (C) forms), as on a real Z80
+  uint8_t (*port_in)(z80*, uint16_t);
+  void (*port_out)(z80*, uint16_t, uint8_t);
   void* userdata;
 
   unsigned long cyc; // cycle count (t-states)
@@ -30,6 +32,7 @@ struct z80 {
   bool iff1 : 1, iff2 : 1;
   bool halted : 1;
   bool int_pending : 1, nmi_pending : 1;
+  bool m1 : 1; // [tek8550] set while read_byte is an opcode fetch (M1 cycle)
 };
 
 void z80_init(z80* const z);

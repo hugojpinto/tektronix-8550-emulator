@@ -101,18 +101,19 @@ void tek8301::ep_firmware(u16 entry)
 	}
 }
 
-u8 tek8301::lp_in(z80 *z, u8 port)
+u8 tek8301::lp_in(z80 *z, u16 port)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
 	if (z == &m->ep && m->proto_mode()) return m->target->io_read(port);
 	return 0xff;
 }
 
-void tek8301::lp_out(z80 *z, u8 port, u8 d)
+void tek8301::lp_out(z80 *z, u16 port, u8 d)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
 	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
 	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
+	// (SVC decode uses A0-A7 only; A8-A15 = A are ignored)
 	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
 		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
 		return;
@@ -176,7 +177,7 @@ void tek8301::lp_run(int cycles2650)
 		u32 before = m_pending;
 		m_bp_hit = 0;
 		if (&z == &ep && proto_mode()) {
-			target->poll();
+			target->poll(z.cyc);
 			bool n = target->nmi();
 			if (n && !m_nmi_prev) z80_gen_nmi(&z);
 			m_nmi_prev = n;
@@ -416,9 +417,9 @@ int tek8301::intack()
 // slave (Language Processor / emulator processor) memory accesses: memory map,
 // write protection and the prototype bus
 
-u8 tek8301::slave_rd(u16 a)
+u8 tek8301::slave_rd(u16 a, bool m1)
 {
-	if (proto_all() || (proto_mode() && (m_map[a >> 7] & 1))) return target->mem_read(a);
+	if (proto_all() || (proto_mode() && (m_map[a >> 7] & 1))) return m1 ? target->mem_fetch(a) : target->mem_read(a);
 	return prog_rd(PROG_BANK, a);
 }
 

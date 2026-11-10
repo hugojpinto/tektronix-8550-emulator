@@ -139,9 +139,9 @@ private:
 	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
 	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
-	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->slave_rd(a); }
+	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->slave_rd(a, m->lp.m1 || m->ep.m1); }
 	static void lp_write(void *u, u16 a, u8 d) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true); m->slave_wr(a, d); }
-	u8   slave_rd(u16 a);
+	u8   slave_rd(u16 a, bool m1 = false);   // m1: opcode fetch
 	void slave_wr(u16 a, u8 d);
 	// Memory map / write-protect RAM: 512 blocks x 128 bytes, D0 = U (prototype), D2 = write
 	// protect. The 2650 reaches it at system FE00-FFFF while MAPEN (EE<3>) is set:
@@ -150,8 +150,8 @@ private:
 	bool m_wp_hit = false;
 	bool m_nmi_prev = false;
 	prototype_bus m_no_target;
-	static u8 lp_in(z80 *z, u8 port);
-	static void lp_out(z80 *z, u8 port, u8 d);
+	static u8 lp_in(z80 *z, u16 port);     // full 16-bit address (A8-A15 from A or B)
+	static void lp_out(z80 *z, u16 port, u8 d);
 
 	// HSI UART
 	u8 m_hsi_rbr = 0; bool m_hsi_da = false, m_hsi_oe = false; bool m_hsi_tbre = true;

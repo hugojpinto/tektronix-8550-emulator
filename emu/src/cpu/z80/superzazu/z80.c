@@ -77,6 +77,15 @@ static inline uint8_t nextb(z80* const z) {
   return rb(z, z->pc++);
 }
 
+// [tek8550] opcode fetch: an M1 cycle (prefix bytes CB/ED/DD/FD and the
+// opcode after them are M1 too; the opcode of DD CB d op is not)
+static inline uint8_t fetch_m1(z80* const z) {
+  z->m1 = 1;
+  const uint8_t v = rb(z, z->pc++);
+  z->m1 = 0;
+  return v;
+}
+
 static inline uint16_t nextw(z80* const z) {
   z->pc += 2;
   return rw(z, z->pc - 2);
@@ -562,7 +571,7 @@ static inline void cpd(z80* const z) {
 }
 
 static void in_r_c(z80* const z, uint8_t* r) {
-  *r = z->port_in(z, z->c);
+  *r = z->port_in(z, get_bc(z));
   z->zf = *r == 0;
   z->sf = *r >> 7;
   z->pf = parity(*r);
@@ -571,7 +580,7 @@ static void in_r_c(z80* const z, uint8_t* r) {
 }
 
 static void ini(z80* const z) {
-  uint8_t val = z->port_in(z, z->c);
+  uint8_t val = z->port_in(z, get_bc(z));
   wb(z, get_hl(z), val);
   set_hl(z, get_hl(z) + 1);
   z->b -= 1;
@@ -587,9 +596,11 @@ static void ind(z80* const z) {
 }
 
 static void outi(z80* const z) {
-  z->port_out(z, z->c, rb(z, get_hl(z)));
-  set_hl(z, get_hl(z) + 1);
+  // [tek8550] B is decremented before the port address goes on the bus
+  const uint8_t val = rb(z, get_hl(z));
   z->b -= 1;
+  z->port_out(z, get_bc(z), val);
+  set_hl(z, get_hl(z) + 1);
   z->zf = z->b == 0;
   z->nf = 1;
   z->mem_ptr = get_bc(z) + 1;
@@ -755,6 +766,7 @@ void z80_init(z80* const z) {
   z->halted = 0;
   z->int_pending = 0;
   z->nmi_pending = 0;
+  z->m1 = 0;
   z->int_data = 0;
 }
 
@@ -763,7 +775,7 @@ void z80_step(z80* const z) {
   if (z->halted) {
     exec_opcode(z, 0x00);
   } else {
-    const uint8_t opcode = nextb(z);
+    const uint8_t opcode = fetch_m1(z);
     exec_opcode(z, opcode);
   }
 
@@ -1197,13 +1209,13 @@ void exec_opcode(z80* const z, uint8_t opcode) {
   case 0xDB: {
     const uint8_t port = nextb(z);
     const uint8_t a = z->a;
-    z->a = z->port_in(z, port);
+    z->a = z->port_in(z, (a << 8) | port);
     z->mem_ptr = (a << 8) | (z->a + 1);
   } break; // in a,(n)
 
   case 0xD3: {
     const uint8_t port = nextb(z);
-    z->port_out(z, port, z->a);
+    z->port_out(z, (z->a << 8) | port, z->a);
     z->mem_ptr = (port + 1) | (z->a << 8);
   } break; // out (n), a
 
@@ -1235,10 +1247,10 @@ void exec_opcode(z80* const z, uint8_t opcode) {
     z->l_ = l;
   } break; // exx
 
-  case 0xCB: exec_opcode_cb(z, nextb(z)); break;
-  case 0xED: exec_opcode_ed(z, nextb(z)); break;
-  case 0xDD: exec_opcode_ddfd(z, nextb(z), &z->ix); break;
-  case 0xFD: exec_opcode_ddfd(z, nextb(z), &z->iy); break;
+  case 0xCB: exec_opcode_cb(z, fetch_m1(z)); break;
+  case 0xED: exec_opcode_ed(z, fetch_m1(z)); break;
+  case 0xDD: exec_opcode_ddfd(z, fetch_m1(z), &z->ix); break;
+  case 0xFD: exec_opcode_ddfd(z, fetch_m1(z), &z->iy); break;
 
   default: fprintf(stderr, "unknown opcode %02X\n", opcode); break;
   }
@@ -1632,15 +1644,15 @@ void exec_opcode_ed(z80* const z, uint8_t opcode) {
     }
     break; // indr
 
-  case 0x41: z->port_out(z, z->c, z->b); break; // out (c), b
-  case 0x49: z->port_out(z, z->c, z->c); break; // out (c), c
-  case 0x51: z->port_out(z, z->c, z->d); break; // out (c), d
-  case 0x59: z->port_out(z, z->c, z->e); break; // out (c), e
-  case 0x61: z->port_out(z, z->c, z->h); break; // out (c), h
-  case 0x69: z->port_out(z, z->c, z->l); break; // out (c), l
-  case 0x71: z->port_out(z, z->c, 0); break; // out (c), 0
+  case 0x41: z->port_out(z, get_bc(z), z->b); break; // out (c), b
+  case 0x49: z->port_out(z, get_bc(z), z->c); break; // out (c), c
+  case 0x51: z->port_out(z, get_bc(z), z->d); break; // out (c), d
+  case 0x59: z->port_out(z, get_bc(z), z->e); break; // out (c), e
+  case 0x61: z->port_out(z, get_bc(z), z->h); break; // out (c), h
+  case 0x69: z->port_out(z, get_bc(z), z->l); break; // out (c), l
+  case 0x71: z->port_out(z, get_bc(z), 0); break; // out (c), 0
   case 0x79:
-    z->port_out(z, z->c, z->a);
+    z->port_out(z, get_bc(z), z->a);
     z->mem_ptr = get_bc(z) + 1;
     break; // out (c), a
 

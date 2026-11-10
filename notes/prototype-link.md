@@ -43,8 +43,9 @@ Bit 6 or bit 5 selects the prototype; both set means all memory belongs to the p
 - **Write-protect violation:** the write is suppressed and the system processor gets interrupt 2. DOS/50 reports `<BREAK MEMWR>`.
 - **Syntax:** `MAP` shows the map; `MAP PRW|PRO|URW|URO lo [hi] …` sets it, e.g. `MAP URW 2000 27FF PRO 0 0FFF`.
 
-## Protocol (version 1)
+## Protocol (version 2; version 1 targets still work)
 
+- **Version:** the emulator sends `H` with its highest version (2). The target answers the version it will speak, which must not exceed the client's. A v1 target answers 1, and the emulator then uses `R` for fetches too.
 - **Transport:** a stream socket. The target listens; the emulator connects (`-target tcp:HOST:PORT` or `-target unix:PATH`). It is synchronous: every request gets exactly one reply.
 - **Request**, 4 bytes: `op, addr_lo, addr_hi, data`.
 - **Reply**, 2 bytes: `data, lines`, where `lines` bit 0 = INT asserted (level) and bit 1 = NMI asserted (the emulator detects the rising edge). Every reply refreshes the line state.
@@ -53,11 +54,12 @@ Bit 6 or bit 5 selects the prototype; both set means all memory belongs to the p
 |---|---|---|
 | `H` | hello; addr = client protocol version (1) | protocol version (1) |
 | `R` | memory read at addr | byte (FF = nothing there) |
+| `F` | opcode fetch (M1 read) at addr. v2 only; prefix bytes and the opcode after CB/ED/DD/FD are M1, the opcode of DD CB d op is not | byte |
 | `W` | memory write data → addr | ignored |
-| `I` | I/O read, port = addr_lo | byte |
-| `O` | I/O write data → port addr_lo | ignored |
+| `I` | I/O read: addr = the full 16-bit I/O address (addr_hi = A8–A15 = A for `IN A,(n)`, B for the `(C)` forms and block I/O) | byte |
+| `O` | I/O write data → I/O address (as `I`; for OUTI/OTIR B is already decremented, as on a real Z80) | ignored |
 | `V` | interrupt acknowledge (Z80 INTA cycle) | byte on the data bus (IM 0 opcode / IM 2 vector low byte) |
-| `T` | time advance, addr = microseconds of Z80 time (sent about every 256 instructions) | ignored |
+| `T` | time advance, addr = microseconds of elapsed Z80 time, computed from the real T-state count at 4 MHz with the fraction carried over. Sent about every 256 instructions, and only while the emulator processor runs | ignored |
 | `Z` | reset | ignored |
 
 Reference target: `tools/proto_target.py`. It has 64 KB RAM, `--rom FILE@ADDR`, and a console UART at port 10h (data) / 11h (status: bit 0 input ready, bit 1 output ready). `--tick MS` adds a periodic INT that is acknowledged with RST 38h and cleared by `OUT (12h)`. `--log` logs every access.
@@ -78,5 +80,7 @@ Verified: mode 1 with code in program memory and the UART on the target; mode 2 
 Any language works. Answer every 4-byte request with 2 bytes. Keep the INT level asserted until your device is serviced (the Z80 takes it when interrupts are enabled, then sends `V`). Use `T` to drive timers.
 
 **Performance:** one round trip per access, roughly 10–50 µs locally. That is fine for I/O-heavy code, but mode 2 (every fetch remote) runs far below real speed. A natural extension is a shared-memory RAM window (the target `mmap`s a file and declares the address ranges, and the emulator accesses them directly), keeping the socket for I/O and memory-mapped devices only. That is not implemented.
+
+**Historical fidelity:** `F` and the 16-bit I/O address are real Z80 pins: M1 and A8–A15 during I/O cycles. A probe that replaces the CPU in its socket presents both to the target, and Z80-family peripherals rely on M1 (RETI decoding, interrupt acknowledge). `T` is not a hardware signal; it only keeps a simulated target's clock in step. None of this changes the 8550 side: DOS/50, the board firmware, mode 0 and the SVC decode (A0–A7) behave as before.
 
 **Not modelled:** bus timing and wait states, the probe's own status (target power or clock present), DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running).
