@@ -171,7 +171,11 @@ Both diagnostic disks run the complete self-test of every board:
 ```
 build/tek8550 -pm ext -0 ../sources/bitsavers/disks/8550_DIAG.IMD
 ```
-At the menus press **Return**, **1 Return**, **Return** (Automatic mode → System Verification → display on terminal). After about 16 minutes of real time it should end in **`SYSTEM VERIFICATION COMPLETE`**.
+At the menus press **Return**, **1 Return**, **Return** (Automatic mode → System Verification → display on terminal). It takes about 16 minutes of real time. One failure is expected: **07/00D0**, the Z80 emulator board's firmware PROM checksum. That PROM was never dumped, so the emulator supplies the board's behaviour but not its bytes.
+
+- Add `-ep none` to leave the emulator board out. Verification then ends in **`SYSTEM VERIFICATION COMPLETE`**.
+- To test the Z80 emulator board on its own, choose **2** (Select mode) and then **9** (Z-80 emulator test).
+- If you ever obtain a dump of the PROM (512 bytes), pass it with `-ep-prom FILE`.
 
 `-pm ext` emulates the newer program-memory boards these diagnostics expect. DOS/50 V1.0 needs the default, older boards, so don't use `-pm ext` for normal work. Screenshots of a passing run are in `docs/screenshots/diagnostics/`.
 

@@ -1,6 +1,6 @@
 // tek8550: the complete 8550 MDL -- 8301 MDU + 8501 DMU joined by the HSI link.
 // Your terminal is the 8301 system terminal port (where DOS/50 talks).
-//   tek8550 [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE]
+//   tek8550 [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep none] [-ep-prom FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE]
 // Ctrl-] enters the monitor ('h' for help).
 #include "machine/tek8301.h"
 #include "machine/tek8501.h"
@@ -43,7 +43,7 @@ static void show(tek8301 &a, tek8501 &b)
 int main(int argc, char **argv)
 {
 	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, termmode, screenfile, targetspec, disks[4];
-	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false;
+	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false; std::string ep_prom_file; bool no_ep = false;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
 	std::vector<typed_t> snaps;      // -snap SECONDS FILE: CT8500 screen state at a machine time
@@ -57,6 +57,8 @@ int main(int argc, char **argv)
 		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
 		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
 		else if (a == "-pm") pm_ext = next() == "ext";
+		else if (a == "-ep") no_ep = next() == "none";      // -ep none: no Z80 emulator board fitted
+		else if (a == "-ep-prom") ep_prom_file = next();   // Z80 emulator board firmware PROM dump (512 bytes, F800-F9FF)
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
 		else if (a == "-log") logfile = next();
 		else if (a == "-hsilog") hsilog = next();
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
-		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep none] [-ep-prom FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT]\n", argv[0]); return 1; }
 	}
 	auto mdu = std::make_unique<tek8301>();
 	auto dmu = std::make_unique<tek8501>();
@@ -116,6 +118,13 @@ int main(int argc, char **argv)
 	}
 	mdu->mode_switch = u8(sw);
 	mdu->pm_ext_comparator = pm_ext;
+	if (no_ep) mdu->ep_present = false;
+	if (!ep_prom_file.empty()) {
+		FILE *f = fopen(ep_prom_file.c_str(), "rb");
+		if (!f) { fprintf(stderr, "cannot read %s\n", ep_prom_file.c_str()); return 1; }
+		mdu->ep_prom.resize(512); size_t n = fread(mdu->ep_prom.data(), 1, 512, f); fclose(f);
+		if (n != 512) { fprintf(stderr, "%s: expected 512 bytes, got %zu\n", ep_prom_file.c_str(), n); return 1; }
+	}
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
 	mdu->ep_trace = getenv("TEK_EPTRACE") != nullptr;
 	FILE *trf = tracefile.empty() ? nullptr : fopen(tracefile.c_str(), "w");

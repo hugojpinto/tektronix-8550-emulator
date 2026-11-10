@@ -35,7 +35,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 
 ## Regression checks (run after touching CPU cores or the 8301/8501 machines)
 1. **Screenshots:** `tools/make_screenshots.sh <workdir>` regenerates `docs/screenshots/*.png`. They should come out byte-identical: `git status docs/` stays clean unless a visual change was intended. The session covers ACE, ASM, LINK, mode 0/1 runs and the IPC target.
-2. **Diagnostics:** `build/tek8550 -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((2400*2000000)) -type 31 '\r' -type 41 '1\r' -type 51 '\r'` must end in `SYSTEM VERIFICATION COMPLETE`, with no `DIAGNOSTIC FAILURE`. Repeat with `062-5412-08_8501_1err_DOS50.imd` (version 2.4).
+2. **Diagnostics:** `build/tek8550 -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((2400*2000000)) -type 31 '\r' -type 41 '1\r' -type 51 '\r'` must end in `SYSTEM VERIFICATION COMPLETE`, with no `DIAGNOSTIC FAILURE`. Repeat with `062-5412-08_8501_1err_DOS50.imd` (version 2.4). With the Z80 emulator board fitted (the default), the only allowed failure is **07/00D0**: its firmware PROM was never dumped. The board's own test is Select mode → 9 (Z80 emulator test).
 3. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
 
 ## Conventions

@@ -72,7 +72,7 @@ void tek8301::ep_firmware(u16 entry)
 		ep.sf = f & 0x80; ep.zf = f & 0x40; ep.yf = f & 0x20; ep.hf = f & 0x10; ep.xf = f & 0x08; ep.pf = f & 0x04; ep.nf = f & 0x02; ep.cf = f & 0x01;
 		ep.sp = u16(pm(24) | (pm(25) << 8));
 		ep.halted = false;
-		ec_interrupt(INT_SVC1, false);           // "registers loaded"
+		ec_interrupt(INT_SVC1 + 6, false);       // Debug SVC 1 (dump/restore) = SVC 7, int 22 (8301 Table 7-x; Z80 diag 07/00E1)
 	} else if (entry == 0xf809) {                // dump (after a break)
 		auto put = [&](int o, u8 v) { m_progmem[o] = v; };
 		put(0, ep.interrupt_mode); put(1, u8((ep.iff1 ? 0x80 : 0) | (ep.iff2 ? 0x40 : 0)));
@@ -83,17 +83,19 @@ void tek8301::ep_firmware(u16 entry)
 		put(23, u8((ep.sf ? 0x80 : 0) | (ep.zf ? 0x40 : 0) | (ep.yf ? 0x20 : 0) | (ep.hf ? 0x10 : 0) |
 		           (ep.xf ? 0x08 : 0) | (ep.pf ? 0x04 : 0) | (ep.nf ? 0x02 : 0) | (ep.cf ? 0x01 : 0)));
 		put(24, u8(ep.sp)); put(25, u8(ep.sp >> 8));
-		ec_interrupt(INT_SVC1, false);           // "registers saved"
+		ec_interrupt(INT_SVC1 + 6, false);       // Debug SVC 1 (dump/restore) = SVC 7
 	} else if (entry == 0xf800) {                // PUT: write block[0] at block[1]:block[2], verify -> block[3] = 0 ok
 		u16 a = u16((pm(1) << 8) | pm(2));
 		target->mem_write(a, pm(0));
 		m_progmem[3] = (target->mem_read(a) == pm(0)) ? 0x00 : 0x01;   // DOS/50 MOV: nonzero = error 3C
-		ec_interrupt(INT_SVC1, false);
+		ec_interrupt(INT_SVC1 + 7, false);       // Debug SVC 2 (get/put) = SVC 8, int 23
 	} else if (entry == 0xf803) {                // GET: read prototype memory at block[1]:block[2] into block[0]
 		m_progmem[0] = target->mem_read(u16((pm(1) << 8) | pm(2)));
 		m_progmem[3] = 0x00;
-		ec_interrupt(INT_SVC1, false);
+		ec_interrupt(INT_SVC1 + 7, false);       // Debug SVC 2 (get/put) = SVC 8
 	} else if (ep_trace) fprintf(stderr, "[EP firmware entry %04x unknown]\n", entry);
+	if (entry == 0xf800 || entry == 0xf803 || entry == 0xf806 || entry == 0xf809)
+		m_svc_stop = true;                       // the firmware's SVC OUT stops the board like any SVC
 	if (ep_trace) {
 		fprintf(stderr, "[   block now:");
 		for (int i = 0; i < 27; i++) fprintf(stderr, " %02x", pm(i));
@@ -101,10 +103,13 @@ void tek8301::ep_firmware(u16 entry)
 	}
 }
 
+static const bool slave_io_trace = getenv("TEK_SLAVEIO") != nullptr;   // trace LP/EP port I/O that goes nowhere
+
 u8 tek8301::lp_in(z80 *z, u16 port)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
 	if (z == &m->ep && m->proto_mode()) return m->target->io_read(port);
+	if (slave_io_trace) fprintf(stderr, "[%.3f %s in  %04x @%04x]\n", m->m_cycles / CPU_HZ, z == &m->ep ? "EP" : "LP", port, z->pc);
 	return 0xff;
 }
 
@@ -116,8 +121,12 @@ void tek8301::lp_out(z80 *z, u16 port, u8 d)
 	// (SVC decode uses A0-A7 only; A8-A15 = A are ignored)
 	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
 		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
+		// on the emulator board an SVC also stops the processor until the next F9 command
+		// (Z80 diag 07/0070); the Language Processor resumes when the SVC is taken (DOS/50 tools)
+		if (z == &m->ep) m->m_svc_stop = true;
 		return;
 	}
+	if (slave_io_trace && !(z == &m->ep && m->proto_mode())) fprintf(stderr, "[%.3f %s out %04x <- %02x @%04x]\n", m->m_cycles / CPU_HZ, z == &m->ep ? "EP" : "LP", port, d, z->pc);
 	if (z == &m->ep && m->proto_mode()) m->target->io_write(port, d);   // modes 1/2: target I/O
 }
 
@@ -168,6 +177,12 @@ void tek8301::lp_run(int cycles2650)
 		z.pc = target;
 		if (&z == &ep && target >= 0xf800) { ep_firmware(target); return; }   // board firmware space
 	}
+	// forced interrupt: the emulator processor's NMI, which also wakes it from HALT
+	if (m_fi_pending && &z == &ep && cpu.halted() && m_lp_live && !m_ec_pend) {
+		m_fi_pending = false;
+		z80_gen_nmi(&z);
+		if (z.halted) z80_step(&z);          // halted: the NMI is taken at the next M1 time
+	}
 	if (!lp_running()) return;
 	m_lp_frac += cycles2650 * ((&z == &lp && (m_e7 & 0x04)) ? 1.25 : 2.0);   // Z80 at 2.5 or 4 MHz vs 2650 at 2 MHz
 	while (m_lp_frac > 0 && lp_running()) {
@@ -185,7 +200,12 @@ void tek8301::lp_run(int cycles2650)
 		}
 		z80_step(&z);
 		m_lp_frac -= double(z.cyc - c0);
-		if (m_pending != before) break;         // SVC / write-protect violation (immediate): master takes over
+		if (m_pending != before) {              // SVC / write-protect violation (immediate): master takes over
+			// a breakpoint matched by the same instruction is pending as well (diag 07/0070-0075)
+			if (m_bp_hit & 1) ec_interrupt(INT_BP1);
+			if (m_bp_hit & 2) ec_interrupt(INT_BP2);
+			break;
+		}
 		// "pending" debug interrupts are issued at the next fetch, after PC next is latched
 		// (priority SVC > BP1 > BP2 > S/CY > HALT)
 		if (m_bp_hit & 1) { ec_interrupt(INT_BP1); break; }
@@ -221,7 +241,7 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
-	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_fr_pending = m_fj_pending = false; m_f5 = 0xff;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
 	lp_reset();
 	cpu.reset();
 }
@@ -306,7 +326,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
 	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
-	case 0xe3: v = ep_present ? u8((m_e3 & 0x80) && ep.halted ? 0x10 : 0x00) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
+	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && ep.halted ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
 	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
@@ -353,9 +373,13 @@ void tek8301::io_write(offs_t port, u8 d)
 	case 0xf9:
 		m_f9 = d;
 		m_ec_pend = 0;                      // a new command releases the latched debug state
+		m_svc_stop = false;                 // ... and a slave stopped by an SVC
 		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_e3);
 		if (!(d & 0x01)) { m_fr_pending = true; m_fj_pending = false; m_lp_live = true; }   // FR: forced reset (taken by the slave)
 		if (!(d & 0x04) && (d & 0x01)) { m_fj_pending = true; m_lp_live = true; }          // FJ: forced jump (FB:FA, F5); reset wins
+		// FI: forced interrupt (D1 = 0). On the Z80 emulator board it is the CPU's NMI
+		// (Z80 diag 07/0040: forced interrupt -> PC 0066, HALT there -> 'emulator halted')
+		if (!(d & 0x02) && (d & 0x01)) { m_fi_pending = true; m_lp_live = true; }
 		break;
 	case 0xf5: m_f5 = d; break;
 	case 0xe3:

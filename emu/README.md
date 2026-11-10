@@ -19,6 +19,8 @@ DOS/50 V1.0 needs the default (no comparator).
 Hardware self-test (all boards):
 ```
 build/tek8550 -pm ext -0 ../sources/bitsavers/disks/062-5412-08_8501_1err_DOS50.imd   # <CR>, 1<CR>, <CR> -> Automatic System Verification
+# expected: one failure, 07/00D0 (Z80 emulator PROM checksum, PROM not dumped). -ep none: no emulator board -> clean pass.
+# -ep-prom FILE: a 512-byte dump of the Z80 emulator board's firmware PROM (F800-F9FF)
 ```
 
 tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (8501 AUX port), `-dump FILE` (memory images),

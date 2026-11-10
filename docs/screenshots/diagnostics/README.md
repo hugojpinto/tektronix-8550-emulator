@@ -1,6 +1,6 @@
 # Disk-resident diagnostics on the emulated 8550
 
-Both surviving diagnostic disks run Automatic System Verification to completion with zero errors. Both runs use `-pm ext`, which emulates the 1981+ program-memory boards that these diagnostics expect. Captured from the emulated CT8500 at its native 80×25 grid; `raw/` holds the bare 640×500 rasters.
+Both surviving diagnostic disks run Automatic System Verification to completion with zero errors. Both runs use `-pm ext`, which emulates the 1981+ program-memory boards that these diagnostics expect. They were captured before the Z80 emulator board became detectable, which is equivalent to today's `-ep none`. With the board fitted, the Z80 emulator test also runs; it passes except 07/00D0, the firmware PROM checksum, which needs the original PROM dump. Captured from the emulated CT8500 at its native 80×25 grid; `raw/` holds the bare 640×500 rasters.
 
 | Disk | File | Shots |
 |---|---|---|
@@ -17,7 +17,7 @@ What runs, in about 990 emulated seconds (≈20 s wall clock):
 Reproduce:
 ```
 cd emu
-build/tek8550 -pm ext -0 ../sources/bitsavers/disks/8550_DIAG.IMD -type 31 '\r' -type 41 '1\r' -type 51 '\r'
+build/tek8550 -ep none -pm ext -0 ../sources/bitsavers/disks/8550_DIAG.IMD -type 31 '\r' -type 41 '1\r' -type 51 '\r'
 ```
 That types `<CR>`, `1<CR>`, `<CR>`, which selects Automatic mode → System Verification → display on terminal.
 

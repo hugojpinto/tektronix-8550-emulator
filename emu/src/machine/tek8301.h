@@ -75,12 +75,13 @@ public:
 	bool proto_mode() const { return ep_enabled() && (m_e3 & 0x60); }
 	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
 	bool ep_present = true;
+	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	bool slave_enabled() const { return ep_enabled() || (m_e7 & 0x80); }
 	z80 &slave() { return ep_enabled() ? ep : lp; }
 	const z80 &slave() const { return ep_enabled() ? ep : lp; }
 	// slave runs while the master is halted and no debug interrupt is outstanding
-	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave().halted && m_lp_live && !m_ec_pend && !(m_pending & 0x00ff0000u); }
+	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave().halted && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u); }
 	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
@@ -99,7 +100,8 @@ private:
 	std::vector<u8> m_par;        // per-byte: parity-complement state when written
 	u16 m_par_addr = 0;
 	u8 m_e3 = 0;
-	bool m_fr_pending = false, m_fj_pending = false;
+	bool m_svc_stop = false;   // an SVC stops the slave until the next F9 write (Z80 diag 07/0070)
+	bool m_fr_pending = false, m_fj_pending = false, m_fi_pending = false;   // forced reset / jump / interrupt
 	u8 m_f5 = 0xff;
 	void ep_firmware(u16 entry);
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;
@@ -120,7 +122,13 @@ private:
 		u8 c = (a & 0x8000) ? m_b9 : m_b8;
 		return (c & 0x40) || ext == PROG_BANK;
 	}
-	u8 prog_rd(u8 ext, u16 a) const { return prog_present(ext, a) ? m_progmem[a] : 0xff; }
+	u8 prog_rd(u8 ext, u16 a) const {
+		// Z80 emulator board firmware PROM: 512 bytes at F800-F9FF of program memory while
+		// the board is in firmware mode (E3<7> = 1, E3<4> = 0). Not dumped: reads FF unless
+		// -ep-prom supplies an image (Z80 diag 07/00D0 checksums it, expecting 0852).
+		if (ep_present && (m_e3 & 0x90) == 0x80 && (a & 0xfe00) == 0xf800) return ep_prom.empty() ? 0xff : ep_prom[(a - 0xf800) % ep_prom.size()];
+		return prog_present(ext, a) ? m_progmem[a] : 0xff;
+	}
 	void prog_wr(u8 ext, u16 a, u8 d) { if (prog_present(ext, a)) m_progmem[a] = d; }
 	u64 m_cycles = 0, m_next_timer = 0, m_next_refresh = 0;
 	u32 m_pending = 0;            // latched interrupt flip-flops (bit n = int n)
