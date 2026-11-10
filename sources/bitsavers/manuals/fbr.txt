@@ -1,0 +1,106 @@
+8560 MUSDU System Reference Manual                                   FBR(5)
+___________________________________________________________________________
+
+FBR(5)
+
+
+NAME
+     fbr - file backup and restore format
+
+SYNTAX
+     #include <sys/types.h>
+     #include <fbr.h>
+
+DESCRIPTION
+     Fbr saves and restores directories and files on a floppy disk archive,
+     preserving  aliases  (multiple  links  to the same file).  The archive
+     consists of:
+
+          Boot block - Block zero is reserved for a copy of  a stand-alone
+          boot program.
+
+          Directory area - This area contains directory information for all
+          files  and  directories  on the archive.  The first entry in this
+          area is dedicated to the archive label.
+
+          Data area - The data of all files on the archive is stored here.
+
+     The format of a directory entry (as given in the  include  file)  fol-
+     lows.  To increase the portability of archives, this structure is read
+     and written in PDP-11 format regardless of what machine fbr_is running
+     on.
+
+     #define PATHLEN         106     /* space for path       */
+
+     struct fbrent
+     {
+             char            fbr_path[PATHLEN]; /* pathname  */
+             unsigned short  fbr_mode;
+             short           fbr_uid;  /* owner's userID     */
+             short           fbr_gid;  /* owner's groupID    */
+             off_t           fbr_size; /* size in bytes      */
+             time_t          fbr_acct; /* access date-time   */
+             time_t          fbr_modt; /* modify date-time   */
+             unsigned        fbr_fblk; /* first data block   */
+             char            fbr_zero; /* unused             */
+             char            fbr_chks; /* checksum           */
+     };
+
+     The path field is the pathname of the file  when  archived,  less  any
+     redundant slashes or initial './'.  It is null-terminated if less than
+     PATHLEN bytes long.  The mode, uid, gid, size, and access and  modifi-
+     cation date-times are in the same format as their corresponding i-node
+     fields.  As in the file system, an available entry has a mode of zero.
+     The fblk field contains the block number of the first data block allo-
+     cated to this file.  The zero field is  unused.   The  checksum  field
+     contains  a  number  such  that  the sum of the first 127 bytes of the
+
+
+                                                                          1
+
+
+
+
+
+
+FBR(5)                                   8560 MUSDU System Reference Manual
+___________________________________________________________________________
+
+     directory entry and the complement of  the  checksum  is  zero.   Each
+     file's  data  starts  on  a block boundary and occupies max(1,((size +
+     511) / 512) contiguous blocks.  At least one archive  block  is  allo-
+     cated  to  each  archived  file or directory so that aliases (multiple
+     links) can be properly recorded.  Each directory archived  is  treated
+     as  an  empty  file (I.E. no directory's data is stored).  All entries
+     representing links to a given file are identical.  In particular,  the
+     fblk field in each link's entry contains the same block number.
+
+     The archive label directory entry contains the following information:
+
+     path A comment about this archive.
+
+     mode Set by fbr to a file readable/writeable/executable by all. Other-
+          wise unused.
+
+     uid  The userID of the user who created this archive.
+
+     gid  The groupID of the same.
+
+     size The total number of bytes in the data area of the archive.This
+          field  in  combination  with  the fblk field, records the size of
+          both the directory area and the entire archive.
+
+     acct The date-time that this archive was  created  -  not its  access
+          time.
+
+     modt The date-time that this archive was last altered.
+
+     fblk The block number of the first archive block following the direc-
+          tory area.
+
+     checksum
+          (same as any other directory entry.)
+
+SEE_ALSO
+   fbr(1), stat(2). 
+   

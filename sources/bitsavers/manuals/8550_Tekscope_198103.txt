@@ -1,0 +1,279 @@
+TECHNICAL INFORMATION         VOLUME 13 NUMBER 1
+FOR TEKTRONIX CUSTOMERS       MARCH 1981
+
+
+
+
+                      8085A
+
+
+
+                                                  8086
+
+
+
+
+                              COMMITTED TO EXCELLENCE
+                                                      A Microprocessof
+                                                      Development Lab with
+                                                      an Expandable Future
+                                                      Designing with microprocessors is a dy-             The 8560 can accommodate up to eight
+                             Bob Hunter, Micropro-
+                             cessor Development
+                                                      namic activity. New applications of the          users with any combination of 8550s, 8540s
+                             Products Marketing       device appear daily. And tomorrow's pro-         or any RS232C terminals. Enhanced per-
+                             manager, was edu-        cessors will perform even more complex           formance is achieved with the Tektronix
+                             cated m England,         tasks. Microprocessor users must choose          CT8500 Terminal.
+                             rece1vmg his M.Sc.       their design tools wisely to be able to take        The 8550 is available now, with the 8560
+                             and Ph.D. in Digitai     full advantage of the processors available
+                             Systems from Man-
+                                                                                                       and 8540 to follow within the year.
+                             chester University. He
+                                                      today and those coming along.
+                                                          As microprocessor capabilities increase,
+                                                                                                       The 8550 single-user system
+                             is a member of the In-
+                             stitute of Electrical    the size and make-up of design teams will        The 8550 Microcomputer Development Lab
+Engineers. Bob gained extensive experience m          change. More extensive programming will          (figure 1) consists of two basic units - the
+development systems before joining Tek m 1977         be needed to effectively put these new           8301 Microprocessor Development Unit and
+After a time m Guernsey, he moved to EMC m                                                             the 8501 Data Management Unit. \i\Orking
+Amsterdam as European marketing product
+                                                      capabilities to work. It is important that the
+                                                      design tools you choose today be adaptable       together, these units support both software
+manager for development systems, logic ana-
+                                                      to your design needs well into the future.       development and hardware/software
+lyzers and communication testers. Bob moved
+to Beaverton and assumed his present position         The new Tektronix 8500 Modular Microcom-         integration.
+early in 1980. For recreation Bob en1oys racquet-     puter Development Lab Series is a design             The 8301 Microprocessor Development
+ball and outdoor activities including hiking and      tool with such flexibility.                      Unit houses a system processor with 32K
+camping.                                                                                               bytes of static system memory, 32K bytes
+                                                          Right now, there are three major ele-
+                                                      ments in the series:                             of static program memory, a language pro-
+                                                                                                       cessor, and an emulator controller. There
+                                                        • The 8550 Microcomputer Development
+                                                           Lab (MDL), a self-contained, single-user    is room for plug-in hardware options such
+                                                           system that supports 26 different chips,    as emulator processors, an additional 32K
+                                                           including the more popular 16-bit pro-      bytes of static program memory, a real-time
+                                                           cessors such as the Z8001, Z8002,           prototype analyzer (RTPA), and a PROM
+                                                           68000, 8086, 8088,SBP9900, and              programmer. The 8301 accommodates up
+                                                                                                       to 16 plug-in circuit boards.
+                                                           TMS9900.
+                                                        • The 8560 Multi-User Development Lab           Multiple processor architecture
+                                                           system, which contains a dedicated          The 8301 uses a multiple-processor archi-
+                                                           central computer and supports up to          tecture in a master-slave relationship (see
+                                                           eight workstations.                          figure 2). The system's controller board,
+                                                        • The 8540 Advanced Integration Unit for        serving as the master processor, runs the
+                                                           performing hardware/software integra-        operating system, directs the input/output
+                                                           tion in host computer environments.         (1/0) activities for system peripherals, and
+                                                                                                        directs all of the other system elements
+                                                                                                        such as the emulator controller, language
+                                                                                                       processor, PROM programmer, and emu-
+                                                                                                        lator processors.
+                                                                                                           The language processor operates as a
+                                                                                                        slave to the system processor and trans-
+                                                                                                        lates assembly language or high level lan-
+                                                                                                        guage into machine language for the emu-
+                                                                                                       lator processor. In addition, it runs the edi-
+                                                                                                       tors including the high-performance ad-
+                                                                                                       vanced CRT editor.
+                                                                                                           The emulator processor, which is the
+                                                                                                       same type as that to be used in the proto-
+                                                                                                       type hardware under development, runs
+                                                                                                       user programs and interfaces with the pro-
+                                                                                                       totype hardware. Interaction between the
+                                                                                                       system and emulator processors is con-
+                                                                                                       trolled by the emulator controller under the
+                                                                                                       direction of the system processor. The emu-
+                                                                                                       lator controller ensures that only one pro-
+Fig. 1. The 8550 Microcomputer Development Lab is a versatile software development and hard-
+                                                                                                       cessor has control of the system buses at
+ware/software integration system for microprocessor-based product design. The system supports          any time.
+many popular 8- and 16-bit microprocessors.
+
+
+
+
+                                                                                                                                                    3
+                                                                                                                  Management Unit (DMU) as needed. The
+                                      PROTOTYPE
+                                                                                                                  system memory also provides buffer space
+                                       CONTROL                                                                    for 1/0 activities.
+                                        PROBE
+                                      (OPTIONAL)                                                                     The primary purpose of the program
+                                                                                                                  memory is to store the user program during
+                                                                                                                  execution by the emulator processor. The
+                        REAL·TIME
+                        PROTOTYPE                     8501
+                                                                                                                  program memory also provides working
+                        ANALYZER
+                        (OPTIONAL)
+                                                      DATA          SYSTEM                                        space for the system and assembler pro-
+                                                   MANAGEMENT      TERMINAL
+                                                      UNIT                                                        cessors, but only during program assembly
+                                                                                                                  and editing activities. During emulation, all
+                                                HIGH
+                                               SPEED                                                              program memory is available for the target
+                                           INTERFACE
+                                                                                                                  microprocessor.
+                                                                                                                     The system processor has access to
+              REAL·
+                                                                                                                  both system and program memories. Sever-
+               TIME                                                                                               al operating features are available to speed
+              TRACE
+                                                                                                                  up the transfer of data between memories,
+                                                                                                                  including direct memory access (DMA),
+                                                                                              SYSTEM
+                                                                                              CONTROU             memory-to-memory data transfer, and bank
+                       PROGRAM                                                                INTERRUPT           switching of 16K-byte blocks of data. A
+                       CONTROL/
+                      INTERRRUPT                                                                                  special high-speed interface port permits
+                                                                                                                  data transfer between the 8301 and 8501
+                                   COMMON ADDRESS/DATA BUS
+                                                                                                                  at a 153.6 kilobaud rate.
+                                                                                                                     Several emulation modes are avail-
+      8301 MDU
+                                                                                                                  able: mode O, mode 1, and mode 2 (see
+                        PROGRAM                                                                                   section on emulation capabilities). When
+                         MEMORY
+                                                                                                                  operating in emulation mode 1, a memory
+                                                                                                                  map function is available that allows the
+                                                                                                                  operator to assign 128-byte blocks of mem-
+Fig. 2. Functional block diagram of the 8301 Microprocessor Development Unit. The system uses                     ory address space to either the program
+a multiprocessor architecture in a master/slave arrangement. The system processor (in the
+system controller) serves as the master, with the emulator and language processors serving as
+                                                                                                                  memory in the 8301 or the memory in the
+slaves. A high·speed interface provides rapid data transfer between the 8301 and 8501 Data                        prototype hardware. Assignments can be
+Management Unit.                                                                                                  made throughout a total address space of
+System bus structure
+The system bus in the 8301 is a 100-line
+bus structure that is common to all 16 plug-
+in circuit boards. The bus is essentially uni-
+versal in that data, address, and control
+lines are paralleled to all boards. The ex-
+ceptions are the independent debug and in-
+terrupt lines and some control lines for the
+system and emulator processors (see figure
+3). The separate lines result in a virtually
+uncrashable architecture.
+The memory structure
+In keeping with the multiprocessor concept
+of Tektronix systems, the 8301 memory is
+segmented. The system and program memories
+are identical 32K-byte static random-
+access memories (RAMs). The program
+memory is expandable to 64K bytes by
+adding a plug-in memory module.
+   The system memory is accessed only by                                                                                             J14      J15      J16
+                                                             J1   J2   J3     J4   J5   J6   J7   J8   J9   J10   J11   J12   J13
+the system processor and contains DOS/50,
+the operating system. The main resident
+                                                       Fig. 3. The system bus consists of 100 lines that provide connection to the plug-in circuit boards
+part of DOS/50 is transferred into system              in the 8301 . The emulator controller board separates those control and signal lines that are
+memory at start-up, with subroutines loaded            dedicated either to the system section or to the program section.
+from the system disc in the 8501 Data
+
+
+
+4
+64K bytes. This function also allows write                                                                  Three levels of emulation are available:
+protection to segments of program mem-
+ory, as selected by the user.                                              c;9                             • Mode O, which uses the 8550's clock,
+                                                                                                              program memory, and 1/0 signals to
+
+
+                                                                         ~~­
+   The 8501 provides high-volume bulk stor-                                                                   run the user's program. The prototype
+age up to two megabytes on two double-                                                                        hardware is not needed in this mode,
+
+                                                                      ~~8 1 8
+density, double-sided-disc compatible drives                                                                  allowing software debugging to take
+with DMA data transfers. A 32K by 16-bit                                                                      place before the prototype is
+dynamic RAM board provides temporary                                                                          operational.
+storage space for the file manager, device                     ~~ APP.LIB l                                • Mode 1, (a partial emulation mode) uses
+
+                                                                ~
+interrupts, and other functions.                                   UB1     LIB  ~t+- LIBRARY
+                                                                           ASM -+ •  MAIN.MDL -+•
+                                                                                                              the prototype's clock and I /O services.
+   The 8501 also contains two 1K-byte                                      ASML-+ •    MAI N.MOLL -+ •
+                                                                                                              Some emulators also allow use of the
+read-only memories (ROMs). These ROMs               ASM -+ •    MDL -+•    OBJ -+ •    MAIN.ASM -+•           8550's 1/0 services in Mode 1. The pro-
+                                                    ASML-+ •    MOLL-+ •   LNKL -+ •   MAIN.ASML-+•
+contain a boot-up program for loading the           OBJ -+ •    ASM -+ •   LOAD-+ •    MAIN.OBJ -+ •          gram is run on the emulator, which may
+                                                                ASML-+•                SUB.ASM -+•
+operating system into system memory,                            OBJ -+ •               SUB.ASML -+ •
+                                                                                                              access both program memory and pro-
+and a set of self-test routines that are per-                                          SUB.OBJ -+•            totype memory. However, full control of
+                                                                                       LNKL      -+•
+formed at start-up to ensure the 8550 is                                               LOAD       -+•         the system is maintained by the system
+ready for use.                                                                                                controller. A memory map function allows
+                                                   Fig. 4. An example of the DOS/50 tree-like                 assignment of 128-byte blocks of memo-
+The disc operating system                          file structure. The "root" of the tree is at               ry address space as previously discussed
+The 8550 uses a new operating system               the top. The rectangles represent directories,
+                                                   while the squares represent data files.
+                                                                                                              in the memory structure section. The
+called DOS/50 (for Disc Operating System,                                                                     emulator can operate at full speed using
+                                                   Arrows indicate a logical connection, from
+8550). While similar to TEKDOS (the oper-          which a path can be designated with a file                 either program or prototype memory.
+ating system for Tektronix 8001 and 8002           specification.                                          • Mode 2, (the full emulation mode) uses
+MDLs) in many respects, DOS/50 provides                                                                       only the prototype's memory, clock, and
+several new options for arranging, manipu-         As files are accumulated, the user may
+                                                                                                              1/0 facilities and runs the user program
+lating, and protecting files and a number of       organize them into specific groups, each
+                                                                                                              under the emulator processor's control.
+enhanced debugging commands.                       under its own specific directory. The user
+                                                                                                              The user program can run at full speed,
+    DOS/50 supervises general input and            may create directories within directories
+                                                                                                              so any problems with functions involving
+output, file creation and maintenance, pro-        to any level of nesting desired.
+                                                                                                              critical timing relationships can be
+gram assembly and compilation, program                With extensive nesting, the file specifica-             resolved.
+execution, monitoring and debugging,               tion needed to access a specific file can be
+                                                                                                             In modes 1 and 2, the emulator takes
+PROM programming, and communication.               lengthy and cumbersome to use. DOS/50
+                                                                                                         the place of the microprocessor that even-
+    Optional software (such as assemblers)         includes a BRIEF command, which allows
+                                                                                                         tually will reside in the prototype, using a
+can be easily combined with DOS/50 on a            the user to specify a file by a single name.
+                                                                                                         prototype control probe to connect the pro-
+master disc (which can store up to 1 mega-         This greatly speeds up access to frequently
+                                                                                                         totype to the emulator.
+byte) giving you the convenience of having         used files.
+                                                                                                            The prototype control probe is a critical
+all of the assemblers, emulators, and com-             DOS/ 50 also includes an extensive set
+                                                                                                         link in the emulation system. The ideal emu-
+pilers you would normally use, on one              of file attributes that allow the user to desig-
+                                                                                                         lator would be transparent to the prototype
+system disc.                                       nate: the file owner, who can read from or
+                                                                                                         hardware. That is, the prototype would
+    DOS/50 includes several other operating        write to that file, the date and time of file
+                                                                                                         function as though the microprocessor
+conveniences, such as spooling, which              creation, when the file was last written to,
+                                                                                                         were plugged directly into its socket on the
+allows DOS/50 to send output to a line             when it was last accessed, and so forth.
+                                                                                                         prototype hardware. In Tek emulators, the
+printer while performing other tasks; and          These attributes are especially helpful in
+                                                                                                         microprocessor is mounted in the prototype
+type-ahead, which allows you to enter addi-        keeping a file current when more than one
+                                                                                                         control probe pod, close to the prototype
+tional commands while the previous com-            user works with the file.
+                                                                                                         microprocessor socket, thus substantially
+mand is executing.                                    The assembler software packages for                reducing the loading and propagation-time
+                                                   the 8550 offer powerful macros, library               effects normally associated with emulators.
+File management                                    generators, linkers, and other capabilities
+The 8501 Data Management Unit handles              designed to enhance the user's                        The real-time prototype analyzer
+files for DOS/50 and manages the move-             productivity.                                         The optional real-time prototype analyzer
+ment of user files between its flexible discs                                                            (RTPA) enables the designer to locate criti-
+and program memory in the 8301 .                   Emulation capabilities                                cal timing problems and hardware/software
+    Data management is simplified by using         Integrating hardware and software is often            sequence problems in the prototype. The
+a tree-like file structure (see figure 4), which   the most time-consuming and frustrating               RTPA serves, in essence, as a logic ana-
+allows the user to specify one main system         task encountered in designing a micro-                lyzer for all data, addresses, and access
+directory, one root directory for each disc,       processor-based product. The 8550 emu-                control on the prototype's microprocessor
+and any number of subdirectories under the         lator options allow integration in several            socket. A logic probe provides an additional
+root directory. Data files may be created          stages, gradually transferring functions              eight lines for viewing logic signals anywhere
+and entered directly into the root directory.      from the 8550 to the prototype.                       on the prototype board.
+
+
+
+                                                                                                                                                     5
+

@@ -1,0 +1,2 @@
+mamedev/mame e0a5e1cad5d8dc72c15a609c6323651847f4fdcd Wed Nov 11 01:45:49 2026 +1100
+All files BSD-3-Clause; keep copyright headers when porting.

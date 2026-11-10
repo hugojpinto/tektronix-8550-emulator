@@ -1,0 +1,11 @@
+.DS_Store
+emu/build/
+*.dSYM/
+# large scans / photos: re-downloadable from bitsavers (see FEASIBILITY.md)
+*.pdf
+*.PDF
+*.jpg
+*.JPG
+*.jpeg
+*.zip
+sources/raw/
