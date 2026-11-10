@@ -4,7 +4,8 @@
 --style ct8500 (default): the CT8500's documented raster -- characters on a 6x8 dot
   matrix in an 8x10 dot field, 80x25 -> 640 dots x 250 scan lines, green on black;
   each scan line is doubled (second line dimmer) -> 640x500 for the tube's aspect.
-  Glyphs: classic 5x7 dot-matrix font (stand-in; the CT8500 character ROM is not dumped).
+  Glyphs: tools/ct8500_font.py -- Tek 308 ROM upper case + matching hand-drawn lower case
+  with descenders (approximation; the CT8500 character ROM is not dumped).
 --style modern: a TrueType monospace font in --cell WxH cells (default 10x20 -> 800x500).
 usage: render_screens.py [--style ct8500|modern] [--cell WxH] [--font TTF] INPUT OUTPUT.png
 INPUT is a .scr snapshot ("CT8500 ..." header) or a plain text file (last 25 lines).
@@ -34,7 +35,7 @@ def load(path):
 GREEN = (70, 255, 120); GREEN_DIM = (35, 150, 70)
 
 def render_ct8500(cols, rows, text, attr, cursor, out):
-    from font5x7 import glyph
+    from ct8500_font import glyph
     W, H = cols * 8, rows * 10                       # 640 x 250 dot raster
     dots = [[0] * W for _ in range(H)]               # 0 off, 1 dim, 2 bright
     for y in range(rows):
@@ -43,12 +44,11 @@ def render_ct8500(cols, rows, text, attr, cursor, out):
             lvl = 1 if a & 8 else 2
             g = glyph(ord(text[y][x]))
             cell = [[0] * 8 for _ in range(10)]
-            for cx in range(5):                       # 5x7 glyph inside the 6x8 matrix, 1-dot margin
-                col = g[cx]
-                for cy in range(7):
-                    if col >> cy & 1: cell[1 + cy][1 + cx] = lvl
-            if a & 1:                                 # underline on the 9th scan line of the field
-                for cx in range(8): cell[8][cx] = lvl
+            for gy in range(8):                       # 6x8 matrix (5 dots + spacing) at field rows 1-8
+                for gx in range(5):
+                    if g[gy] >> (4 - gx) & 1: cell[1 + gy][1 + gx] = lvl
+            if a & 1:                                 # underline on the last scan line of the field
+                for cx in range(8): cell[9][cx] = lvl
             inv = bool(a & 4) ^ (cursor == (y, x))    # inverse video / block cursor
             for cy in range(10):
                 for cx in range(8):

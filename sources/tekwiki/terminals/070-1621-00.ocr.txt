@@ -1,0 +1,4658 @@
+Tektronix, Inc.
+P.O. Box 500
+Beaverton, Oregon 97005
+
+070-1621-00
+
+TEKTROND€
+
+INSTRUCTION MANUAL
+
+Serial Number
+773
+BHHe He He He Hee ee Ee HE HF FE EF Ee & Ss
+)
+
+-)
+
+>
+
+4023 Users
+
+GENERAL INFORMATION
+
+SECTION |
+OPERATOR’S MANUAL
+
+SECTION II
+TECHNICAL USER’S MANUAL
+
+APPENDICES
+
+|
+|
+|
+|
+
+About This Manual
+Table of Contents
+
+INDEX
+
+Part 1
+Introduction
+
+Part 2
+Controls
+
+Part 3
+Using the 4023
+
+Part 1
+Programming
+
+Part 2
+Installation
+
+APPENDIX A
+Characteristics
+
+APPENDIX B
+ASCII Code Chart
+
+APPENDIX C
+Accessories
+
+APPENDIX D
+Formatting a Display
+
+APPENDIX E
+Glossary
+
+TO
+4023 Users
+
+About This Manual
+
+This manual will acquaint the operator and the technical user with the
+capabilities and operation of the Tektronix 4023 Computer Display
+Terminal.
+
+Section | contains information important to the operator. It begins with
+an introduction to the 4023 including a basic description of 4023 operation
+in a data processing system, the purpose of the 4023, and layman’s
+description of Terminal features. Section | also contains a description of
+Terminal controls, including Keyboard keys, console switches, console
+indicators, and special function keys. Short operational descriptions are
+provided to assist in control familiarization.
+
+Section II contains information from a more technical point of view.
+Here the technical user will find programming information, strappable
+
+option information, installation information, etc.
+
+Appendices at the rear of the manual contain additional information to
+aid the user in achieving maximum efficiency from the 4023.
+
+A glossary is included listing the technical terms associated with the
+4023.
+
+A topical index follows the Table of Contents.
+i 4023 Users CONTENTS Pe
+| TABLE OF CONTENTS
+SECTION I
+| INDEX
+PART1 INTRODUCTION Page
+You and the 4023 1-1
+General 1-1
+What the 4023 Is 1-1
+Data Processing 1-1
+| Data Retrieval 1-2
+Data Entry 1-2
+Inquiry-Response 1-2
+Accessories 1-3
+| The 4023 In a Data Processing System 1-3
+Operating Modes 14
+Transmitting 15
+Receiving 16
+| Local Operation 17
+Hard Copy Operation 18
+| PART2 THE CONTROLS
+General 1-9
+Purpose of Controls 1-9
+| r Console Controls and Indicator 1-12
+Keyboard Controls 1-14
+Function Controls 1-16
+| Power and Display Controls 1-18
+Rear Panel 1-18
+| PART3 OPERATION-USING THE 4023
+Introduction 1-19
+Terminal/Computer Connection 1-19
+| Set These Switches 1-19
+Turning Power On and Adjusting Display 1-19
+Becoming Familiar With Keys 1-20
+Erasing the Display 1-20
+| Numeric Keyboard 1-21
+Home Cursor 1-21
+Dual Function Keys 1-21
+Editing Keys and Operation 1-22
+i Becoming Familiar With Operation 1-23
+General 1-23
+Direct Mode 1-23
+| Roll-Up 1-24
+Buffer Mode 1-24
+Buffer Operation 1-24
+Buffer Form Fill-Out Operation 1-26
+| Protected Fields 1-27
+Non Alpha Fields 1-27
+rs) Field Identification 1:27
+Example of Form Fill-Out Operation 1-28
+| Conclusion 1-30
+q ® I
+CONTENTS
+
+(cont.)
+
+PART 1
+
+PART 2
+
+APPENDIX A
+APPENDIX B
+APPENDIX C
+APPENDIX D
+APPENDIX E
+
+SECTION II
+
+PROGRAMMING
+
+Introduction
+Input/Output Configuration
+Summary of Terminal Configuration
+Code Effect
+General
+Code Set
+Control Codes
+Control Character Performance
+Storage
+Message End Character
+Edit Key Effects
+Computer Controlled Editing Functions
+Format Effectors
+Display Formatting
+General
+The Field Attribute Code
+Setting the Field Attribute Code
+Non-Alpha Fields
+Sample Input String
+Position Cursor
+Read Cursor
+4023 Program Time Delays
+Fill Characters
+Summary of ASCII Code Effect
+Rulings Character Set (Optional)
+Introduction
+Rulings Character Set Organization
+Finding the Character
+Simple Join Characters
+Complex Join Characters
+Miscellaneous Characters
+Single Element Characters
+Summary
+
+INSTALLATION
+
+General
+
+Mounting the Terminal
+
+Selecting Operating Voltage and Fuse Size
+Selecting Strappable Options
+
+Spare Switch (SW1 and SW2) Connections
+Spare Indicator Connection
+
+Connectors and Wiring
+
+Connecting the Terminal to a Computer
+Direct Connection
+
+Telephone Line Connection
+
+CHARACTERISTICS
+
+ASCII CODE CHART
+ACCESSORIES
+FORMATTING A DISPLAY
+GLOSSARY
+
+4023 Users
+
+yr
+NO
+EH mH HH HE HE HE HE HE HE HE HE HE EE EF EE
+
+2-14
+4023 Users
+
+accessories 1-3, C-1
+address 2-5
+auxiliary devices 1-5, through 1-8, 1-13, C-2
+
+backspace 2-7
+BACKSPACE key 1-15 (def.)
+
+back tab 1-14, 2-3
+
+baud rate 2-6
+
+Baud Rate Selector 1-18 (def.), 1-24
+BEL control char. 2-7, 2-9, B-1
+
+bell 1-27, 1-28
+
+Blink Cursor Strap 2-2, Fig. 2-9
+
+BS control char. 2-3, 2-6, 2-7
+
+BREAK key 1-15 (def.)
+
+BRIGHTNESS control 1-18 (def.), 1-19
+buffer 1-5, 1-13, 1-14, 1-16, 1-23,
+Buffer Form Fill-Out 1-23, 1-24, 1-26
+Buffer Form Fill-Out Entry (transmission) 2-9
+buffer operation, summary A-2
+
+buffer transi n 1-16, 1-17, 1-25, 1-26, 1-30, 2-1, 2-2
+
+1-24, 241, 23, 27, 28
+
+carriage return 2-8
+carriage return transmission 2-1
+
+character, end of message 2-1
+characteristics, 4023 A-1
+
+characters 2-1
+
+characters per display A-1
+
+characters per line A-1
+
+characters per second rate 2-6
+
+clear (erase) page 1-14, 2-2, 2-6, 2-9
+
+clear input 2-9
+
+code effect 2-2, 2-7
+
+code translation 2-7
+
+communication link 1-3, 2-16, 2-21
+complex joins 2-10, 2-11
+
+computer display terminal 1-1, 1-9
+computer entry (to terminal) 2-3
+CONTRAST control 1-18 (def.), 1-19
+controls 1-9, through 1-18
+
+control character(s) 1-14, 1-16, 2-1, 2-2, 2-6
+control character storage 2-2
+
+control character transmission 2-2
+
+control commands 1-2, 1-6, 1-14
+
+controls, function (see function controls)
+control sequences 2-2
+
+COPY key 1-17 (def.), 2-9
+
+CR control character 2-1, 2-2, 2-3, 2-6, 2-8
+CR DOES LF strap 2-1, Fig. 1-8,
+
+CTRL key 1-14 (def.), 1-25, 2-3
+
+cursor 1-19, 1-22, 1-23, A-1
+
+cursor blink 2-2
+
+cursor BLINK strap 1-16, Fig. 2-9
+
+cursor coordinate transmission 2-10
+
+cursor movement 1-18 (key def.), 1-20, 2-1
+cursor movement in data transmission 1-25
+
+®
+
+INDEX
+
+data 1-1
+data entry 1-2
+
+data entry forms 1-2
+
+data processing 1-1 (def.)
+
+data retrieval 1-2
+
+delete character 1-22, 2-2, 2-4
+
+delete line 1-23, 2-2, 2-4, 2-6
+
+DEL L-DEL C key 1-16 (def.), 1-22, 1-23
+
+desk mounting 2-14
+
+direct 1.5, 1-13, 1-14, 1-18, 1-23, 2-3, 27,28
+
+direct entry (transmission) 1-24, 2-1
+DIRECT/BUFFER switch 1-5, 1-13 (def.), 1-18, 1-23
+direction connection 2-16
+
+display 1-10
+
+display backgrounds (video) 1-27
+
+display formatting 1-10, 2-1, 2-3
+
+display size A-1
+
+display writing 1-3
+
+dual Function keys 1-21
+
+echo 1.5, 1-14, 1-18, 1-23, 2-1, 2-4
+ECHO switch 1-18 (def.)
+
+edit functions 1-10, 1-22
+
+editing, in DIRECT 1-23
+
+editing, program 1-23
+
+edit keys 2-4
+
+encoded data 1-5
+
+End character 2-1, 2-5
+
+enter 2-2, 2-7
+
+enter sequence 1-5, 1-24, 2-1, 2-4
+
+EOL LF GEN strap 2-1, 2.8, Fig. 28
+
+put 2-2, 2-3, 2-6
+
+jing the display 1-20, 1-21
+
+1g unprotected data 1-21
+
+ERASE TO END key 1-16 (def.), 1-27, 1-30, 2-2, 2-3, 2.6
+ESC 2.2, 2-3, 2-5, 2-6, 28,29
+
+ESC key 1-14 (def.)
+
+ETX control character 2-2, 2-7
+
+FAC 2-3, 2-7,2-9,D-1
+
+FF control character 2-3, 2-9
+
+field attribute code(s) 1-2, 1-14, 2-2, 2-3, 2-4, 2-7,2-9,D-1
+field identification 1-27
+
+field separator 2-9
+
+fill characters 2-6
+
+flagged interfaces 2-1
+
+forms 1-6
+
+format effectors 2-3
+
+formatted display 1-13, 1-14, 1-16, 1-17, 1-23, 1-24, 1-26, 2-4
+formatting a display (example) D-1
+
+form fill-out 1-28, 1-30
+
+FS control character 2-4, 2-8
+
+full duplex 2-1
+
+function controls 1-9, 1-11
+
+fuse, operating 2-15
+
+INDEX
+
+(cont.)
+
+GS control character 2-5
+
+half duplex 2-1
+hard copy 2-9
+
+hard copy unit 1-3, 1-4, 1-8, 1-17, 2-9, C-2
+
+Hard Copy Unit connector 1-18, 2-16
+
+hard copy operation 1-4
+
+home 1-14, 1-17, 1-19, 1-20, 1-21, 1-24, 2-3, 2-7, 28
+HOME key 1-17 (def.), 1-30
+
+home position 1-14 (def.)
+
+HT control character 2-3, 2-7
+
+indicators 1-9, 1-11
+
+indicator, spare 1-13
+
+ial condition 1-14
+
+input field 2-7
+
+input/output A-1
+
+insert character 1-22, 2-3
+
+insert line 1-23, 2-3, 2-6
+
+INSL-INS C key 1-16 (def.), 1-22, 1-23
+installation 2-14
+
+interface 1-3, 1-4, 1-6, 2-16, 2-21
+
+join types, rulings 2-10
+
+keyboard A-1
+KEYBOARD LOCK indicator 1-12 (def.), 1-24, 1-27, 1-28, 1-30
+keyboard function (purpose of) 1-10
+
+keyboard, numeric 1-21
+
+L
+
+LF control character 2-1, 2-6, 2-7
+
+LF DOES CR strap 2-1, Fig. 2-8
+
+LF key 1-15 (def.), 1-20
+
+line feed 1-24, 2-1, 2-3, 2.7
+
+local 1-4, 1-7, 1-12, 1-13, 1-24, 1-26, 1-28, 2-1
+
+local echo 2-1
+
+LOCAL/ON LINE switch, 1-4, 1-12 (def.), 1-23, 1-28, 2-1
+local operation 1-7
+
+Iv
+
+4023 Users
+
+magnetic tape 1-1
+
+Make Copy Command 1-4, 1-8
+
+memory 1-4, 1-5, 1-24, 2-1
+
+Message End Character 2-2, Fig. 2-8
+
+Message Separator 1-17, 1-24, 1-25, 1-26, 2-2, 2-7,28
+modem 2-21
+
+monitor connector 1-18
+
+motherboard 2-16, 2-20
+
+non-alpha fields 1-27, 1-30, 2-4
+non-formatted displays 1-23, 1-24
+
+NUL control character 2-2, 2-3, 2-6, 2-9
+numeric keyboard 1-17, 1-21
+
+NUM LOCK key 1-17 (def.), 1-21
+
+fe}
+
+on line 1-4, 1-12, 1-13, 1-23, 1-24, 1-26, 2-1
+optional accessories C-1
+
+P
+
+PAGE-ERASE INPUT key 1-14 (def.), 1-21, 1-27, 1-30
+page full 2-1
+
+position cursor operation 2-2, 2-4, 2-5
+POWER indicator 1-13 (def.)
+
+power requirements A-1
+
+POWER switch 1-18 (def.)
+
+program time delays 2-6
+
+Prompt Character 2-2, 2-6
+
+PROMPT MODE strap 2-1, Fig. 2-8
+protected data 2-4
+
+protected fields 1-12, 1-16, 1-26, 1-27, 1-28
+
+R
+
+read cursor operation 2-2, 25, 2-10
+receiving 1-4, 1-6, 2-1
+
+refresh rate A-1
+
+repeat key entry 1-20
+
+RESET key 1-16 (def.), 1-25, 1-27, 1-30, 2-2
+RETURN key 1-15 (def.), 1-25, 2-1
+
+roll-up 1-24, 2-1, 2-3, 2-6
+
+RUBOUT key 1-15 (def.), 2-6
+
+ruling formula 2-10
+
+rulings character set 2-10 through 2-13
+rulings character set select 2-8
+
+rulings transmission 2-9
+
+ruling types 2-10
+
+4023 Users
+
+sample input string 2-4
+screen 1-10
+
+send 1-5, 1-9, 1-26, 2-4
+
+SEND-ENTER key 1.5, 1-17 (def.), 1-24, 1-26, 1-30
+send transmittable only 2-9
+
+SHIFT key 1-14 (def.), 1-21, 1-25, 2-3
+
+$1 control character 2-8, 2-9,
+
+sign on procedure 2-21
+
+simple joins 2-10, 2-11
+
+SO contro! character 2-8, 2-9, 2-10
+
+SPACE 2-3
+
+SPARE indicator 1-13
+
+SPARE switches 1-12, 1-13
+
+standard accessories C-1
+
+standard character set select 2-8
+
+storage medium 1-2
+
+strappable options 2-1, 2-16, 2-18, 2-19, Fig. 2-8, Fig. 2-9
+
+TAB key 1-14 (def.), 1-30, 2-7
+
+tab stop 1-14
+
+telephone line connection 2-16, 2-21
+terminal busy 2-1
+
+T
+terminal controls 1-9, 1-11
+transmission 1-24, 1-25
+transmitted 1-5
+transmitting 1-4, 1-5, 1-30, 2-1
+TTY LOCK key 1-14 (def.)
+
+u
+
+unprotected data 2-4
+unprotected field 1-14, 1-26, 1-28, 1-30, 2-3, 2-7
+US control character 2-3, 2-9
+
+video A-1
+video connector 2-16
+
+video monitor 1-3
+
+voltage, operating select 2-14, 2-15
+VT control character 2-3, 2-8
+
+w
+
+WAIT Indicator 1-12 (def.), 1-24, 1-30,
+
+INDEX
+
+(cont.)
+
+Fig. 1-1. The 4023 Computer Terminal
+
+4023 Users
+
+SECTION I
+PART 1
+
+YOU AND THE 4023
+
+This information will provide you with a basic understanding of the General
+Tektronix 4023 Computer Display Terminal, and help in its operation.
+When, in reading the following, you come upon an unfamiliar term or
+phrase, refer to the Glossary. If more detailed information is desired on a
+subject, refer to the index. There you will find page references for additional
+information about the subject.
+
+The 4023 Computer Display Terminal is an instrument which enables What The 4023 Is
+exchange of information between people and computers. The 4023 is a
+“computer display terminal” because it is the starting and stopping point for
+information to and from the computer. As the Terminal operator, you will
+need to know how to use the 4023 effectively to obtain, input, or change
+the computer information.
+
+Before we go into more detail about the 4023, it might be a good idea to
+review some of the basics of data processing. The following discussion briefly
+describes the part that you and the Tektronix 4023 perform in processing
+data.
+
+“Data Processing” is the work involved in processing the information or Data Processing
+records required by your company to conduct its business. There’s the
+payroll, the inventory, the sales, engineering, and others — depending on the
+particular business your company is in. The data processing job is more
+rapidly and accurately performed by using the 4023 connected to a
+computer system.
+
+First, all the data necessary to run your company’s business is input to
+the computer system, where it is stored on a medium such as magnetic tape.
+This data can be input to the computer using the 4023 keyboard.
+
+® 1-1
+INTRODUCTION 4023 Users
+
+(cont.)
+
+Data Processing
+(cont.)
+
+Data Retrieval
+
+Data Entry
+
+Inquiry-Response
+
+1-2
+
+Once the system has all the information, and the instructions describing
+how to manipulate the information, your assigned task can be performed.
+For example, depending on the instructions, inquiries, etc., that you type
+into the computer from the keyboard, the computer will call from storage
+the particular data required and use it by sorting, testing, and computing to
+arrive at the answer or information you want. The computer then transmits
+the results to the 4023, where they are displayed on the screen.
+
+The 4023 can display information in response to operator or program
+selection; however, the Terminal’s response is not restricted to writing on the
+screen. It can also perform a variety of functions in response to “‘control’’
+commands. These functions include (but are not limited to) controlling the
+display format, switching Terminal operations from one mode to another,
+ringing the Terminal’s bell, and controlling outputs from and inputs to the
+Terminal.
+
+There are three basic types of data processing that the 4023 will
+perform; data retrieval, data entry, and inquiry-response.
+
+As a data retrieval device, you will use the 4023 to obtain information
+on subjects such as bank balances, credit reports, inventory reserves, or
+motor vehicle registrations. Again, the information retrieved depends on
+your company’s business. Keyboard entry is brief; usually there is just
+enough to identify the data you wish to retrieve. Once the data is identified,
+the computer responds with the specified data.
+
+As a data entry device, the 4023 is used to enter new data to the
+computer, or to up-date data previously stored in the computer. The only
+outputs from the computer will be operational instructions for you, or data
+entry forms to aid in speeding up data entry. You will find that the excellent
+editing capabilities of the 4023, coupled with the ability of the display data
+to be “‘formatted,’’ greatly simplify the data entry operation.
+
+This is a mode of operation in which the operator and computer carry on
+a “conversation”. Here, the operator uses the keyboard to enter, to the
+computer, inquiries that are based on previous computer-calculated results.
+The ‘‘conversation’’ that results between the operator and the computer is
+displayed on the screen. Using the 4023 in this manner is helpful to
+programmers, engineers, designers, and others who create and use the
+computer program in a step-by-step fashion.
+4023 Users INTRODUCTION
+
+(cont.)
+
+Accessory devices are offered for the 4023 to help you and your
+company more effectively use the Terminal in a computer system.
+Accessories for the 4023 include video monitors, digital magnetic storage
+units, and hard copy units. A hard copy unit is a device that, when
+connected to the 4023, can make paper (hard copy) reproductions of
+information displayed on the Terminal’s screen.
+
+With the preceding information in mind, Fig. 1-2 can be more readily
+understood. This figure illustrates the Terminal’s position in a data
+processing system.
+
+Data from a computer is sent to the Terminal via a communication link.
+The communication link may be a direct connection, or may be special
+equipment that connects the Terminal and computer using telephone lines.
+(Additional information on the Terminal and computer connections is
+provided in the Part 2 of Section II.) The Terminal’s interface applies the
+received data to the Terminal Control circuits, which cause either display
+writing or control execution, depending on the coded content of the
+incoming signals.
+
+TERMINAL
+
+Fig. 1-2. 4023 position in a data processing system.
+
+Accessories
+
+The 4023 In A Data
+
+Processing System
+
+COMPUTER
+
+1-3
+
+INTRODUCTION 4023 Users
+
+(cont.)
+
+Data Processing
+System
+(cont.)
+
+Operating Modes
+
+1-4
+
+Data entered from the keyboard can be routed directly through the
+Terminal Control circuits, the Interface, and thence to the computer,
+by-passing the Terminal memory. If a data ‘‘echo” exists, the data is
+processed by the Terminal circuits and displayed. Data is not always sent
+directly to the computer from the keyboard. Keyboard data can be first
+stored in the Terminal memory, edited, then transmitted to the computer.
+
+When a Make Copy command is given by any source (computer,
+Terminal, or at the Hard Copy Unit), the Hard Copy Unit takes control of
+the Terminal, extracts the display information, and reproduces the display
+on paper.
+
+You will normally operate the Terminal ‘‘on line’ with the computer, as
+selected by the LOCAL/ON LINE switch (this switch can be placed in the
+LOCAL position for operator training, using the Terminal with auxiliary
+devices independent of the computer, repair, etc.). The basic On Line
+operations are Transmitting and Receiving. An introduction to these
+operations is given in the remainder of this section, along with a brief
+description of Local and Hard Copy Operation.
+e
+
+TRANSMITTING
+
+When transmitting, data entered at the keyboard is sent
+to the computer as indicated by this figure.
+
+Data to the computer is encoded to indicate the specific
+character which is entered by the operator. Data may also
+be transmitted from auxiliary devices to the computer, or
+may be sent from the keyboard to the auxiliary devices.
+
+With the DIRECT/BUFFER switch at DIRECT, no
+action is taken on the data by the Terminal unless an
+“echoing” condition exists, under which circumstance the
+4023 accepts it as received data. With the DIRECT/
+BUFFER switch at BUFFER, data entered at the keyboard
+is stored in the Terminal memory and displayed; it is not
+transmitted until the operator activates an Enter or Send
+sequence using the SEND/ENTER key.
+
+COMPUTER
+
+AUXILIARY
+DEVICES
+
+LtNing An DIRECT, dota is not displaved unless mn echo
+
+ENTER or SEND
+
+Men transnitting (ron the BUFER. dots is displayed beter tran
+sission tovatlow salting and fare feeb
+
+COMPUTER ECHO
+
+LOCAL ECHO
+
+BUFFER
+
+=F @e@Qeeeeeeer
+x ) a : = © . ay b csirl e@
+-2§ @@e@fR e888 08%
+<-* @@@@C8882808 * «
+
+Fig. 1-3
+
+INTRODUCTION 4023 Users
+RECEIVING
+
+The 4023's receiving operation consists basically of
+writing characters, drawing forms (if the Terminal is
+equipped with the optional rulings characters), or executing
+control commands.
+
+Data from the computer passes through the Interface COMPUTER.
+and is applied to the Terminal Control circuits. The data is
+interpreted either as writing characters or command
+characters. Writing characters are then displayed on the
+
+screen as either alphanumeric or forms characters, as
+selected by computer or keyboard command. Command
+characters are executed by the Terminal. Data can also be
+accepted from or by auxiliary devices.
+
+AUXILIARY
+DEVICES
+
+Data
+From
+Computer
+
+biREcT BUFFER
+
+@@eeeeec Bi
+
+Fig. 1-4
+
+16 ®
+
+€
+
+C
+am Hee eE He He He HEH He EE EEE HE HE =
+4023 Users INTRODUCTION
+LOCAL OPERATION
+
+COMPUTER
+
+In Local Operation the 4023 is
+isolated from the computer. Key-
+board inputs are displayed or other-
+wise executed by the Terminal. The
+Terminal can interact with auxiliary
+devices while in Local.
+
+AUXILIARY
+DEVICES
+
+READ From Aux Device
+
+LOCAL ECHO
+
+BUFFER
+
+LOCAL ON LINE on w ofr
+
+77 ©8208 8888087 w
+=<@9@@8@8eee888R"%
+2. €@82808288088088 2
+
+Fig. 1-5
+
+INTRODUCTION
+HARD COPY OPERATION
+
+1-8
+
+Fig. 1-6
+
+A Hard Copy Unit can produce a
+permanent copy of a Terminal
+display in response to a ‘make
+copy” command from the com-
+puter, keyboard, Hard Copy Unit,
+or from auxiliary devices.
+
+4023 Users
+
+Cc
+aR meme He we He He He He Ee He HE HE SE SF
+
+Cc
+
+Cc
+4023 Users
+
+General
+
+Purpose of Controls
+
+CONTROLS
+
+SECTION |
+PART 2
+
+THE CONTROLS
+
+As a Terminal operator, understanding the Terminal controls is an
+important part of your job. Of course, if you are not familiar with computer
+terminals, the purpose and usage of some of the controls may be unfamiliar
+at first. But, as you use the Terminal your understanding of Terminal
+controls and operation will increase proportionately.
+
+NOTE
+Because of the variety of systems, the purposes of some controls
+will vary from system to system.
+
+Even though the Terminal Keyboard looks like a typewriter keyboard, its
+use is quite different. Typewriter keys and controls provide a convenient
+means of writing, with functions designed toward outputting printed
+material on a piece of paper. The Terminal keyboard and controls are
+designed to manipulate computer-based data. THE KEYBOARD’S
+PRIMARY FUNCTION IS TO ACT AS A SOURCE OF DATA FOR THE
+COMPUTER. The screen (or display—both words are used interchangeably
+throughout this manual) is a convenient means of recording, for operator
+convenience, the Terminal/computer conversation. Editing functions and
+display formatting are simply Terminal features that provide more efficient
+Terminal/computer communications. So, even though for most operations
+the keyboard appears to be ‘‘talking’’ with only the screen, the result (or end
+result) of keyboard data manipulation is directed toward the computer.
+Keeping this in mind will help to better understand the use of the controls.
+
+1-9
+
+CONTROLS
+
+Terminal Controls can be divided into three basic groups; the Terminal
+Controls and Indicators, the Keyboard, and the Function Controls. A brief
+explanation of each group is provided in Fig. 1-7.
+
+By understanding a few simple commands and the correct format, the
+operator at the Terminal runs programs that have already been stored in the
+computer. The keyboard enables you to “consult” with your “‘assistant”’ the
+computer; telling it what to do and when to do it. As the computer receives
+each instruction it ‘talks back” to you via the display.
+
+With a typewriter typing on paper, you can tell where the next character
+will be typed by the mechanical position of the carriage. With the Terminal
+display, there is no mechanical relationship. To show where the next character
+is to be written rectangular marker, called a cursor, is provided.
+
+is to be written a rectangular marker, called a cursor, is provided.
+
+4023 Users
+
+Purpose of Controls
+(cont.)
+4023 Users
+
+CONTROLS
+
+CONSOLE CONTROLS AND INDICATORS
+
+Two rocker-type switches provide control over the
+destination of data. Two spare switches can be used for
+control of auxiliary units. Console indicators provide data
+entry indications and a power on indication. Individual
+switch and indicator descriptions are given in Fig. 1-8.
+
+THE KEYBOARD
+
+The 4023 keyboard arrangement is
+similar to a typewriter keyboard. Both upper
+and lower case alphabetic characters can be
+generated. Non-shaded keys provide func-
+tions similar to a typewriter, and are used
+solely for entering data. Special keyboard
+keys that provide functions not normally
+related to a typewriter are shaded. Their
+functions are explained in Fig. 1-9.
+
+Fig. 1-7
+
+CONTROL AND FUNCTION KEYS
+
+This group of keys provides a dual
+purpose:
+
+1, Functions such as editing, cursor posi-
+tioning, data transmitting, reset functions,
+etc,, are controlled by these switches. A
+description of each switch is given in Fig.
+1-10.
+
+2. These keys can be made to function as a
+numeric keyboard by simply pressing the
+NUM LOCK key. Thus, those familiar with
+adding machine-type keyboards will find this
+a convenient means of entering numeric
+data.
+
+CONSOLE CONTROLS 4023 Users
+AND INDICATORS
+
+Cc
+
+nan Hm He ete me He Hee Ee Ee ee eH He SS
+
+A two-position rocker switch that
+performs the following functions.
+LOCAL — Logically disconnects
+the Terminal from the computer.
+However, the Terminal can still
+interact with other devices con-
+nected to it, such as a digital
+magnetic storage unit, etc. LOCAL
+is also used when practicing with
+the Terminal, using the 4023 with
+auxiliary devices independent of
+the computer, and when main-
+
+tenance is performed.
+ON LINE — Logically connects the Spare rocker switch. Normally used
+Terminal to the computer, allowing to control auxiliary devices.
+
+the 4023 and computer to interact.
+
+KEYBOARD
+LOCK LOCAL ON LINE
+
+Indicates that keyboard entry is
+
+KEYBOARD inhibited because one of the
+
+Indicates that the computer system LOCK following is occuring:
+
+will not accept data from the 4023.
+
+Operator must wait for light to 1. The 4023 is transmitting a mes-
+extinguish before functions can sage or a message transmission is
+occur. pending.
+
+2. The cursor is located in a pro-
+tected field in which data cannot be
+entered.
+
+3. The cursor is positioned on a
+Field Attribute Code.
+
+C
+
+Fig. 1-8 (A)
+C)
+
+4023 Users
+
+CONSOLE CONTROLS
+AND INDICATORS
+
+Two position rocker switch that
+provides the following functions.
+DIRECT — Keyboard entries are
+DIRECT BUFFER routed directly to the computer if
+the Terminal 4023 is ON LINE. If
+in LOCAL, keyboard entries are
+sent directly to the Terminal auxil-
+
+Spare rocker switch. Normally used
+to control auxiliary devices.
+
+iary devices.
+
+BUFFER — Keyboard entry is
+routed to the Terminal memory for
+editing, prior to transmitting the
+data. BUFFER position is also used
+
+/ with formatted displays.
+
+DIRECT BUFFER
+
+/
+
+Function depends on Terminal con-
+figuration.
+
+Fig. 1-8 (B)
+
+Mlluminates when Terminal +5 volt
+power is on.
+
+KEYBOARD CONTROLS
+
+Used as a preparatory command
+key to notify the Terminal that the
+next character is to perform a
+function other than its normal
+function. For a keyboard example,
+pressing ESC then simultaneously
+pressing the SHIFT and L keys is
+the keyboard equivalent of the
+PAGE key. Works only in Buffer or
+with an Echo condition.
+
+Used with formatted displays to tab
+the cursor to the first character
+position of the next unprotected
+(input) field. The first character
+position in an unprotected field
+serves as a tab stop. If no unpro-
+tected fields are found on the
+display, the cursor returns to the
+home position. In Direct with echo,
+TAB causes cursor to move one
+space right.
+
+Causes character key inputs to be
+interpreted as control commands.
+Used with SHIFT and character
+keys to enter control commands.
+For example, simultaneously
+pressing the CTRL and K keys
+performs a “back tab” function.
+
+1-14
+
+4023 Users
+
+A dual function key whose function depends on
+whether the SHIFT key is pressed or not pressed.
+
+Pressing without SHIFT causes all unprotected data
+on a formatted display to be erased. Protected data
+(form headings, etc.) is not erased, Pressing with
+SHIFT causes a clear page (erase) function. All
+displayed information is erased (including non-
+displayed information such as Field Attribute Codes),
+the Terminal logic is reset to the initial condition, and
+the cursor resides at the home position (upper left
+hand corner which corresponds to the first character
+position of the first line).
+
+SHIFT
+
+Pressing key down causes TTY
+LOCK to be in effect. All lower
+case characters are then displayed
+and/or transmitted as upper case
+characters, regardless of condition
+of SHIFT key. Key must be pressed
+a second time to unlock.
+
+Fig. 1-9 (A)
+
+Used with character keys to shift
+them to upper case; used with
+CTRL and letter keys to enter
+control characters.
+4023 Users
+
+Moves the cursor one character
+space to the left. Does not destroy
+data.
+
+BACK
+
+SPACE
+
+BREAK
+
+Use of this key depends on the
+particular Terminal/computer _in-
+stallation. Consult your  pro-
+grammer for its exact function.
+
+KEYBOARD CONTROLS
+
+Positions the cursor to the start of a
+new line which is down one line
+and to the left side.
+
+Moves the cursor down one line.
+
+RETURN
+
+RUB
+ouT
+
+The function of this key varies by
+computer system. Consult your
+programmer for its exact function.
+
+Fig. 1-9 (B) 1-15
+
+FUNCTION CONTROLS
+
+Performs different functions de-
+pending on the operating configura-
+tion.
+
+1. Pressing RESET causes the cur-
+sor to blink (unless a previously
+selected strap option has been set
+to make the cursor blink con-
+tinuously). RESET
+
+2. Pressing RESET while simul-
+taneously entering a control charac-
+ter will store that control character
+in Terminal memory when in
+Buffer.
+
+3. With formatted displays, press-
+ing RESET enables data to be
+keyed into a protected field. Also,
+alpha data can be keyed into a
+numeric field and a Field Attribute
+Code can be keyed over.
+
+4, Allows ERASE TO END key to
+erase a protected field.
+
+5. Stops a buffer transmission
+sequence,
+
+INS L
+INS C
+
+Causes a SPACE character to be entered at the cursor
+location. Data under and to the right of the cursor shifts
+right with each activation. Data shifted past the right
+margin is lost.
+
+INS L
+
+INS Plus SHIFT
+
+Simultaneously pressing these two keys causes the line
+where the cursor resides to move down one line. All lines.
+below roll down one line, leaving an empty line of
+SPACES at the cursor location.
+
+4023 Users
+
+ERASE, Pressing these keys when the cursor
+resides in an unprotected field
+erases all data from the cursor
+location to the end of that field.
+Plus When no fields reside in a line, data
+is erased from the cursor position
+
+to the end of the line.
+
+Causes the character where the cursor resides to be
+deleted and replaced with the next character to the
+right. All characters to the right of the cursor move left
+one space.
+
+vet L
+DEL ¢ Plus SHIFT
+
+Simultaneously pressing these two keys causes the line
+where the cursor resides to be erased, and replaced with
+the line immediately below. All other lines below also
+move up one line.
+
+Fig. 1-10 (A)
+
+1-16
+
+Cc
+
+e@
+RBRHeHe Hee He HeH He He ee wee HE & SS we
+4023 Users
+
+Provides directional move-
+ment for the cursor in the
+direction indicated.
+
+SEND
+ENTER
+
+With unformatted displays, pressing
+SEND-ENTER causes all data
+between the cursor location and the
+Home position, or preceding Mes-
+sage Separator, to be transmitted to
+the computer. When pressed, a
+Message Separator stores at the
+cursor location. With Formatted
+displays, SEND/ENTER causes
+only transmittable data to be trans-
+mitted to the computer. No Mes-
+sage Separator is displayed at the
+cursor location with formatted
+displays.
+
+Plus
+
+Causes all displayed data between
+existing Message Separators to be
+transmitted to the computer
+whether the display is formatted or
+unformatted. Does not display a
+Message Separator.
+
+®
+
+FUNCTION CONTROLS
+
+Fig. 1-10 (B)
+
+With a Hard Copy Unit connected
+to the Terminal, pressing this key
+will activate the Hard Copy Unit to
+make a copy (on paper) of the
+displayed information.
+
+COPY
+
+Moves the cursor to the “home”
+position. Home corresponds to the
+first character position of the first
+line (also terminates Buffer trans-
+mission sequence).
+
+Causes the Function Keys to func-
+tion as a numeric keyboard. This
+provides an adding machine-type
+key structure to facilitate entry of
+numeric data.
+
+POWER AND DISPLAY CONTROLS 4022 User
+
+@
+
+Provides power ON-OFF control
+for the Terminal.
+
+BRIGHTNESS — Adjusts brightness of the charac-
+ters, Adjust for operator con-
+venience.
+
+CONTRAST Changes the difference in dis-
+play intensity between white
+and gray. Adjust for operator
+convenience.
+
+BAUD RATE
+SELECTOR
+
+An eight position
+rotary switch located
+on the rear panel
+that selects one of
+eight data transfer
+speeds from the 4023
+to the computer.
+
+VA
+J \eoewey yy
+
+IN position provides an “echo”
+to permit data to be displayed
+when transmitting with the
+DIRECT/BUFFER switch in
+DIRECT.
+
+OUT position disables the Ter-
+minal’s echoing of its own data
+and would be used when the
+computer provides an echo of
+the Terminal transmission.
+
+ov
+ASAFAST
+
+Cc C
+RRB Hee HE He HE He HEHE He He HE Ee Ee He Ee HS = we
+
+Fig. 1-12. Rear Panel 4023
+
+4023 Users
+
+SECTION 1
+PART 3
+
+USING THE 4023
+
+These operating procedures will more thoroughly acquaint you with the
+4023 and its uses. Obtain a 4023 to use as you read through the following
+information.
+
+In most cases, the Terminal you use will be connected to a computer. If
+the computer is in the same building as the 4023, the Terminal will probably
+be connected directly to the computer. If the computer is any great distance
+from the 4023, the computer connection will be made using a telephone and
+special electronic equipment. More detailed information on the Terminal/
+computer installation is provided in Part 2 of Section II.
+
+In this portion of the manual, you will not be working with the
+computer. However, once you become familiar with 4023 operation, you
+will be shown how to go on line with the computer.
+
+Before turning the power on, set the LOCAL/ON LINE switch to
+LOCAL to isolate the 4023 from the computer. Set the DIRECT/BUFFER
+switch to BUFFER. Set both auxiliary switches 1 and 2 OFF to prevent
+typed data from accidentally being sent to any auxiliary units that may be
+connected to the Terminal. The above switch settings completely isolate the
+4023 from the components of your company’s data processing system. Set
+the DIRECT/BUFFER switch to BUFFER. You are now ready to turn on
+the power.
+
+Turn the power on. Fig. 1-11 shows the location of the switch. Note the
+POWER indicator is lighted. After about 30 seconds, the cursor will appear
+in the upper left hand corner of the display. This is the first character
+position of the first line, and is called the HOME position. If the cursor does
+not appear after about one minute, turn up the BRIGHTNESS control (See
+Fig. 1-11) until most of the screen is dimly lit. Adjust the CONTRAST to
+make the cursor more clear, then turn down the brightness to your liking.
+With the cursor displayed, type in a few characters from the keyboard. Now,
+using the BRIGHTNESS and CONTRAST controls adjust the display for a
+viewing level that is most comfortable for you.
+
+®
+
+OPERATION
+
+INTRODUCTION
+
+Terminal/Computer
+
+Connection
+
+Set These Switches
+
+Turning The Power
+
+On and Adjusting
+The Display
+
+1-19
+
+OPERATION
+
+Becoming Familiar
+With The Keys
+
+Erasing The Display
+
+Cursor Movement
+
+4023 Users
+
+Fig. 1-13 highlights the keys you should first become familiar with. Note
+that the majority of these keys are standard typewriter keys. Check out the
+operation of these keys using the descriptions given in Figs. 1-9 and 1-10.
+Further control and operating familiarization is provided in the following
+
+material.
+
+Type some characters onto the display, then simultaneously press the
+PAGE-ERASE INPUT key and the SHIFT key. Note that the displayed
+information is erased and the cursor positions to home. (The ERASE INPUT
+function will be described in the description of Formatted Displays.)
+
+You have probably noticed by now that the LF key moves the cursor
+down one line. You may have also noticed that most of the keyboard keys
+when held down for more than about one half second, repeat their function.
+Keys that do not repeat their functions are; CTRL, TTY LOCK, SHIFT,
+BREAK, RESET, COPY, and NUM LOCK.
+
+The Cursor Direction keys (keys with arrows on them) move the cursor
+in the direction of the arrow on the key. Note that when moving the cursor
+over displayed data, the data is not affected. These keys provide you with
+the ability to rapidly move the cursor to any character position on the
+display. You'll find them very useful.
+
+1-20
+
+Fig. 1-13. Most often used keys.
+
+©
+
+Cc
+om
+4023 Users
+
+Press the NUM LOCK key and note that it remains depressed. Press the
+keys on the Control Function Keyboard and you'll notice that numerals (the
+same as those in the top row of the keyboard) are displayed. A decimal point
+(SEND-ENTER) key permits a decimal point to be entered in the string of
+numerals. Press The NUM LOCK key once more to re-establish the Control
+Functions. .
+
+Using the Cursor Direction controls, position the cursor to any position
+on the display. Now, press the HOME key and note that the cursor moves
+instantly to the first character position in the first line — the home position.
+
+Four control keys perform dual functions. The function that the key
+performs depends on whether the SHIFT key is pressed or not pressed. For
+example, the PAGE-ERASE INPUT key causes an erase page function to
+occur when pressed simultaneously with SHIFT. With SHIFT, this key
+causes erasure of only unprotected data on a formatted display (This key is
+explained in more detail in the Buffer Form Fill-Out description). The other
+three dual function keys are:
+
+TYPE OF KEY KEY OPERATION
+
+Press with SHIFT key
+
+INSL . to insert a line.
+
+INS C Batt Press without SHIFT key
+to insert a character.
+Press with SHIFT key
+
+DELL Edit to delete a line.
+
+DELC Press without SHIFT key
+to delete a character.
+Press with SHIFT key
+to initiate the Send
+
+SEND Transmission Sequence.
+
+ENTER Control Press without SHIFT key
+to initiate the Enter
+Sequence.
+
+OPERATION
+
+Numeric Keyboard
+
+Home Cursor
+
+Dual Function Keys
+
+1-21
+
+OPERATION mots
+
+Editing Keys A thorough understanding of the operator controlled editing features
+will help you to more effectively use your 4023.
+
+Correcting Fig. 1-14 shows an example of text that has been displayed. However, it
+
+Typing Errors needs to be edited before being entered to the computer (typing errors can
+be corrected by simply typing over the error). The Insert and Delete
+functions are performed as follows:
+
+Inserting A To insert a character, position the cursor where the character is to be
+
+Character inserted, then press the INS C key. Fig. 1-14 (A) illustrates this operation.
+Note that all data from the cursor location to the right margin shifts right
+one space, leaving a space at the cursor location.
+
+Deleting A To delete a character, position the cursor over the character to be
+
+Character deleted, then press the DEL C key. All data to the right of the cursor moves
+left to fill up the space left by the deleted character. Fig. 1-14 (B) illustrates
+this.
+
+Inserting] character Deleting of] character
+
+Insertingjja character eting dfcharacter
+
+(A) (B)
+
+rting a line is ting a line is
+dit feature
+
+ing a line is
+
+feature
+
+(c)
+
+Fig. 1-14. Display mock-up of edit functions.
+
+1-22 ®
+4023 Users
+
+To insert a line, position the cursor to the position on the display where
+you wish the line to be inserted, then press the INS L and SHIFT keys. Note
+that the line where the cursor resides and all lines below the cursor move
+down one line. Fig. 1-14 (C) illustrates this.
+
+To delete a line, position the cursor to the position on the display where
+you wish the line to be deleted, then press the DEL L and SHIFT keys. Note
+that the line where the cursor resides is erased and replaced with the line
+immediately below. All other lines below the cursor also move up one line.
+Fig. 1-14 (D) illustrates this.
+
+The editing features can be used to move entire lines or partial lines of
+text, such as would be done for centering form headings, etc. Practice and
+note the effects of the edit keys.
+
+The following is a summary of what to expect when you begin operating
+your 4023 on line with a computer. The 4023 communicates with a
+computer in three basic configurations, which can be summarized as Direct,
+Non-Formatted display (Buffer), and Formatted display (Buffer Form
+Fill-Out).
+
+In Direct communication, the DIRECT/BUFFER switch is set to
+DIRECT. If the LOCAL/ON LINE switch is set to ON LINE, data typed
+from the keyboard is sent directly to the computer. However, most systems
+provide an “echo” that allows the keyboard entries to be displayed for
+viewing by the operator. The echoing of transmitted data occurs so rapidly
+that it gives the impression of having occurred immediately when the key
+was pressed.
+
+Editing the display from the keyboard serves no purpose in Direct
+communications, because the computer has already received the informa-
+tion. However, most systems provide some form of program editing. If you
+are working with such a system, consult your programmer for more
+information.
+
+®
+
+OPERATION
+
+Inserting A Line
+
+Deleting A Line
+
+Editing Summary cee
+
+BECOMING
+
+FAMILIAR WITH
+
+OPERATION
+
+General
+
+Direct Mode
+
+1-23
+OPERATION
+
+Roll-Up
+
+Buffer Mode
+
+Buffer Operation
+
+1-24
+
+4023 Users
+
+Direct Entry is the only mode in which roll-up occurs. Roll-up occurs
+when a line feed from the keyboard or computer tries to position the cursor
+past the bottom line on the display. Note the effect of roll-up by switching to
+DIRECT and typing a few lines of text at the top and bottom of the display.
+Position the cursor to the bottom line, then press the LF (line feed) Key.
+Note that all lines of displayed data move up one line, leaving a new line at
+the bottom: note that the top line is lost. Switch back to BUFFER.
+
+In Buffer communications, the keyboard entries are first stored in the
+Terminal memory, displayed, and edited by the operator before being
+transmitted to the computer. Buffered communications can be with or
+without a formatted display. Non-formatted displays are used for operations
+such as programming. Formatted displays (Buffer Form Fill-Out Entry) are
+used for those data entry operations requiring a form-type arrangement of
+data.
+
+Fig. 1-15 shows a partial display illustration of a typical Buffer
+Transmission (non-formatted display) sequence. The first line is transmitted
+to the computer when the operator presses the SEND/ENTER key, initiating
+an Enter sequence. Pressing this key causes a rectangular marker about
+cursor size to be displayed at the cursor location. This display marker is
+called a Message Separator, and is used to bracket information transmitted to
+the computer. If no preceding Message Separator is displayed, data
+transmission occurs from the home position to the Message Separator caused
+by pressing the SEND-ENTER key. As the data is being transmitted, the
+KEYBOARD LOCK indicator becomes lighted as an indication that
+keyboard entry is inhibited until the transmission sequence is finished. Also,
+if a key is pressed during a buffer transmission sequence, the bell will ring. If
+the WAIT indicator is on, this is a signal that the transmission sequence
+cannot begin until the WAIT indication ends.
+
+Visual indications that an On Line buffer sequence has been initiated
+are:
+
+1. Message Separator stores at the cursor location when ENTER key is
+pressed.
+
+2. Cursor moves back through text seeking the home position or a
+previously stored Message Separator.
+
+“esters OPERATION
+
+3. Data transmission begins and is indicated by cursor movement over Buffer Operation
+the data. Speed of cursor movement is indicative of the Baud Rate Selector (cont.)
+switch on the rear panel. The higher the baud rate selection, the faster the
+cursor moves.
+
+4. When the cursor reaches the previously stored Message Separator, it
+positions to the left margin in the last line of data transmitted, waiting the
+computer reply.
+
+NOTE
+/n Local, the Baud Rate Selector switch has no effect. The buffer
+transmission sequence occurs so fast that cursor movement cannot be
+visually monitored.
+
+transmitted on these tuo line is from the hone position to the
+age Separator at the end of this sentence
+
+Message Separator caused by
+operator pressing ENTER.
+
+n is the computer's response to the above input. The dis-
+rectangular marker aot the end of this poragroph is the last character
+parator) transmitted to the Terminal. If the computer doe:
+eporator,, the r can key one from the keyboord
+ng the CTRL and
+
+Message Separator caused by
+computer.
+
+another operator entr: @ computer. the recta
+nning of this por v by the operator sisu
+
+Message Separator caused by
+operator pressing ENTER.
+
+ing the CTRL and C
+
+Fig. 1-15. A typical 4023/computer interchange using the terminal buffer.
+
+OPERATION
+
+Buffer Operation
+(cont.)
+
+Buffer Form
+Fill-Out Operation
+
+1-26
+
+4023 Users
+
+The second line in Fig. 1-15 is the computer response to the preceding
+buffer entry. Some computer systems cause a Message Separator to be
+displayed as the last character of the computer transmission. These computer
+generated Message Separators prevent computer originated data from being
+transmitted back to the computer on subsequent buffer transmissions. If the
+computer does not provide a Message Separator, the operator can provide
+one by simultaneously pressing the RESET and RETURN keys or by
+simultaneously pressing the CTRL and C keys.
+
+Pressing the SEND/ENTER key simultaneously with SHIFT initiates the
+Send sequence. This transmission sequence does not store a Message
+Separator at the cursor location. However, existing Message Separators are
+honored. Thus, if no Message Separators are displayed, all screen data is
+transmitted to the computer.
+
+You can gain an idea of the operation of both transmission sequences
+(Enter and Send) by exercising the 4023 in LOCAL.
+
+You can gain an idea of the operation of both transmission sequences by
+exercising the 4023 in LOCAL. Of course, no computer responses are
+available in LOCAL, but enough can be learned from the information
+supplied in the preceding Buffer transmission descriptions that you will be
+prepared for on-line operation with a computer.
+
+Buffer Form Fill-Out is the mode of operation that uses a “‘formatted’’
+display to aid in data entry to a computer. Formatted displays are divided
+into fields that permit the displayed data to be arranged in a form
+configuration (the computer or auxiliary device will display the form as
+requested by the operator). (See Glossary for definition of a Field.) The
+computer program decides the type and amount of a specific information
+contained in a field. The operator types in or changes the necessary form
+information, then enters part of the form (or the entire form) to the
+computer.
+
+Terminal features such as tabbing, editing, partial or entire form
+transmission, and others are directed toward Form Fill-Out operation. These
+features will be explained later. For the present, two types of data fields are
+important. These are ‘‘protected”’ fields and ‘‘unprotected”’ fields.
+4023 Users
+
+Protected fields are data fields that cannot be changed by normal
+keyboard entry. These fields will contain form heading information, and
+other information, that the program sets as normally unchangeable from the
+keyboard. Protecting a field prevents accidentally typing into that field.
+When the cursor is in a protected field, the KEYBOARD LOCK indicator is
+lighted. As additional warning, pressing a key when the cursor is in a
+protected field causes the bell to ring.
+
+NOTE
+In isolated cases, it may be necessary to enter data into a
+protected field. Your programmer will tell you when such an entry is
+to be made. This can be done by pressing the RESET key
+simultaneously with the desired keyboard character.
+
+Unprotected fields are normally the fields in which you will be entering
+and changing data. Data in unprotected fields can be changed. Any
+unprotected field can be partially or completely erased (depending on cursor
+position in the field) by pressing the ERASE TO END key. Data in the
+unprotected fields can be erased by pressing the PAGE-ERASE INPUT key.
+The Erase Input function is used to leave a “blank form” for further entries
+that use the same heading information.
+
+Some formatted displays may contain non alpha fields. Only the
+following characters can be entered into a non alpha field: SPACE !""#$%
+&'()*+,-./0123456789: ;<=>?. Attempting to enter an alpha
+character into a non alpha field will cause the bell to ring. In isolated cases it
+may be necessary to enter a character into a non alpha field. In this case,
+simultaneously press the RESET key with the character desired.
+
+Field identification is accomplished by a variety of display backgrounds.
+For example, protected data can be displayed “‘dim’’, while unprotected data
+can be displayed at normal intensity. If the program requires the operator’s
+attention to a specific field, that field can be made to blink. Other types of
+display backgrounds are available to the programmer. Fig. 1-16 is an example
+of the variety of displays available. When working with formatted displays,
+you will be told what type of background identifies specific fields.
+
+®
+
+OPERATION
+
+Protected Fields
+
+Unprotected Fields
+
+Non Alpha Fields
+
+Field Identification
+
+1-27
+
+OPERATION
+
+4023 Users
+
+This line contains normal video
+
+Example Of Form
+Fill-Out Operation
+
+1-28
+
+ried video with n
+
+Fig. 1-16. Display fields available.
+
+If your company uses formatted displays that contain protected and
+unprotected fields, have a more experienced 4023 Terminal operator retrieve
+a blank form from the computer system to use as you proceed through the
+following discussion. Find out which of the fields are protected and which
+are unprotected, then proceed with the following: Fig. 1-17 can also be
+referred to when reading the following. (Fig. 1-17 can be programmed from
+the keyboard by using the procedure outlined in Appendix D.) This figure
+illustrates a formatted display and related keyboard keys that are used in
+form fill-out operations.
+
+1. Check that the LOCAL/ON LINE switch is in LOCAL, then position
+the cursor inside a protected field. Note that the KEYBOARD LOCK
+indicator comes on, and when any character key is pressed, the bell rings.
+
+2. Note that protected data can be changed by entering a character
+when the RESET key is held down,
+
+¢ Cc
+Em HEHE HE HE Hee HE Ee EE HE EE EE ES
+4023 Users
+
+OPERATION
+
+PERSONNEL RECORD
+
+Dan Oliver GMUEEEN 2130 SW Nain
+
+Anytoun, USA
+11-1111 Soc 000-00-008
+
+Nov 30 1943 MARRIED [CH
+
+toca, oN UNE c oinect aursen
+
+CTRL and K
+Performs
+Backtab function
+
+Fig. 1-17. Formatted display and related keys.
+
+OPERATION
+
+Example of Form
+Fill-Out Operation
+(cont.)
+
+1-30
+
+4023 Users
+
+3. Press the HOME key, then quickly press and release the TAB key.
+The cursor is now positioned in the first character position of the first
+unprotected field. (In the case of Fig. 1-17, it is the field into which the
+person’s name is entered.) Type in a few characters, then using the TAB key,
+move from one input field to the next, keying in a few characters in each.
+
+NOTE
+
+In Fig. 1-17, the unprotected fields for PHONE and SOC SEC
+NO are non alpha fields. When you wish to enter an alpha character,
+simultaneously press RESET with the character input desired.
+
+4. Using the TAB key, position to an unprotected field. Press the
+ERASE TO END key and note that the information in that particular field is
+erased. The cursor positions to the first character position of the next field,
+whether it’s protected or unprotected. Hold down the TAB key and note
+how it tabs from one unprotected field to the next.
+
+5. Press the SEND-ENTER key. This starts the Buffer Enter transmis-
+sion sequence. Note that the cursor automatically tabs from one unprotected
+field to the next, skipping the protected data. After the cursor has scanned
+the entire form, it positions to the left margin on the last line. The
+KEYBOARD LOCK and WAIT indicators are lighted as described in the
+preceding Buffer Transmission description.
+
+6. Simultaneously press the SEND/ENTER and SHIFT keys. This starts
+the Buffer Send transmission sequence. But note that the cursor
+automatically tabs from field to field, transmitting all data. The Send
+sequence for formatted displays is useful to programmers when it becomes
+necessary to update a form (change headings, etc.).
+
+7. Press the ERASE INPUT key and note that all unprotected data is
+erased. This provides a clear form for further data entries that use the same
+form.
+
+CONCLUSION
+
+This concludes the operator familiarization portion of this manual.
+Because of the variety of systems with which the 4023 can operate, the
+presentation of material is very generalized. However, the information
+presented here should have acquainted you with the basics of 4023/
+computer communication.
+4023 Users
+
+PROGRAMMING
+
+SECTION II
+PART 1
+
+INTRODUCTION
+
+Input/Output Configuration
+
+The 4023 is both a transmitting and a receiving device.
+Standard interface hardware provides full duplex only. Full
+or half duplex can be achieved by use of an Optional
+Interface. Data can be transmitted directly from the
+keyboard to the computer, from the Terminal memory
+(buffer), or from an optional auxiliary unit. Data received
+by the Terminal can be written on the display, can control
+other functions in the Terminal, or can control functions at
+auxiliary units.
+
+The LOCAL/ON LINE switch must be in the ON LINE
+position to communicate with the computer.
+
+Data transmitted to the computer can be echoed back to
+the Terminal’s receiving circuits by either the computer, or
+by selecting Local Echo at the Interface Unit (if the
+Interface Unit is equipped with Local Echo capability).
+Under Local Echo conditions, data from the keyboard or
+auxiliary unit is simultaneously sent to the computer and
+the 4023 receiving circuits. All data from the computer
+enters the Terminal memory and is displayed.
+
+The 4023 operates independent of the computer when
+the LOCAL/ON LINE switch is set to LOCAL. Local
+Operation permits keyboard or auxiliary unit data to be
+written on the display or otherwise executed (to a degree)
+by the Terminal.
+
+Summary of Terminal Configuration
+
+The following describes the standard 4023 configura-
+tion. Where Strappable Options affect the Terminal
+configuration, special notation will be given (Strappable
+Options information can be found in Part 2 of this
+Section).
+
+The 4023 displays information on 24 lines of 80
+characters each, Display formatting capabilities are
+standard.
+
+The 4023 communicates directly with a computer, or
+communicates with the computer via the Terminal buffer.
+In DIRECT, automatic roll-up occurs when the computer
+
+®
+
+or Operator attempts to give a line feed past the bottom
+line. This is known as “page full.” In BUFFER, the
+Terminal goes busy when the computer or operator
+attempts to enter a line feed past the bottom line. With
+flagged interfaces, this will stop data flowing to the 4023
+without loss. With unflagged systems (such as RS-232),
+further received data will be confined to the bottom line.
+
+Pressing the RETURN key also performs a line feed. A
+computer-generated CR does not perform a simultaneous
+line feed. The effect of CR on line feed can be changed by
+strap placement (CR DOES LF strap) on the Keyboard
+Interface Card.
+
+The LF (line feed) code from either the LF key or the
+program, performs a line feed function only. It can be
+strapped to also perform a carriage return. See the LF
+DOES CR strap on the Keyboard Interface Card.
+
+When ON LINE and entering buffer data to the
+computer, carriage returns are transmitted at the end of a
+line, line feeds are not transmitted. Line feeds can also be
+transmitted by placement of the EOL LF GEN Strap on the
+Control Card. When no data resides in a line, CR and LF
+transmissions are suppressed.
+
+The standard 4023 transmits an End of Message
+character as the last character in an enter sequence. The
+standard End of Message character is CR. However, the
+MESSAGE END straps on the Control Card can be strapped
+to enable any ASCII control character to be used as the
+Message End Character.
+
+The 4023 always performs (does not transmit) a carriage
+return after the last character transmitted, whether the
+Message End Character is CR or not.
+
+Buffered data from the standard 4023 is entered by
+page, and not by line. Once an enter sequence is activated,
+transmission continues until the entire message is trans-
+mitted. However, for those computer systems that can
+handle only a line of data at a time, the Terminal can be
+configured to meet their needs by placement of the
+PROMPT Mode strap on the Control Card. This strap causes
+buffer contents to be transmitted a line at a time. After a
+line is transmitted, cursor movement stops, awaiting the
+
+21
+
+PROGRAMMING
+
+(cont.)
+
+“prompt” character from the computer. With the receipt of
+the prompt character, another line is transmitted to the
+computer. Standard prompt character is the code for the
+ASCII upper-case “P” (80; 9).
+
+The standard 4023 does not blink the cursor unless the
+RESET key is pressed. The BLINK CURSOR strap on the
+Timing Card can be placed to make the cursor blink
+continuously.
+
+Features such as Position Cursor and Read Cursor are
+standard.
+
+CODE EFFECT
+
+General
+
+In order to offer specialized functions and features to
+the programmer, several character codes or code sequences
+are designated as controls. Specialized features such as the
+definition of fields, clearing the screen, positioning the
+cursor, ringing the bell, and triggering hard copies allow the
+programmer to set up the Terminal in the desired manner.
+
+Code Set
+
+The standard ASCII code set is used to provide control
+for data transmission, operational configuration, and
+control over the specialized functions mentioned in the
+above paragraph.
+
+Control Codes
+
+Some of the control characters used in the Terminal are
+simply designated as controls. The ASCII Code Chart in
+Appendix B shows those controls. However, to expand the
+number of possible controls, two-character control se-
+quences are used. The first character of the control
+sequence is ESC (27,9). It signals the Terminal that the
+next character, regardless of its normal function, is to
+perform a different function.
+
+NOTE
+Table 2-2 provides a description of the code controls
+
+and the effects they have on Terminal operation. The
+4023 responds to or otherwise uses, only those listed.
+
+Control Character Performance
+
+Storage. Control characters typed by the keyboard or
+
+sent by the computer are usually not stored in Terminal
+
+22
+
+4023 Users
+
+memory, but are simply performed. For example, a CR
+(13,9) typed on the keyboard will normally not alter
+Terminal memory, but will cause the cursor to position
+itself at the beginning of the next line. The operator may
+enter the CR character (or any control character) into
+memory, by holding down the RESET key while typing the
+control character desired. The screen will show a block
+character (all dots written) to signal that the memory
+position contains an otherwise invisible control character.
+(Only half the control characters are displayed as blocks. If
+BIT 1 of the control character is true, then that control
+character can be displayed.) However, for normal usage,
+control characters need not be stored in memory. Stored
+control characters (excluding CR, NUL, and ETX) can be
+transmitted.
+
+Two control characters, NUL and ETX are normally
+stored in Terminal memory independent of the RESET
+key, as explained by the following:
+
+NUL A NUL is entered into the memory on Clear
+Page, Erase to End, Erase Input, Delete Line, and
+Delete Character functions. Nothing is displayed in
+a character position if a NUL occupies that
+position in Terminal memory. NULs are not
+transmitted. Thus the data string is compacted to
+include only the information displayed (or other-
+wise identified as being transmittable).
+
+ETX When no Field Attribute Codes are stored in
+memory, pressing the ENTER key causes an ETX
+code to store in memory at the cursor location.
+ETX is also known as the Message Separator Code.
+It marks the beginning or end of text in
+conjunction with the Enter Function. With any
+Field Attribute Code stored, the ENTER key does
+not store an ETX unless RESET is pressed.
+
+The computer equivalent of the ENTER key is
+the ETX code. By sending the Terminal an ETX
+(3,9) as the last character of the computer
+transmission, the displayed computer data is
+prevented from being transmitted back to the
+computer on subsequent buffer entries. The
+computer originated ETX stores regardless of Field
+Attribute Codes.
+
+Message End Character. This is the last character trans-
+mitted from the 4023 in a buffer transmission sequence.
+The standard End character is CR (13,9). However, strap
+options on the Control Board permit any ASCII control
+
+®
+4023 Users
+
+character to be selected. (See Strappable Options in the
+Installation procedures.)
+
+Edit Key Effects
+
+NULs are entered into memory on Delete Line and
+Delete Character functions. SPACEs are entered into
+memory on Insert Line and Insert Character functions.
+Erase Input and Erase to End (used with formatted
+displays) functions also place NUL characters into appli-
+cable positions in memory.
+
+Computer Controlled Editing Functions
+
+Format Effectors. The 4023 uses six ASCII control
+characters designated Format Effectors by the American
+National Standards Institutes. These six characters are CR
+(1319), LF (10,9), BS (80), HT (940), VT (11,9), and
+FF (12;).
+
+CR (carriage return) moves the cursor to the first
+position of the line it is in. The standard Terminal can be
+strapped to also perform a line feed upon receipt of the CR
+code. See Strappable Options in the Installation Appendix.
+
+LF (line feed) performs a line feed by moving the cursor
+down one line. It does not affect the horizontal position of
+the cursor unless strapped to do so (see Strappable Options
+in the Installation Appendix). If in DIRECT, attempting to
+enter a line feed past the bottom line on the display will
+cause the screen to roll-up one line. If in BUFFER, a line
+feed cannot be entered past the bottom line on the display.
+
+BS (backspace) moves the cursor to the left one
+character. If the cursor is already at the left margin, the BS
+command is ignored.
+
+HT (horizontal tabulate) tabs the cursor one space
+beyond the Field Attribute Code that describes an
+unprotected field (in Buffer Form Fill-Out). If no
+unprotected field is found, the cursor returns to the home
+position (upper left corner). In DIRECT, HT moves the
+cursor one space to the right.
+
+VT (vertical tabulate) performs a back tab function; the
+reverse of the HT function. Again, if no unprotected field is
+found, the cursor returns to the home position.
+
+FF (form feed) performs a clear page function when
+preceded by ESC (27,0).
+
+®
+
+PROGRAMMING
+
+(cont.)
+
+Display Formatting
+
+General. The display formatting feature is used to divide
+the display into fields. Codes called Field Attribute Codes
+(FACs) arrange the displayed data as to its appearance, its
+protection, and its transmission. A variety of FAC’s provide
+programming versatility.
+
+The Field Attribute Code. The FAC is stored in the first
+character position of the field it defines. It is protected
+from keyboard replacement. The field extends from the
+location of the FAC to another FAC in the same line or the
+end of the line (80th character position).
+
+Setting the Field Attribute Code. Sending the US
+(31, 9) control character sets the Terminal logic to interpret
+the next character as a FAC. Table 2-1 provides a quick
+reference for locating a specific FAC.
+
+Once the FAC is chosen, it needs to be placed in Ter-
+minal memory at the desired location.
+
+NOTE
+
+Do not enter a FAC in the 80th character position of
+any line.
+
+First, position the cursor to the start of the field being
+defined (see Position Cursor description, this section), then
+send the US (31,9) control character. US causes the next
+character to be interpreted as a FAC. Once the FAC is
+stored in memory, the field is completely defined. The FAC
+is protected from keyboard replacement, regardless of the
+field it defines.
+
+NOTE
+
+Since the computer can enter data anywhere on the
+screen regardless of fields, it is free to write the FAC’s
+in any order. However, when a display is being
+formatted from the keyboard, it is convenient to
+enter the codes from right to left, beginning with the
+right-most FAC. Because the keyboard is not free to
+enter data anywhere on the screen, entering a FAC
+that sets up a protected field to the left, first,
+prevents other FAC’s from being entered on the same
+line. However, protected Fields can be overridden
+from the keyboard by pressing the RESET key, while
+simultaneously keying in another FAC. The US
+contro! character from the keyboard is entered by
+simultaneously pressing the CTRL and SHIFT and O
+keys (°*0).
+
+23
+
+PROGRAMMING
+
+(cont.)
+
+4023 Users
+
+TABLE 2-1
+
+FIELD ATTRIBUTE CODES
+
+TRANSMITTABLE NON TRANSMITTABLE |
+UNPROTECTED PROTECTED UNPROTECTED PROTECTED
+DISPLAY ALPHA- | NON ALPHA- | NON
+EFFECT INUMERIC| ALPHA [NORMAL | _DIM_| NUMERIC] ALPHA| NORMAL | DIM
+. @ A B c D E F G
+White on Black) (64,4) | (65,9) | (66) | (67:0)| (6810) | (69,0) | (70,0) | (7110)
+a
+
+; + \ J K L M N oO
+Black on White} (79,4) | (7310) | (7410) ofa) (7610) | (7710) | (7810) | (79,0)
+a P Q R s T U v w
+Blinking (80,0) | (81,0) | (82,0) | (83,0) | (84,0) | (8510) | (8610) | (8710)
+x Y Zz [ \ ] A _
+Blanked (8819) | (8910) | (9010) | (9110) (9210) | (9316) | (94s0) | (98y0)
+
+NOTE (cont)
+
+Edit keys are operational with formatted displays.
+Although a Field Attribute Code cannot be keyed
+over from the keyboard, it can be deleted by using
+the Delete Character function. Also, lines that con-
+tain Field Attribute Codes can be deleted by using
+the Delete Line function (whether the code defines
+the data as being protected or unprotected is im-
+
+material).
+
+Non Alpha Fields. Non alpha fields are limited to those
+
+With SEND Sequence:
+
+USNNAMEUS@John SmithUS@2130 S.W. MainCRLF
+US@Beaverton, Or.CR
+
+Code explanation is:
+
+US — Field Segregator that precedes each FAC.
+
+characters in columns 2 and 3 of the ASCII Code Chart (see
+
+Appendix B).
+
+Sample Input String. Fig. 2-1 shows a formatted dis-
+
+play. The input string as seen by the computer is:
+
+With ENTER Sequence:
+
+US@John SmithUS@2130 S.W. MainCRLFUS@Beav
+
+erton, Or.CR
+
+2-4
+
+@ —FAC
+N —FAC
+rR — Carriage return and line feed
+
+CR — End character (can be strapped to be any ASCII
+control character).
+
+Position Cursor
+
+Each of the 1920 character positions can be individually
+addressed. Sending the FS (28, 9) control character sets the
+4023 to recognize the next two characters received as
+
+®
+4023 Users
+
+PROGRAMMING
+
+(cont.)
+
+BEM 2130 SW Main
+
+Fig. 2-1. A Formatted Display.
+
+position cursor information. To find the specific horizontal
+(X) and vertical (Y) codes necessary to position the cursor,
+you must add 32,9 to both the X address and the Y
+address, The X address is the specific character position in a
+line, and the Y address is the specific line.
+
+For example, assume that you wish to position the
+Cursor to the 18th character position of the 10th line.
+
+Horizontal address = 18 + 32 = 5019
+Vertical address = 10 + 32 = 42,9
+Referring to the ASCII Code Chart, you find that the
+numeral 2 and the asterisk codes are the respective X and Y
+codes needed to position the cursor to the above address.
+
+The complete sequence would be:
+
+Set Cursor Position Send FS (28; 9)
+
+Set Horizontal Address Send 2 (50; 9)
+
+Set Vertical Address Send * (42,9)
+
+Read Cursor
+
+To read (send) the cursor position to the computer, the
+two-character control sequence of ESC followed by ]
+(93,9) is used. Receiving this sequence causes the 4023 to
+send GS, X, Y, END to the computer. GS (29, 9) identifies
+the next two characters as cursor position information. X is
+the code for the character position in a line; Y is the line
+number; and END is the character that marks the end of
+the message and is usually CR (The End character can be
+strapped to be any control character).
+
+NOTE
+
+To obtain the actual character and line position
+number, the program must subtract 32 from both the
+X and Y values received.
+
+25
+PROGRAMMING 4023 Users
+
+(cont.)
+
+4023 Program Time Delays
+
+FUNCTION TIME DELAY REQUIRED
+Erase Input
+
+Clear Page
+
+Roll up 3.75 ms
+
+Insert Line
+
+Delete Line
+
+Erase to End 5 ms maximum. 63.6 Us
+
+for each character erased,
+up to 80 characters.
+
+Prompt Character Delay
+
+Receipt of Prompt Prevents terminal from
+
+Character causes . . . transmitting to the
+computer for about
+0.5 sec (250-750 msec)
+with timeshare systems
+
+ESC Character Delay
+
+Same as Prompt
+Character Delay
+
+Fill Characters
+
+The following shows the number of fill (pad) characters required at various baud rates, after a LF that produces a roll-up is
+received by the Terminal. Acceptable fill characters are NUL, RUB-OUT, or any non-functioning control character.
+
+BAUD RATE Typical FILL CHARACTERS NEEDED
+up to 2.93 k - up to 2400 baud - 0
+2.93 k to 5.86 k = 4800 baud = 1
+5.86 k to 8.799 k 2
+8.799 k to 11.73 k - 9600 baud - 3
+
+Terminal functions that include new line (LF with CR),
+backspace (BS), and NUL, do not interrupt the 15720
+character-per-second rate; except in roll-up as noted above.
+
+26 ®
+4023 Users
+
+Summary of ASCII Code Effect on the 4023
+Code translation is (Refer to ASCII Code Chart):
+
+0-31; 9 (0-36g)
+Control characters. Specific control characters used
+by the 4023 are indicated in Table 2-2, as well as on
+the ASCII Code Chart.
+
+3219 (378)
+
+Non-displayable SPACE character.
+33-126; (40-1773)
+
+Printing characters which occupy a character space in
+Terminal memory.
+
+ts) Single Character Commands
+
+ASCII CONTROL KEYBOARD KEY
+
+CHARACTER COMBINATION
+
+PROGRAMMING
+
+(cont.)
+
+12719 (178g)
+
+Does not write or space.
+
+The following table summarizes the ASCII code effect on
+the 4023. The terminal uses, or otherwise acts, on only
+those listed.
+
+NOTE
+
+Keying control characters from the keyboard requires
+two (and in some cases, 3) key closures. In the
+following table, a superscript C followed by a letter
+character indicates that the control character is
+formed by simultaneously pressing the CTRL and
+indicated letter key. A superscript C and S, e.g. °°O,
+indicates the control character (in this case, US) is
+formed by simultaneously pressing the CTRL and
+SHIFT and O keys.
+
+TABLE 2-2
+ASCII CODE EFFECT
+
+RESPONSE
+
+ETX (310) °C (normally
+not keyed
+from keyboard)
+
+BEL (7,0)
+
+END OF TEXT. Functions as a Message Separator when
+stored in the buffer. It is stored when the computer outputs
+the ETX to the Terminal as the last character of the
+computer transmission, or when the operator types °C or
+presses the ENTER key. Storage is suppressed from the
+keyboard if there are any Field Attribute codes in memory.
+
+Activates the bell-like tone from the speaker.
+
+BS (8; 0)
+
+Backspace
+
+"1
+
+or TAB key
+
+Backspace — a format effector. Moves the cursor to the left
+one character. If the cursor is already at the left margin, the
+BS command has no effect.
+
+Horizontal Tabulate — a format effector. In Buffer mode
+with formatted displays, HT tabs the cursor one character
+space beyond the FAC that describes an unprotected field.
+Used to tab the cursor from one field (any field) into the
+next input field. If no input field is available, the cursor
+returns to the Home position.
+
+In DIRECT, HT performs a non-destructive direct space,
+i.e. moves cursor right one space.
+
+27
+
+PROGRAMMING 4023 Users
+
+(cont.)
+
+TABLE 2-2 (cont)
+
+ASCII CONTROL KEYBOARD KEY
+
+RESPONSE
+
+CHARACTER COMBINATION
+
+LF (10,0) ‘J
+or LF key
+
+Linefeed — a format effector. In Buffer operations, LF
+performs a line feed by moving the cursor down one line. It
+does not affect the horizontal position of the cursor unless
+strapped to give a CR with LF (see Strappable Options). An
+LF past the 24th line will cause the screen to roll up one
+line, if in DIRECT. Linefeed’s are generated as set by the
+EOL LF GEN strap on the Control Board (see Strappable
+Options).
+
+Line Feed
+
+VT (10;;) °K Vertical Tab — a format effector. Performs a “back tab”
+function — the reverse of the HT function. If no input field
+is found, the cursor goes to the home position. Does not
+
+work in DIRECT.
+
+Back Tab
+
+CR (10,3) “M Carriage Return — a format effector. Moves the cursor to
+the first character position at the left margin. Can be
+strapped to provide a line feed with carriage return, thus
+establishing a new line at the left margin. Various effects to
+and from a CR are provided by Strappable Options. Can
+also be stored in memory for use as a Message Separator by
+having the operator simultaneously press RESET with CR.
+
+Carriage
+Return
+
+SO (10,4) Shift Out. Selects the optional (rulings) character set.
+
+Rulings Set
+Select
+
+SI (10,5) ize)
+
+Shift In. Selects the standard character set if the optional
+(rulings) character set has previously been selected.
+
+Standard
+Set Select
+
+ESC (10,7) ESC key First character of a special two-character sequence. ESC
+“arms” the Terminal to interpret the next character
+received (regardless of its normal function) as a special
+control or function. (See ESC BEL, ESC FF, ESC SO, ESC
+SI, ESC O, and ESC }.) The character following ESC causes
+CBUSY to go active for 0.5 sec. (See ESC Character Delay
+in Programming Considerations.)
+
+Arming
+Command
+
+FS (1028) Sets the Cursor Addressing Mode. When followed by the
+proper address codes, the cursor can be positioned to any
+
+position on screen.
+
+Set Cursor
+Addressing
+Mode
+
+28 ®
+4023 Users
+
+PROGRAMMING
+
+(cont.)
+
+TABLE 2-2 (cont)
+
+ASCII CONTROL
+
+CHARACTER
+
+KEYBOARD KEY
+
+COMBINATION
+
+RESPONSE
+
+US (1031)
+
+Field
+Separator
+(Field
+
+Attribute
+Code Sub-
+stitute)
+
+Two Character Commands
+
+Performs two functions:
+1) Used in Buffer Form Fill-Out Entry Sequences as a
+
+Field Segregator. The US code precedes the Field Attribute
+Code on the data string to identify the input data that
+follows as having been preceded by a FAC in Terminal
+memory.
+
+2) When the Terminal receives a US code, Terminal logic is
+set to interpret the next character received as a Field
+Attribute Code.
+
+ESC BEL
+
+ESC FF
+
+Clear Page
+
+ESC SO
+
+Send Page
+
+Used to trigger a hard copy of the displayed data when
+using a Hard Copy Unit. ESC BEL is the computer
+addressed equivalent of the COPY button on the Terminal
+or Hard Copy Unit. The Hard Copy Unit can receive and
+print video (except for blink) on paper. Multiple copies can
+be obtained under program control by commanding a copy
+to be made and immediately following it with the Read
+cursor command (ESC ]). The action of making a copy
+delays the reading of the cursor until the copy is
+completed. When the Terminal responds with the cursor
+location, the program can use this as signifying that the
+copier is ready for another command.
+
+Clear screen command. Performs same function as PAGE,
+The screen is cleared, cursor positions to HOME and all
+Terminal logic is initialized.
+
+Initiates a send function. Causes all fields, normally
+transmittable or not, from the beginning to end of text, to
+be transmitted to the computer. If fields are contained on
+the display, the Field Attribute Codes are preceded by the
+US (31,9) character. When transmission of all data is
+completed, the cursor resides in the left-most character
+position on the last line of the message.
+
+ESC SI
+ENTER i.e.
+Send Trans-
+mittable Only
+
+Performs the same function as ESC SO with the exception
+that only transmittable fields are transmitted. (Rulings are
+not transmittable.)
+
+ESCO
+
+(Clear Input)
+
+Initiates the clear input sequence. Sets all unprotected data
+fields to NUL characters. Used in the Buffer Form Fill-Out
+Mode when it becomes necessary to clear the input data
+only (does not clear rulings). Do not confuse with the Clear
+Page Function.
+
+PROGRAMMING
+
+(cont.)
+
+4023 Users
+
+TABLE 2-2 (cont)
+
+ASCII CONTROL KEYBOARD KEY
+
+CHARACTER COMBINATION
+
+RESPONSE
+
+ESC ]
+
+ESC ]
+
+(] = 1093)
+Set Read
+
+Cursor Mode
+
+RULINGS CHARACTER SET
+(Optional)
+
+Introduction
+
+An optional rulings character set can be provided with
+the 4023 to develop rulings for forms, charts, and bar
+graphs. To address the rulings character set, send SO
+(14,9). Use SI (15; 9) to select the normal character set.
+
+Rulings Character Set Organization
+
+The optional Rulings Character set (Fig. 2-2 shows ruling
+characters available) is organized to make it possible for the
+program to compute the address of a character from the
+character description, This facilitates the designing of a
+subroutine package to compute the type and location of
+the ruling character by simply defining the rulings. The
+rulings are divided into two types:
+
+Type @ single lines
+
+Type 1 double lines
+
+Each of the ruling types have six join types; three for
+
+horizontal and 3 for vertical.
+
+Horizontal Join
+
+Vertical Join —T]
+
+L
+
+Thus, a horizontal type join of “@” is a horizontal line
+where the vertical element (line) crosses at or meets its left
+
+2-10
+
+Initiates the Read Cursor Mode. Causes cursor coordinates
+to be transmitted to the computer.
+
+end. A vertical type join of “1” means the horizontal
+element passes through or meets the center of the vertical
+line.
+
+There are four classes of characters that are used to
+make the horizontal and vertical lines.
+
+. SIMPLE JOIN CHARACTERS — Joins that exist
+between a horizontal and vertical element of the same
+ruling type.
+
+2, COMPLEX JOIN CHARACTERS — Joins where the
+two elements have a differing ruling type.
+
+3. SINGLE ELEMENT CHARACTERS — Straight lines
+with no join.
+
+4, MISCELLANEOUS CHARACTERS — Use depends
+on program.
+
+Finding the Character
+
+A formula can be used to compute the specific character
+desired for three classes of characters (the formula will not
+work for the Miscellaneous Characters), The formula for
+computing a specific character is:
+
+Ruling Character = (6 X P) + (2 X S) + T + 32
+
+Where P = Primary Element (horizontal join)
+Secondary Element (vertical join)
+
+Tertiary Element (ruling type @ or 1)
+
+4023 Users
+
+L
+
+32 33 34 35
+
+=
+_
+i
+=
+
+40 41 42 43
+
+aa
+SH sre
+He
+
+49 50 51
+
+a: HS
+He
+HH
+==
+
+56 57, 58. 59
+
+na
+qb
+_
+
+SINGLE ELEMENTS
+
+Note: Numbers 32-63 correspond to ASCII decimal code.
+
+Simple Join Characters. As an example in using the
+formula to compute simple joins, assume that you wish to
+display the following simple join:
+
+= (6X0) + (2X 1) +1+32
+=( 0 )+( 2 )+1+32
+= 3810
+Referring to the ASCII code chart, you will see that sending
+
+the ASCII code for the # (35,0) character will display the
+ruling character shown in the example.
+
+rs] Complex Join Characters. For complex joins, the com-
+puting system is slightly modified, in that the ruling type
+codes are modified, and the types of joins are limited. The
+
+®
+
+i
+i
+R
+i
+i
+i
+i
+i
+|
+10
+i
+i
+/
+i
+i
+i
+Hj
+i
+i
+
+PROGRAMMING
+
+(cont.)
+36 37 38 39
+i E |
+SIMPLE
+44 45 46 47 JOINS
+7 7 | 4 .
+52 53 54 55
+. A * . =
+JOINS
+60 61 62 63
+* ie Ms .
+
+MISCELLANEOUS ELEMENTS
+
+Fig. 2-2. Ruling characters provided by the optional rulings character set.
+
+following are examples of those types of complex joins
+NOT present.
+
+FEL ;
+
+The rule for whether a specific join exists or not is: A
+HIGHER RULING TYPE MAY NOT TERMINATE INA
+LOWER RULING TYPE.
+
+For complex joins, the P element of the formula is
+always given the value of three (3), the S element states the
+join type of the inferior element, and the T element is the
+orientation of the superior element.
+
+T = @ (when superior element is horizontal)
+
+T = 1 (when superior element is vertical)
+PROGRAMMING
+
+(cont.)
+
+NOTE
+To obtain the correct T element for the ruling type,
+remember that the element with the lowest ruling
+
+type is the inferior element, and the element with the
+highest ruling type is the superior element.
+
+The following is an example of computing the ASCII
+code for a complex join.
+
++ = (6X 3) +(3X0) +0432
+
+=( 18 )+( 0 )+0+32
+= 5010
+Refering to the ASCII Code Chart, you will find that
+
+sending the numeral 2 (50, 9) will display the complex join
+shown in the example.
+
+Single Element Characters. To use the formula for single
+elements, the P element is automatically set to 4. The S
+element tells the orientation of the ruling:
+
+Horizontal = 0
+
+Vertical = 1
+
+4023 Users
+
+The T element is the ruling type
+
+Single = @
+
+Double =
+
+An example of using the formula for single rulings:
+
+Seal
+
+mn = (6 X 4) + (3X 0) +1+32
+=( 24 )+( 0 )+1+4+32
+= 5710
+
+The ASCII Code Chart shows that sending the code for the
+numeral 9 (57,9) will display the ruling character shown in
+the above example.
+
+Miscellaneous Characters. The remaining four elements
+do not fit the formula, therefore, they are not considered
+here.
+
+Summary
+
+Table 2-3 summarizes the values that can be used in
+computing the specific ruling characters. The numbers in
+
+TABLE 2-3
+
+VALUES FOR COMPUTING RULING CHARACTERS
+
+ELEMENT IN
+
+FORMULA
+ELEMENT CLASS
+
+Horizontal Join
+
+Type
+(0, 1, 2)
+
+Simple Join
+
+Vertical Join
+Type
+(0, 1, 2)
+
+Ruling Type
+
+(0, 1)
+
+Complex Join
+
+Inferior Element
+Join Type
+(0, 1, 2)
+
+Superior Element
+Orientation
+(0, 1)
+
+2-12
+
+Ruling
+Orientation
+(0, 1)
+
+Ruling Type
+
+(0, 1)
+4023 Users
+PROGRAMMING
+(cont.)
+parentheses are the legal values that may be used in that Figure 2-3 is an example of the rulings capability.
+space . . . any others will yield unpredictable results, Arrows show keyboard characters used to generate the
+
+form.
+
+Fig. 2-3. Example of 4023 ruling capability. Numbers & symbols correspond to ruling codes.
+
+® 2-13
+
+4023 Users | N STA L LATI O N
+
+>
+
+SECTION II
+PART 2
+
+General sides should be kept free of obstructions to permit air flow
+
+Installation consists of desk-mounting the Terminal, rough the unit.
+
+selecting the proper operating voltage and fuse size, setting
+the desired strap options, and connecting the Terminal to
+the computer. These steps are discussed in the following
+paragraphs.
+
+A dimensional drawing is provided in Fig. 2-4 as an
+installation aid.
+
+Selecting the Operating Voltage and Fuse Size
+
+( rmina
+_ Mounting the Terminal The Terminal is intended to be operated from a
+
+Desk-Mounting consists of simply setting the Terminal single-phase power source which has one of its current
+on a desk or other surface. The air vents on the bottom and carrying conductors (the neutral conductor) at ground
+
+12.500
+
+13.125
+With Feet
+
+ )
+
+Fig. 2-4. Physical Dimensions.
+
+® 2-14
+
+nReHmeHhmRe ee ee ee HEHE FE HF SE HE ES SF ss
+* |
+INSTALLATION
+
+(cont.)
+
+(earth) potential. Operation from other power sources
+where both current-carrying conductors are live with
+respect to ground (such as phase-to-phase on a multi-phase
+system, or across the legs of a 117-234 V single-phase
+three-wire system) is not recommended, as only the line
+conductor has over-current (fuse) protection within the
+instrument.
+
+The Terminal is provided with a three-wire power cord
+with a three-terminal-polarized plug for connection to the
+power source. The grounding terminal of the plug is
+directly connected to the instrument frame as recom-
+mended by national and international safety codes. Color
+coding of cord conductors follows the National Electrical
+Code (ANSI CL-1968) which specifies Line, Black; Neutral,
+White; Safety Earth or Ground, Green with a yellow strip
+(or solid green).
+
+The 4023 can be operated from either a 110 or 220 volt
+nominal line voltage source which has a frequency of 60 or
+50 Hz. (For a stable display, the line frequency must be 60
+Hz, unless the 4023 has been ordered to operate with a 50
+Hz voltage source.) A fuse change and a jumper arrange-
+ment for the transformer permits the Terminal to be
+modified to suit the voltage supply. The line fuse is located
+
+Fig. 2-5. Location of Transformer wiring connectors.
+
+2-15
+
+4023 Users
+
+in the bottom-left corner of the back panel. Fuse size is
+indicated beside the fuse. The transformer and jumper
+arrangements are located inside the display unit in the
+left-rear corner. Removing the display unit cover provides
+access to the jumper arrangement. This consists of removing
+2 screws on each side of the display unit cover and 2 screws
+at the top of the rear panel. The display unit cover can then
+
+be removed.
+WARNING }
+
+Dangerous voltages exist at several places inside the
+display unit, Disconnect the Terminal from the power
+source before changing transformer connections. (In
+the event the power was on when the cover was
+removed, a safety interlock switch disables the power
+supply. Pulling the switch up allows the Terminal to
+be operated with the cover off.)
+
+Wiring instructions are shown on the metal protection
+cover directly above the transformer wiring connectors. See
+Fig. 2-5. Wiring instructions are repeated in Fig 2-6 for
+convenience. Fuse size is 2A slow-blow for 110-volt
+operation and 1.25 A slow-blow for 220-volt operation.
+
+8
+
+LINE CORD ALWAYS
+ATTACHED TO 1 & 4
+
+JUMPER ARRANGEMENT
+VOLTAGE * 10% 100 115 120 220 200 230 240
+
+4 8
+
+TERMINAL NO
+
+TWO JUMPERS ONE JUMPER
+REQUIRED REQUIRED
+
+Fig. 2-6. Transformer Terminal jumper arrangement.
+
+4023 Users
+
+WARNING }
+
+Dangerous potentials exist at several places inside the
+display section. Disconnect the Terminal from the
+power source before changing transformer connec-
+tions.
+
+Selecting Strappable Options
+
+Strappable Options are movable wire straps located on
+circuit cards inside the display unit. These straps provide
+options for the operator and programmer and can be set at
+the user site by qualified technical personnel. The circuit
+cards (seven of them) plug into the Motherboard. See Fig.
+2-7 for card locations on the Motherboard.
+
+CAUTION
+
+Even though identical signal lines are provided at
+corresponding points for each of the Motherboard
+card connectors, adequate heat dissipation requires
+that the cards be installed in the order shown in Fig.
+
+27,
+
+Do not remove or install circuit cards while the
+Terminal Power is on.
+
+The positions of the straps are dependent upon
+computer and program requirements, and in some cases,
+upon user preference. Strap locations and descriptions for
+the Keyboard Interface, Control, Timing, and Basic Data
+Communications Interface cards are shown in Fig. 2-8A-B
+and Fig. 2-9A-B. The Optional Data Communications
+Interface (021-0112-02) may be installed in place of the
+Basic Data Communications Interface (021-0111-00).
+Detailed Strappable Option information for these two
+interfaces can be found in their respective manuals.
+
+Spare Switch (SW1 and SW2) Connections
+
+Connection to SWITCH 1 and SWITCH 2 is provided at
+pin Z and X, respectively. Fig. 2-10 shows a complete
+listing of the Motherboard connector pin assignments.
+Depressing the right side of a switch provides a ground
+connection for the respective switch; the other position of
+the switch results in an open circuit.
+
+®
+
+INSTALLATION
+
+(cont.)
+
+Spare Indicator Connection
+
+Connections to spare Indicator 3 are provided at pin 2 of
+the card-edge connector in the display unit.
+
+Connectors and Wiring
+
+Rear Panel Connectors provide connection for the 4023
+Hard Copy Unit and video monitors.
+
+Hard Copy Connector — J 190. 15-pin Cannon female
+connector with signals for sending video out of the 4023 or
+into the 4023. It can be used by the Hard Copy Unit or
+other devices for connections of up to 15 feet.
+
+Video Connector — J 193. The Monitor connection is a
+75 ohm BNC connector for composite video. The number
+of video monitors to which the 4023 can provide
+acceptable video depends on the type of monitor, the cable
+distance to the furthest monitor, and the type of
+connecting cable used. For example, using RG 59/U cable,
+the 4023 can drive up to 8 Conrac monitors if the string of
+monitors does not exceed 400 feet.
+
+Connecting the Terminal to a Computer
+
+The two basic methods of connecting the Terminal to a
+computer are direct connection and telephone line connec-
+tion. A direct connection is used when the Terminal and
+the computer are located close to each other, permitting
+hook-up without additional equipment. A telephone line
+connection can be made regardless of the distance which
+separates the Terminal and the computer.
+
+Direct Connection (not to be confused with DIRECT/
+BUFFER switch). When the Terminal has its standard
+interface (021-0111-00 Data Communication Interface)
+installed, a direction connection can be made by connecting
+the output plug to the interface card so that the plug index
+mark is matched with the “DIRECT TO CPU” index mark
+on the card. This is shown in Fig. 2-8D. The plug on the
+other end of the interface cable can then be inserted into
+the jack at the computer. The signal lines available to the
+computer are shown in Table 2-4.
+
+2-16
+
+INSTALLATION 4023 Users
+
+(cont.)
+
+©
+
+>
+>
+x anne
+
+{0 | aH: SH «eveoarp interrace (a4) i [0]
+
+[2] 4HHHHHHHHIE 74H ©0100) HHHHHHHHIHHHHEHE [65
+
+C
+RH HE EE EE &
+
+Fig. 2-7. Motherboard card connector assignment.
+4023 Users INSTALLATION
+
+(cont.)
+
+CR DOES LF LF DOES CR
+
+iH
+
+LF
+
+BUF—position with BUFFER
+selection permits a keyboard
+CR to also generate a linefeed.
+
+LF position performs a line-
+feed only upon receipt of a
+linefeed command.
+
+IN position permits either a
+keyboard or computer gen-
+erated CR to generate a
+simultaneous linefeed.
+
+LF/CR position causes a
+simultaneous carriage return
+function upon receipt of a
+linefeed command.
+
+OUT position inhibits simulta-
+neous linefeeds with CR,
+regardless of CR origin.
+
+Fig. 2-8A. Keyboard Interface Card.
+
+GEN
+
+PROMPT MODE
+==
+ouT | IN }
+
+ia
+
+LOCAL enables line feeds to
+be generated in LOCAL when
+
+OUT is used when 4023 does
+not require a prompt character
+for data transmission from
+buffer.
+
+from an aux. device. Linefeeds
+are not transmitted to the
+computer if on line.
+
+IN enables linefeeds to be
+generated by transmit circuits
+when operating in LOCAL or
+ON LINE with BUFFER
+selected.
+
+IN is used when 4023 is to
+receive a prompt character for
+data transmission from buffer.
+
+its linefeeds from
+ated at end of a
+
+MESSAGE END
+
+BIT3
+BIT2
+BIT1
+
+The Message End character is
+1 1 1 1 the last character sent in a
+
+buffer transmission. The
+standard Message End char-
+acter is strapped to be CR;
+however, any ASCII control
+oo og character can be strapped.
+
+> Osits
+
+Ld
+;
+;
+;
+,
+°
+
+Fig. 2-88. Control Card.
+® 2-18
+INSTALLATION 4028 Users U
+(cont.) |
+BLINK CURSOR |
+RESET BLINK Position o
+causes cursor to blink when ]
+RESET key is pressed. H
+RESET BLINK |
+BLINK position causes cursor BLINK
+to blink continuously.
+Fig. 2-9A. Timing Card. @ lJ
+J222 J223 J224
+SEND 8 TTY MASTER
+oo Oo oO oO Oo 8 sp |
+Ff sw2o O OiFast 76)
+TO MODEM DIRECT
+TOCPU
+ouTO Oo 60
+SP2
+(TAPEFETCH)
+Fig. 2-9 B. Standard Data Communications Interface Card. Strap descriptions are given in Interface manual. |
+2-19 ® "
+
+@
+
+4023 Users
+
+Under Side —
+
+GND | ———_________F]]
+aX ———______q
+vevNc | ——______
+DMASTROSBE ——____f]
+LsTYCRS ———_____—_B]
+YEQUAL ———__——_—_fj
+ars) ——______4
+|
+RESET ——_____s4
+|
+a4]
+WATT (INDICATOR 7) + ——_ 4
+49MHz  ———__—______F]]
+SP7(FAST1/0) ——————j
+sree) —_______
+STROBE ————___F¥
+AUXSENSE §—————__y
+DIRECT (sw) 1 ———————_J
+EXECUTE 9——_____]
+oo |
+LlsTYDIS) ————+]
+
++15V
+
+-12V
+AIX
+Bite
+BITS
+BiT7
+
+BOUNCE
+TBUSY
+
+ECHO
+
+me iy
+TSTaOBE = ——_____wy
+EAB ——_______
+csTaoseE ~ ———______4
+inpicaToRs ~—————1]
+ceusy ——————_
+
+INSTALLATION
+
+t— Component Side
+=————_ onc
+
+-5V
+[ER KBD LOCK (iNDICATOR2)
+@e————___ Torcurs
+=e sacax
++ cap
+—a—__ HKCU Busy
+
+UP
+
+HOME
+
+PAGE
+
+oe———_ fos
+eo MAKE COPY
+
+Tce
+
+Ge. x Equa
+
+SW 1 (SPARE)
+ee _
+SW2 (SPARE)
+
+TEFT
+
+RIGHT
+
+Fig. 2-10, Motherboard connector pin assignments.
+
+(cont.)
+
+2-20
+
+INSTALLATION 4023 Users
+
+(cont.)
+
+Telephone Line Connection. A modulator-demodulator TABLE 2-4
+(modem) is required to establish telephone line connection.
+Telephone companies rent these modems (also called data
+sets or data phones). There are a number of specialized
+modems available; the type required depends upon the
+specific needs of the installation.
+
+021-0111-00 Data Communication
+Interface Output Connector Signals
+
+Connector | RS-232C | CCITT
+Circuit Description
+
+When a standard interface (021-0111-00 Data Communi-
+cation Interface) is installed in the Terminal, the plug on
+the interface card must be connected so that the plug index
+mark aligns with the “TO MODEM” index mark on the
+card. Then the other end of the interface cable must be
+plugged into the modem set. Signal names remain as listed
+in Table 2-4,
+
+Protective Ground
+
+Transmitted Data
+
+Received Data
+
+Request to Send
+(on while Terminal is on)
+
+Clear to Send
+
+Once connected to the modem, computer connection is
+achieved as follows: 1) Energize the equipment; 2) Dial the
+number of the computer installation; 3) When the com-
+puter responds with an audible tone, place the telephone
+headset on the cradle provided on the modem; or push the
+button marked DATA, and hang up the headset; or perform
+such other function as required by the specific modem in
+use; 4) Perform the sign-on procedure, which varies with
+the computer installation.
+
+Signal Ground
+(Common Return)
+
+Received Line Signal
+Detector
+
+Data Terminal Ready
+(on while Terminal is on)
+
+2-21 ®
+4023 Users
+
+Summary of Hardware Characteristics
+
+CRT -
+
+Display Size -
+
+Phosphor Type -
+
+Video =
+
+Refresh Rate =
+
+Cursor Type -
+
+Character Generator —
+
+Character Size =
+
+Character Code -
+
+Characters per Line —
+Lines per Display -
+Characters per Display —
+
+Refresh Buffer -
+
+Intensity -
+
+Keyboard -
+
+Input/Output =
+
+12 inch diagonal
+9 inches wide by 5.5 inches high
+P-4 (white)
+
+Composite Video, compatible
+with standard interlaced
+525 monitor
+
+60 Hz
+
+7 by 10 dot matrix, non-
+destructive, remote or local
+control
+
+5 by 7 dot matrix
+
+80 mils by 120 mils (0.08 inches
+wide by 0.12 inches high)
+
+128 ASCII, 96 printing (including
+space) upper and lower case
+characters. Optional Rulings
+Character Set provides 32 ruling
+characters.
+
+80
+24
+1920
+
+MOS RAM
+
+Normal 30 foot lamberts
+Dim 15 foot lamberts for back-
+ground identification
+
+64/96 ASCII upper and lower case
+2 key rollover
+
+auto-repeat for any keys de-
+Pressed over one-half second
+
+Standard Data Communications
+Interface is RS-232C compatible,
+Full Duplex, Serial Asynchronous,
+Start/Stop, LSB first, Baud
+
+rate Transmit/Receive selectable
+110-9600 with backpanel switch,
+Transmission code is 128 ASCII
+upper/lower case.
+
+APPENDIX A
+
+CHARACTERISTICS
+
+Power Requirements —
+
+Physical Dimensions —
+
+115/230 (Hi, Medium, Lo) VAC,
+50 or 60 Hz, nominal 220 watts
+
+Height — 13 inches
+Width — 18 inches
+Depth — 23 inches
+Weight
+
+net — 46 Ibs
+shipping — 67 Ibs
+
+Summary of Control Characteristics
+
+Cursor Positioning -
+
+Clear Page -
+
+Insert Character -
+
+Delete Character -
+
+Insert Line -
+
+Delete Line -
+
+Erase Input =
+
+Erase to End =
+
+Copy -
+
+Up, down, left, right, or Home
+(upper left corner)
+
+Deletes all data and posi-
+tions the cursor to home.
+
+A space is entered at the cursor
+position. All data from the
+cursor position moves right,
+leaving a space at the cursor
+Position. Only the line where
+the cursor resides is affected.
+
+The character where the cursor
+resides is deleted or replaced
+by a new character typed from
+the keyboard. When a charac-
+ter is deleted, all characters
+
+to the right of the cursor
+
+move left one space.
+
+The line where the cursor re-
+sides and all lines below move
+down one line for each key de-
+pression. The bottom line is
+lost.
+
+The line where the cursor re-
+sides is deleted and all lines
+below move up one line for each
+key depression.
+
+Erases all unprotected informa-
+tion on the screen and positions
+the cursor to home.
+
+Erases information from cursor
+to end of line or unprotected field.
+
+Activates the Hard Copy Unit.
+
+A-1
+
+APPENDIX A
+
+CHARACTERISTICS
+
+(cont.)
+
+Enter
+
+Send
+
+Number Lock
+
+A-2
+
+— Transmittable information on
+the screen is transmitted to
+the computer when on line, or
+to auxiliary devices when in
+local.
+
+— Everything on the screen is
+transmitted to the computer
+when on line, or to auxiliary
+devices when in local.
+
+— Shifts the Function Pad into
+a Numeric Pad; thus, those
+keys when depressed generate
+their respective numbers 0
+through 9, plus a decimal
+point.
+
+4023 Users
+
+Summary of Buffer Operation Characteristics
+
+An important benefit of the 4023 is that the contents
+of the buffer can be sent to the computer as a message.
+Instead of conversing character-by-character, the data can
+be sent as one complete block. The number of input errors
+is therefore almost eliminated because the user can see and
+edit the entire input before it is transmitted. If an error is
+detected, the buffer can be re-transmitted by the operator
+or on a command from the computer.
+
+Buffer operation not only reduces the amount of
+“on-line” time needed, but also makes more efficient use of
+the “on-line” time that is used. CPU time is also reduced
+for two reasons; the editing function is done locally and the
+input is in a block mode, rather than a character at a time.
+This makes for more efficient use of the computing system,
+and equates directly to lower cost for the user.
+4023 Users APPENDIX B
+
+‘ASCII CODE CHART
+
+CONTROL NON ALPHA FIELD CODES LOWER CASE
+a
+
++)
+
+3
+
+MESSAGE
+SEPARATOR
+
+4
+
++
+
+OL ol nN oO; an!) a 1]wW] wv
+
+74
+
+75
+
+7 |o|m i< |x |€ /< le
+
+&
+ot
+
+7), J 93
+
+Ms faeao
+
+CURSOR
+
+94
+
+A n
+
+79 95
+Sur x O
+
+nuuinos| Onrno: CLEAR
+
+Reser | Tecteo INPUT —
+
+% CHAR IS PRECEDED BY ESC CHAR TO PERFORM FUNCTION
+
+~N
+127
+RUBOUT
+
+® B-1
+4023 Users
+
+Refer to Tektronix, Inc. advertising information or
+contact a Tektronix Field Office for up-to-date listing of
+accessory devices.
+
+Standard Accessories
+
+Data Communication Interface 021-0111-00
+Data Communication Interface Instruction
+Manual 070-1613-00
+4023 Terminal Users Manual 070-1621-00
+Cabinet Colors
+Red 390-0340-02
+Green 390-0340-03
+Gold 390-0340-04
+Optional Accessories
+4023 Service Manual 070-1617-00
+
+Provides the technician with all the information needed
+to service and maintain the 4023. Documentation includes
+schematics, mechanical and electrical parts lists, wiring lists,
+component locations, theory of operation, and testing and
+adjustment procedures.
+
+Optional Data Communication Interface 021-0112-00
+This interface offers increased data communications
+control over that provided by the Data Communication
+Interface. Provides operation in full-duplex or either of two
+half-duplex modes, Baud rate selection from 110 to 9600
+can be controlled by back panel switches for independent
+transmit and receive baud rates (plus two field program-
+mable rates). Mode control, parity generation, and trans-
+mission rate are controlled by 4023 back panel switches.
+Includes a user manual and 15 feet connecting cable.
+
+Rulings Character Set 020-0085-00
+
+This is an additional character set that allows the 4023
+to print 32 special “ruling’’ characters. These characters are
+orthogonal patterns and lines that are placed together to
+form contiguous lines. These lines are very useful in borders
+
+®
+
+APPENDIX C
+
+ACCESSORIES
+
+and rulings of forms and can also be used for simple chart
+plotting. The rulings character set is factory installed when
+the 4023 is ordered.
+
+Logic Extender Card
+(Includes Extender Cable kit)
+
+067-0659-00
+
+A design and maintenance device which can be
+independently inserted into the Motherboard to monitor
+signal lines or to inject signals into them. It can be used as a
+circuit card extender to perform those same functions, plus
+a signal interrupt function.
+
+72-Pin Extender Card
+(Includes Extender Cable kit)
+
+067-0696-00
+
+Used to extend the 4023 motherboard cards away from
+the bus for component access when troubleshooting. Each
+of the 72 bus lines are labeled and have a test point.
+
+Audio Recorder Card 018-0086-00
+
+This plug-in card is used in conjunction with the 4023
+and an audio type tape recorder to provide low cost off-line
+storage. Several recording and playback modes are available
+including, tape to computer, tape to terminal, terminal to
+tape and computer to tape. Input and output characteristics
+can be varied to match a wide variety of tape recorders but
+for information on compatability with specific recorders,
+contact your Tektronix Field Office. Includes hook-up
+cables and operators manuals.
+
+Pedestal 016-0568-00
+The pedestal is a convenient support module for the
+4023 Terminal.
+
+Data Form Software Package 062-1573-02
+
+This 4023 software system allows the user to manip-
+ulate data, enter and view forms, and easily access the
+various features of the Terminal. The package is developed
+as a set of FORTRAN subroutines that are grouped into
+two areas of usage; Utility support and Forms support. The
+utility support allows program control of screen erase, hard
+copy activation, cursor addressing and buffer transmission
+while the forms support group is used to design, edit and
+recall forms and formatting combinations to the screen.
+This also includes support for the hardware RULINGS
+CHARACTER SET (020-0085-00) when the 4023 is
+
+C-1
+
+APPENDIX C
+
+ACCESSORIES
+
+(cont.)
+
+equipped with this feature. Includes user manual and
+
+installation procedure.
+Auxiliary Devices
+4623 Hard Copy Unit
+
+The 4623 Hard Copy Unit is offered as a companion
+unit to the 4023. The 4623 produces an 8% X 11 hard copy
+
+4023 Users
+
+of the 4023 display in about 15 seconds and subsequent
+copies every 7 seconds. The standard 4623 can interface
+with up to four 4023's at distances up to 200 feet. A four
+color choice is also available to match the 4023 color
+selection of TAN, RED, GOLD, or GREEN.
+
+633 Video Monitor
+
+The 633 Video Monitor displays data that is being
+processed by the Terminal.
+4023 Users
+
+Displayed data can be field formatted from the
+keyboard. Table 2-1 in Section II shows 32 characters
+designated as Field Attribute Codes (FACs). When preceded
+by simultaneously pressing the CTRL and SHIFT and O
+keys (°°O), keying in one of these FACs causes data from
+the cursor location to the end of the line (or the next FAC)
+to be identified as indicated. For example, assume you
+want a field with inverted video to contain data that is
+non-transmittable, protected, with dim intensity. Table 2-1
+shows the O (79; 9) character will set up the desired field.
+
+Try it out. Turn on the Terminal power and after
+warm-up, move the cursor away from the home position;
+then type °S0 followed by 0. Note that the field extends
+from the cursor position to the end of the line. Note its
+appearance and that keyboard data cannot be keyed into
+the field. Now you can begin formatting the display shown
+in Fig. D-1.
+
+GEEGEM Don Oliver
+
+M1-1111
+Hov 3@ 1943
+
+APPENDIX D
+
+FORMATTING A DISPLAY
+
+Type the headings in the approximate screen positions
+as shown in Fig. D-1. Fig. D-1 also shows the particular
+FACs and their respective positions. Next, enter the FACs.
+Do this by positioning the cursor over the FAC positions
+(as shown in Fig. D-1), and pressing the °°O keys followed
+by the particular FAC.
+
+NOTE
+
+When formatting displays from the keyboard and
+more than one FAC resides in a line, enter the FACs
+from right to left. Note also, that °*O must precede
+each FAC.
+
+With the headings and all FACs set up as shown, enter
+the unprotected data (you can enter your name, address,
+etc.) in the appropriate positions. Formatted display
+operation can be checked oyt by following the “Example
+of Form Fill-Out Operation” procedure provided in Section
+| Part 3.
+
+GMGTEEY 2132 SW Main
+
+fAnytoun, USA
+
+(EU 020-00-000
+MARRIED BAIS
+
+Fig. 0-1. Example of formatted display.
+4023 Users
+
+This glossary pertains to this manual and is not intended
+to be a universal reference. It excludes definitions of most
+control characters which are defined by referring to pages
+listed in the index.
+
+Accessory—See standard accessory or option accessory.
+
+Address—A character location within the display memory
+(buffer) that is within the 80X by 24Y coordinate
+capability of the Terminal’s registers.
+
+Alpha—Refers to letter characters.
+
+Alphanumeric—Refers to letters and numbers.
+
+Arming—Preparing the Terminal so that the next-received
+character performs a function other than what it would
+cause if the Terminal were not “armed”. The ESC control
+character normally is used to “arm” the Terminal.
+
+ASCII character—Any one of 128 characters contained in
+the character set used by “American Standard Code for
+Information Interchange”. See the ASCII code chart in the
+appendix.
+
+ASCII Code—Seven-digit binary numbers which express any
+of the 128 ASCII characters. See the ASCII Code Chart in
+the appendix.
+
+Auxiliary/Auxiliary Unit—A device which is designed for
+use with the Terminal, but which is not required for
+Terminal operation.
+
+Backtab—A feature used to position the cursor back to the
+preceding unprotected field when using the buffer with
+formatted displays. The backtab command is the VT
+control character. The cursor will backtab upon receipt of
+the VT command from either the keyboard (CTRL K) or
+from the computer, Will not work in DIRECT.
+
+Baud—Signalling units per second; an expression of serial
+data transmission bit rate.
+
+Beam—The element (within the cathode-ray tube) which
+causes displays to appear on the screen.
+
+®
+
+APPENDIX E
+
+GLOSSARY
+
+Binary—Referring to a number system which uses two as its
+base. Only the digits 0 and 1 appear in binary expressions.
+
+Binary equivalent—A number expressed in binary form to
+represent a number which has a different base or to
+represent a character from the ASCII code.
+
+Bit—A binary digit.
+Blanked—The non-writing status of the display beam.
+Board, circuit—See circuit board.
+
+Break—A signal sent from the Terminal to the computer to
+interrupt computer transmission in some installations. Also
+the command which initiates the signal.
+
+Buffer—The memory of the 4023 which has the capability
+to remember the display location of 1920 individual
+characters (80 characters per line, times 24 lines, equals
+1920 characters).
+
+Bus—A wire which conveys electrical information between
+two or more points.
+
+Byte—A group of bits operated on as a unit.
+Card, circuit—See circuit card.
+
+Carriage return—Movement of the writing beam to the left
+margin. Also the command which causes this movement.
+
+Cathode-ray tube (CRT)—An evacuated glass envelope
+similar to a television display tube. The CRT face is the
+Terminal’s display screen.
+
+Character generator—An electronic circuit within the
+Terminal, which provides the positioning and writing
+information required for displaying characters on the
+screen,
+
+Character—A symbol within a set of symbols; also the
+encoded form of that symbol. Also see control character.
+APPENDIX E
+
+GLOSSARY
+
+(cont.)
+
+Character keys—The keys located on the Terminal’s
+
+keyboard.
+
+Character set—Characters which make up a defined group,
+such as ASCII.
+
+Character space—The horizontal area alotted to writing of
+one character on the screen.
+
+Character writing—Moving the beam through a 7 by 9 dot
+matrix and unblanking the beam in the positions required
+for constructing the character.
+
+Circuit board—A bolt-in circuit assembly, as opposed to a
+plug-in circuit card assembly.
+
+Circuit card—A plug-in circuit assembly, as opposed to a
+bolt-in circuit board assembly.
+
+Clock—An oscillator or other signal-producing device which
+provides signals for circuit timing.
+
+Code Set—The individual binary bit sequence patterns that
+comprise the character set.
+
+Command sequence—A sequence of characters, the first of
+which arms the Terminal so that the subsequent charac-
+ter(s) produce a result other than what they would produce
+alone.
+
+Communication link—The connection between the Ter-
+minal and computer. It may be a wire cable, or may be a
+telephone line and modems.
+
+Control character—A character which normally causes a
+function other than writing to occur, controlling the
+operation of equipment.
+
+Control character command
+
+sequence.
+
+sequence—See command
+
+Copy making—Generating a paper reproduction of a
+display.
+
+E-2
+
+4023 Users
+
+CPU—Central processing unit; a term used interchangeably
+with computer in this manual.
+
+CRT-See cathode-ray tube.
+
+CTRL key—A keyboard key which, when held down,
+causes letter key entries to result in transmission of control
+characters.
+
+Cursor—A rectangular symbol which indicates the next
+character writing position.
+
+Data—Basic elements of information which can be pro-
+duced or processed by devices such as computers, Ter-
+minals, teletypewriters and associated devices.
+
+Data communication interface—A device which provides
+compatibility between the Terminal and a computer,
+usually via a modem.
+
+Data communication standards—A statement of particulars
+regarding interfacing between data terminal equipment and
+data communication equipment employing serial binary
+data interchange. Typified by documents such as ElA
+RS-232C.
+
+Data lines—Wires which carry data between or within
+devices,
+
+Data Processing—Systematic computer oriented functions
+in classifying, sorting, and calculating of data that are
+necessary to obtain a desired result from that data.
+
+Direct connection—In computer interfacing, a direct con-
+nection infers connecting the Terminal to the computer
+without benefit of modems.
+
+Display—Information written on the Terminal screen;
+sometimes also used to denote the screen itself.
+
+Display Format—The arrangement of data on the display.
+Usually synonomous with formatted displays.
+
+Display beam—See beam.
+4023 Users
+
+Display Screen—See screen.
+
+Display Unit—That section of the Terminal which includes
+the screen, keyboard, and associated circuits.
+
+Dual key entry—Pressing a character key while holding the
+CTRL or SHIFT key down.
+
+Echoing—The return of transmitted data to the transmitting
+device.
+
+Enter—Synonomous with ENTER key actuated trans-
+mission of buffer contents. Also can refer to keyboard
+entry directly to the computer or to the buffer.
+
+Erasing— Removing displayed data from the screen.
+
+Form Fill-Out—Function used with formatted displays
+where the operator fills in the blank spaces or otherwise
+changes the information displayed.
+
+Formatted Display—A display that is arranged to resemble a
+form or other source document through use of Field
+Attribute Codes.
+
+Field Attribute Codes—Codes used by the 4023 that
+arrange the display into fields. Data residing in the fields is
+identified by the code as to appearance, transmittability,
+and protection.
+
+Fields—Specific portions of the display that contain data
+identified by Field Attribute Codes as to the data’s
+appearance, transmittability, and protection. The size of a
+field can be from one to seventy-nine characters (one line
+maximum).
+
+Full Duplex—In data communications, full duplex refers to
+the ability of data transmissions between the Terminal and
+computer to occur in both directions simultaneously; both
+stations can transmit and receive at the same time.
+
+Half Duplex—Data communications proceeds in only one
+direction at a time. The Terminal or computer can either
+transmit or receive, but never both at the same time.
+
+®
+
+APPENDIX E
+
+GLOSSARY
+
+(cont.)
+
+Hard copy—A reproduction (on paper) of a Terminal
+display.
+
+Hard Copy Mode—The operating status achieved by the
+Terminal during copy making.
+
+Hard Copy Unit—An instrument which generates paper
+copies of Terminal displays.
+
+Hardware—The mechanical, magnetic, electrical, and elec-
+tronic devices and components of data processing equip-
+ment.
+
+Home—The first line, first character position. Exists at
+top-left of the screen.
+
+Initial Condition—Logic condition of the Terminal when
+power is turned on or the screen is erased.
+
+Initializing—Turning the Terminal power on, or returning
+the Terminal to its initial condition.
+
+Interface—The unit which permits two devices to interact
+with each other. Specifically, the unit which makes the
+Terminal compatible with a computer, modem, or periph-
+eral equipment.
+
+Jack—The least-portable of two mating connectors.
+
+Keyboard Entry—The manual insertion of data into a data
+processing system using the Terminal keyboard. Keyboard
+data can be entered directly to the system, or entered first
+to the Terminal buffer, edited, then transmitted to the
+system using the Enter or Send function.
+
+Letter keys—Commonly used to denote the keys which
+generate the code for Roman (conventional English) letters.
+
+Line—A display consisting of 80 horizontally adjacent
+characters; also the space allocated to such a display.
+
+Line feed—Movement of the writing beam from a line to
+the next lower line; also the command which causes such
+movement.
+APPENDIX E
+
+GLOSSARY
+
+(cont.)
+
+Line voltage—The force of the supply at an electrical outlet.
+In the United States, it is usually 115V or 230V or some
+slight variation of those values.
+
+Lines, signal—See signal lines.
+
+Local Echo—Simulating echoing within the Terminal, so
+that the Terminal executes the data it transmits, without
+having it echoed by the receiving device.
+
+Local operation—An operating status which isolates the
+Terminal from the computer and sets up an echoplexing
+condition,
+
+LSB (least significant bit)—The bit in the position of least
+magnitude in a binary expression; usually written as the last
+bit on the right.
+
+Magnetic Storage Medium—An auxiliary device used with
+the Terminal on which system related information can be
+stored for future data processing applications.
+
+Memory—See Buffer.
+
+Message Separator—A control code (ETX) that is stored in
+Terminal memory at the cursor location. Message Separa-
+tors can be either keyboard or computer initiated, and are
+used to limit the data transmitted to the computer to the
+data bracketed by two Message Separators, The Home and
+last character position of the last line perform Message
+Separator functions.
+
+Motherboard—A wiring arrangement which makes all signal
+lines in the Terminal’s pedestal available to all installed
+circuit cards.
+
+Mode—A Terminal operating configuration.
+
+Modem (Modulator/demodulator)—A device which can
+convert digital data to a signal (in a process called
+modulation) which can be conveyed over telephone lines,
+and can perform the reverse function in a process called
+demodulation. A modem is required on each end of the
+telephone line.
+
+E-4
+
+4023 Users
+
+Monitor—As associated with the Terminal, monitor refers
+to a device which provides a copy of the Terminal display,
+or otherwise displays data which is processed by the
+Terminal.
+
+MSB (most significant bit)—The bit in the position of
+greatest magnitude in a binary expression; usually written
+as the bit on the left.
+
+Nul Suppression—The feature of the Terminal that sup-
+presses transmission of NUL characters.
+
+Non-Alpha—Fields into which only those characters con-
+tained in columns 2 and 3 of the ASCII Code Chart can be
+entered from the keyboard.
+
+Non-Transmittable Data—Data that is identified by a Field
+Attribute Code as being non-transmittable.
+
+On Line operation—Communicating with the computer.
+
+Optional accessory—A device which can be purchased from
+Tektronix for use with the Terminal, but is not supplied as
+part of the standard Terminal package.
+
+Options—See Strappable Options.
+
+PAGE—A command which erases a display, sets initial
+condition Mode, and homes the cursor. Also a completed
+display.
+
+Page full break—A signal generated when a page full of
+information has caused the display to line feed past the last
+(24th) line. Also an option contained on the Data
+Communication Interface circuit card.
+
+Page full busy—A busy signal which can be generated in
+response to a page full of information.
+
+Parallel transmission—simultaneous transmission of more
+than one data bit.
+
+Pedestal—An optional accessory on which the 4023 may be @
+
+mounted.
+4023 Users
+
+Peripheral devices—Generally refers to the equipment used
+in support of, or under control of, the computer. Used in
+this manual to mean equipment other than the computer or
+Terminal.
+
+Plug—The most portable of two mating connectors.
+
+Program—A pre-defined course of action which controls
+computer or other equipment operation. May be written on
+paper, punched on tape, stored on a magnetic storage
+device, or stored in computer or other equipment memory.
+
+Program command—A command sent from the computer to
+the Terminal or to peripheral equipment as a result of a
+program decision.
+
+Protected Data—Data identified by a Field Attribute Code
+that cannot be changed by a keyboard entry.
+
+Receiving—Receiving data from another device.
+
+Reset—Can refer to the RESET switch or one of many
+functions it controls. See RESET switch description.
+
+Return—See carriage return. Also the keyboard name for
+control character CR.
+
+Roll-up—The Terminal feature that when communicating in
+DIRECT, enables the displayed data to roll-up one line
+when attempting to perform a line feed past the bottom
+line.
+
+Ruling Characters—An optional display package that can be
+ordered to permit the Terminal to draw lines for forms,
+charts, etc.
+
+Screen—That area of the Terminal’s display unit on which
+data is displayed. The face of the cathode-ray storage tube.
+
+Send Function—A transmission function initiated by
+simultaneously pressing the SEND-ENTER and SHIFT
+keys. This function permits all data that resides between
+Message Separators to be transmitted.
+
+®
+
+APPENDIX E
+
+GLOSSARY
+
+(cont.)
+
+Serialization—The process of converting simultaneously-
+occurring (parallel) data bits into sequentially-occurring
+(serial) data bits.
+
+Serial Transmission—Sequential transmission of single data
+bits.
+
+SHIFT key—A key on the Terminal keyboard whose
+function is comparable to that of a typewriter shift key.
+
+Shifted character—A character resulting from pressing a
+symbol key while the SHIFT key is held down.
+
+Signal lines—Wires which are used to send command signals
+between or within devices.
+
+Software—Programs, procedures and techniques for direct-
+ing the hardware (computer, Terminal, etc.) to perform
+desired functions.
+
+Space—The horizontal area allocated to writing a character.
+Also, the movement from a character writing area to the
+next writing area. Also, the command which causes such
+movement without causing character writing.
+
+Standard accessory—A device which is supplied with the
+basic Terminal.
+
+Standards, data communication—See data communication
+standards.
+
+Store—Synonomous with Terminal memory. The placement
+in memory of computer and keyboard data.
+
+Strappable options—Operating features which can be
+changed by moving a friction-held wire from one point to
+another,
+
+Telephone line connection—A communication link between
+the Terminal and computer. Sometimes generalized to
+include the associated modems.
+
+Timing—The control of operations between and within
+devices with respect to time.
+APPENDIX E
+
+GLOSSARY
+
+(cont.)
+
+Transmittable Data—Data identified by a Field Attribute
+Code as being able to be transmitted,
+
+Transmitting—Sending data to another device.
+
+Triple key entry—Pressing a character key while holding
+down both the CTRL and SHIFT keys to generate the code
+for a control character.
+
+Unblanked—The beam writing condition which produces
+the display on the screen.
+
+Unprotected Data—Data identified by a Field Attribute
+Code that can be altered from the keyboard.
+
+Unshifted character—A character resulting from pressing a
+symbol key while the SHIFT and CTRL keys are both
+released.
+
+E-6
+
+4023 Users
+
+Voltage, data transfer—The voltage levels required to
+denote the status of data being transmitted.
+
+Voltage, operating—See line voltage.
+
+Writing—Displaying information on the screen as a result of
+unblanking the display beam.
+
+Writing character—Any of the numerous characters in the
+ASCII code which can be written by the Terminal’s
+character generator.
+
+X—The horizontal axis of the screen.
+
+Y—The vertical axis of the screen.
+MANUAL CHANGE INFORMATION
+
+At Tektronix, we continually strive to keep up with latest
+electronic developments by adding circuit and component
+improvements to our instruments as soon as they are devel-
+oped and tested.
+
+Sometimes, due to printing and shipping requirements, we
+can't get these changes immediately into printed manuals.
+Hence, your manual may contain new change information on
+following pages. :
+
+A single change may affect several sections. Sections of
+the manual are often printed at different times, so some of
+the information on the change pages may already be in
+your manual. Since the change information sheets are carried
+in the manval until ALL changes are permanently entered,
+some duplication may occur. If no such change pages appear
+in this section, your manual is correct as printed.
+fe] i)
+
+4023 Users EFF SN ALL
+
+TEXT CORRECTION
+
+Page 2-9 Under ASCII Control Character column, "ESC 0"
+CHANGE TO READ:
+ESC 0 (7919)
+ESC o (111)9)
+ESCey, (4719)
+C1/873
+4023 USERS EFF for ALL SN
+
+TEXT CORRECT ION
+
+Oo Page 2-7 Under Summary of ASC11 Code Effect on the 4023
+
+CHANGE : 33-126) (40-177,,) to read: 33-1265 (40-176,)
+Page 2-8 Under ASC11 CONTROL CHARACTER column
+CHANGE:
+
+vT (10,,) to VT (11,9)
+
+CR (10,3) to CR (1349)
+
+so (10,,) to so (1455)
+
+S1 (10,,) to $1 (1545)
+
+ESC (10,5) to ESC (2749)
+
+FS (1053) to FS (28,9)
+
+Page 2-9 CHANGE:
+
+us (10,,) to US (31,4)
+(s) Page 2-10 Under KEYBOARD KEY COMBINATION column
+CHANGE: ESC] (]= 10,3) to ESC] (= 9349)
+
+SS)
+
+1/873
