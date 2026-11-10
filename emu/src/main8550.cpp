@@ -7,6 +7,7 @@
 #include "cpu/s2650/2650dasm.h"
 #include "cpu/t11/t11dasm.h"
 #include "host/tty.h"
+#include "host/ct8500.h"
 #include <cstdio>
 #include <string>
 #include <sstream>
@@ -40,7 +41,7 @@ static void show(tek8301 &a, tek8501 &b)
 
 int main(int argc, char **argv)
 {
-	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, disks[4];
+	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, termmode, screenfile, disks[4];
 	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false;
 	struct typed_t { double at; std::string text; };
 	std::vector<typed_t> typed;
@@ -59,10 +60,12 @@ int main(int argc, char **argv)
 		else if (a == "-hsilog") hsilog = next();
 		else if (a == "-auxlog") auxlog = next();
 		else if (a == "-dump") dumpfile = next();
+		else if (a == "-term") termmode = next();
+		else if (a == "-screen") screenfile = next();
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
-		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE]\n", argv[0]); return 1; }
 	}
 	auto mdu = std::make_unique<tek8301>();
 	auto dmu = std::make_unique<tek8501>();
@@ -74,7 +77,19 @@ int main(int argc, char **argv)
 	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
 	FILE *hsif = hsilog.empty() ? nullptr : fopen(hsilog.c_str(), "w");
 	FILE *auxf = auxlog.empty() ? nullptr : fopen(auxlog.c_str(), "wb");
-	mdu->term.on_tx = [&](u8 c) { c &= 0x7f; if (c) { fputc(c, stdout); fflush(stdout); } if (logf) { fputc(c, logf); fflush(logf); } };
+	bool interactive = isatty(0) && max_cycles < 0;
+	// terminal: CT8500 model rendered with ANSI (default when interactive), or raw pass-through
+	if (termmode.empty()) termmode = (interactive && isatty(1)) ? "ct8500" : "tty";
+	const bool ct_mode = termmode == "ct8500";
+	ct8500 ct;
+	bool ct_dirty = false;
+	ct.send = [&](u8 b) { mdu->term.host_rx(b); };
+	mdu->term.on_tx = [&](u8 c) {
+		c &= 0x7f;
+		if (ct_mode || !screenfile.empty()) { ct.feed(c); ct_dirty = true; }
+		if (!ct_mode && c) { fputc(c, stdout); fflush(stdout); }
+		if (logf) { fputc(c, logf); fflush(logf); }
+	};
 	dmu->aux.on_tx = [&](u8 c) { if (auxf) { fputc(c & 0x7f, auxf); fflush(auxf); } };
 
 	// the HSI cable
@@ -113,8 +128,12 @@ int main(int argc, char **argv)
 	mdu->power_on();
 	dmu->power_on();
 
-	bool interactive = isatty(0) && max_cycles < 0;
-	if (interactive) { host::tty_raw(true); fprintf(stderr, "[tek8550: Ctrl-] for monitor]\r\n"); }
+	if (interactive) {
+		host::tty_raw(true);
+		if (ct_mode) { fputs(ct.enter_screen().c_str(), stdout); fflush(stdout); }
+		else fprintf(stderr, "[tek8550: Ctrl-] for monitor]\r\n");
+	}
+	std::string keybuf;
 	using clk = std::chrono::steady_clock;
 	auto t0 = clk::now();
 	const double slice_s = 0.0001;   // run both machines in 100 us lockstep
@@ -122,8 +141,12 @@ int main(int argc, char **argv)
 	for (;;) {
 		if (max_cycles >= 0 && (long long)mdu->cycles() >= max_cycles) break;
 		int k;
-		while ((k = host::poll_key()) >= 0) {
-			if (k == 035) {
+		while ((k = host::poll_key()) >= 0) keybuf += char(k);
+		while (!keybuf.empty()) {
+			u8 k0 = u8(keybuf[0]);
+			if (k0 == 035) {
+				keybuf.erase(0, 1);
+				if (ct_mode) { fputs(ct.leave_screen().c_str(), stdout); fflush(stdout); }
 				host::tty_raw(false);
 				printf("\n[monitor] c continue | q quit | r regs | R restart both\n"); show(*mdu, *dmu);
 				char line[64]; bool quit = false;
@@ -131,9 +154,19 @@ int main(int argc, char **argv)
 					if (line[0] == 'q') { quit = true; break; } if (line[0] == 'c' || line[0] == '\n') break;
 					if (line[0] == 'r') show(*mdu, *dmu); if (line[0] == 'R') { mdu->restart(); dmu->restart(); } }
 				if (quit) goto done;
-				host::tty_raw(true); continue;
+				host::tty_raw(true);
+				if (ct_mode) { fputs(ct.enter_screen().c_str(), stdout); fputs(ct.render(true).c_str(), stdout); fflush(stdout); }
+				continue;
 			}
-			mdu->term.host_rx(u8(k == '\n' ? '\r' : k));
+			// split off one key: ESC [ ... final, ESC O x, lone ESC, or a plain byte
+			size_t n = 1;
+			if (k0 == 0x1b && keybuf.size() >= 2 && (keybuf[1] == '[' || keybuf[1] == 'O')) {
+				if (keybuf[1] == 'O') n = std::min<size_t>(3, keybuf.size());
+				else { n = 2; while (n < keybuf.size() && !(keybuf[n] >= 0x40 && keybuf[n] <= 0x7e)) n++; n = std::min(n + 1, keybuf.size()); }
+			}
+			std::string key = keybuf.substr(0, n); keybuf.erase(0, n);
+			if (ct_mode) ct.key(key);
+			else for (char ch1 : key) mdu->term.host_rx(u8(ch1 == '\n' ? '\r' : ch1));
 		}
 		for (auto &t : typed)
 			if (!t.text.empty() && mdu->cycles() >= t.at * tek8301::CPU_HZ) {
@@ -153,6 +186,7 @@ int main(int argc, char **argv)
 		dmu->run_slice(int(tek8501::CPU_HZ * slice_s));
 		if (dmu->cpu.halted()) dmu->cpu.set_halted(false);   // no ODT console here: resume (logged)
 		ticks++;
+		if (ct_mode && interactive && ct_dirty && ticks % 20 == 0) { fputs(ct.render().c_str(), stdout); fflush(stdout); ct_dirty = false; }
 		if (ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
 		if (interactive && ticks % 10 == 0) {
 			auto want = t0 + std::chrono::microseconds(ticks * 100);
@@ -160,7 +194,9 @@ int main(int argc, char **argv)
 		}
 	}
 done:
+	if (ct_mode && interactive) { fputs(ct.leave_screen().c_str(), stdout); fflush(stdout); }
 	host::tty_raw(false);
+	if (!screenfile.empty()) { FILE *f = fopen(screenfile.c_str(), "w"); if (f) { fputs(ct.text().c_str(), f); fclose(f); } }
 	{ std::string e; if (!dmu->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
 	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }
 	for (FILE *f : { logf, hsif, auxf, trf, trf11 }) if (f) fclose(f);

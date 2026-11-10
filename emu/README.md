@@ -40,3 +40,24 @@ CPU cores are ported from MAME (BSD-3-Clause, see `../reference/mame/SOURCE.txt`
 > COPY T.LST CONO
 ```
 Disk writes stay in memory (the image file is not modified).
+
+## Terminal: CT8500 emulation (default when interactive)
+Your terminal shows an emulated **Tektronix CT8500** (25×80 window over 50 lines of memory, attributes, split screen,
+cursor/top-line queries), so the full-screen **ACE** editor works. Use a terminal of at least 80×25. `-term tty` gives raw
+pass-through instead, and `-screen FILE` dumps the emulated screen at exit.
+
+Key map (ACE's configurable commands in brackets, see ACE manual Fig. 4-2):
+
+| Your key | CT8500 key | ACE |
+|---|---|---|
+| arrows / Home | cursor keys / HOME | (cu) (cd) (cl) (cr) (ch) |
+| F1 F2 F3 F4 | F1–F4 (SCROLL ← ↓ ↑ →) | (sl) (sd) (su) (sr) |
+| F5 / PgDn, F6 / PgUp | F5 PAGE↓, F6 PAGE↑ | (pd) (pu) |
+| F7 | F7 REVISE | (rm) |
+| F8 | F8 | |
+| Insert / Delete | INSERT / DELETE CHAR | (ic) (dc) |
+| F9 / F10 | INSERT / DELETE LINE | (il) (dl) |
+| F11 / F12 | ERASE to EOL / EOP | |
+| Shift-Tab | BACK TAB | (mark) |
+| Ctrl-J | LINE FEED | (cmd-esc) |
+| Esc | ESC | ends insert; `EX` saves & exits ACE |
