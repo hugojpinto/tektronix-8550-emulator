@@ -38,6 +38,12 @@ public:
 	bool halted() const { return m_halt; }
 	u64 insn_count() const { return m_insns; }
 	std::function<void(u16)> trace_hook;
+	// [tek8550] machine hook before each instruction (software compatibility fixes),
+	// with access to the current register bank (MAME swaps banks on RS changes, so
+	// m_reg[1..3] always hold the current one) and the top of the return address stack
+	std::function<void(u16)> exec_hook;
+	void set_reg_bank(int n, u8 v) { m_reg[n] = v; }
+	u16 ras_top() const { return m_ras[m_psu & 7]; }   // push = SP + 1, then store
 
 private:
 	// ---- adapters standing in for MAME address spaces / callbacks ----
@@ -50,7 +56,7 @@ private:
 	void standard_irq_callback(int, offs_t) {}
 	const char *tag() const { return "s2650"; }
 	template <typename... A> void logerror(const char *f, A... a) { fprintf(stderr, f, a...); }
-	void debugger_instruction_hook(offs_t pc) { if (trace_hook) trace_hook(u16(pc)); }
+	void debugger_instruction_hook(offs_t pc) { if (exec_hook) exec_hook(u16(pc)); if (trace_hook) trace_hook(u16(pc)); }
 
 	bus_interface &m_bus;
 	prog_t m_program, m_cprogram;

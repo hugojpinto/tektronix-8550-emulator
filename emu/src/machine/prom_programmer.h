@@ -39,6 +39,7 @@ public:
 	bool int14() const { return present && m_int14; }   // cleared by the 0E/0D acknowledges or 0C
 
 	void reset();
+	u8   last_command() const { return m_cmd; }
 	u8   read(int port);                           // 0 = D0, 1 = D1
 	void write(int port, u8 d);
 	void tick(int cycles2650);
@@ -58,6 +59,15 @@ public:
 	void then_recv(int n) { step x{step::RECV}; x.count = n; then(x); }
 	void then_call(std::function<void(prom_programmer &)> f) { step x{step::CALL}; x.fn = std::move(f); then(x); }
 	std::vector<u8> params, received;              // collected by PARAMS / RECV
+
+	// the device in the ZIF socket, backed by an image file (-prom-dev FILE)
+	std::vector<u8> socket;                        // contents (erased EPROM = FF)
+	std::string socket_file;
+	size_t socket_size = 0;                        // bytes to save: the file's size, or the highest address programmed
+	bool socket_dirty = false;
+	bool load_socket(const std::string &path, std::string &err);
+	bool save_socket(std::string &err);
+	u8 socket_rd(u32 a) const { return a < socket.size() ? socket[a] : 0xff; }
 
 private:
 	// interface

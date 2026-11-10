@@ -23,6 +23,16 @@ tek8301::tek8301()
 {
 	lp_reset();
 	prom.present = false;      // option; -prom on fits it
+	// -prom fix, part 2: the later DOS/50's 'post event' (0304 there) delivers the target
+	// task id as the woken task's r1; V1.0's 02FA delivers the caller's r1 instead. The
+	// PROM framework (6002) stores that r1 as its own task id (60E7), so calls coming from
+	// the relocated PROM driver get r1 = r0.
+	cpu.exec_hook = [this](u16 pc) {
+		if (prom_dos50_fix && pc == 0x02fa) {
+			u16 ret = cpu.ras_top();
+			if (ret >= 0x6000 && ret < 0x7000) cpu.set_reg_bank(1, cpu.reg(0));
+		}
+	};
 }
 
 // --------------------------------------------------------------------------
@@ -392,12 +402,23 @@ void tek8301::io_write(offs_t port, u8 d)
 		break;
 	case 0xd0:
 		if (prom_dos50_fix && prom.present) {
-			// PROM software V2.1 (1982) calls the DOS/50 scheduler wake-up at 03DE, which in
-			// DOS/50 V1.0 (18-AUG-80) is a data table; the routine is at 03D4 there. Redirect
-			// the driver's 'bsta,a $03de' calls (overlays load at 6000-6FFF) to 03D4.
-			if (peek(0x03d4) == 0x04 && peek(0x03d5) == 0xc0 && peek(0x03de) == 0x1e)
-				for (offs_t a = 0x6000; a < 0x6ffe; a++)
-					if (peek(a) == 0x3f && peek(a + 1) == 0x03 && peek(a + 2) == 0xde) poke(a + 2, 0xd4);
+			// PROM software V2.1 (1982) was built for a later DOS/50 V1.x whose resident
+			// routines sit 10 bytes higher than in V1.0 (18-AUG-80): 'post event to task'
+			// 02FA -> 0304 and 'wake the dispatcher' 03D4 -> 03DE (in V1.0, 0304 is the
+			// post's inner entry that needs a message slot in r1, and 03DE is the task
+			// entry-address table). Relocate the driver's calls (overlays at 6000-6FFF).
+			// Empirically, only the device-write commands (F0-F3: WPROM) need the relocated
+			// post on V1.0; status, type, read and compare (PSTAT, PTYPE, RPROM, CPROM) only
+			// complete with the original 0304 call. The call sites follow the current command.
+			if (peek(0x02fa) == 0xc8 && peek(0x02fb) == 0x52 && peek(0x03d4) == 0x04 && peek(0x03d5) == 0xc0) {
+				bool reading = (prom.last_command() & 0xfc) != 0xf0;
+				for (offs_t a = 0x6000; a < 0x6ffe; a++) {
+					if (peek(a) != 0x3f) continue;
+					if (peek(a + 1) == 0x03 && peek(a + 2) == 0xde) poke(a + 2, 0xd4);
+					else if (!reading && peek(a + 1) == 0x03 && peek(a + 2) == 0x04) { poke(a + 1, 0x02); poke(a + 2, 0xfa); }
+					else if (reading && peek(a + 1) == 0x02 && peek(a + 2) == 0xfa) { poke(a + 1, 0x03); poke(a + 2, 0x04); }
+				}
+			}
 		}
 		prom.write(0, d);
 		break;

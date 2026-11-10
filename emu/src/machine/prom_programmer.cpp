@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdarg>
 #include <cstdlib>
+#include <cstring>
+#include <algorithm>
 
 static const bool g_trace = getenv("TEK_PROMTRACE") != nullptr;
 
@@ -160,6 +162,28 @@ std::vector<u8> prom_programmer::module_info()
 	return v;
 }
 
+bool prom_programmer::load_socket(const std::string &path, std::string &err)
+{
+	socket_file = path;
+	socket.assign(0x10000, 0xff);                  // an erased device unless the file exists
+	FILE *f = fopen(path.c_str(), "rb");
+	socket_size = 0;
+	if (f) { socket_size = fread(socket.data(), 1, socket.size(), f); fclose(f); }
+	return true;
+}
+
+bool prom_programmer::save_socket(std::string &err)
+{
+	if (!socket_dirty || socket_file.empty()) return true;
+	FILE *f = fopen(socket_file.c_str(), "wb");
+	if (!f) { err = "cannot write " + socket_file; return false; }
+	fwrite(socket.data(), 1, std::min(socket_size, socket.size()), f); fclose(f);
+	socket_dirty = false;
+	return true;
+}
+
+static u32 be24(const std::vector<u8> &p, size_t i) { return u32(p[i] << 16 | p[i + 1] << 8 | p[i + 2]); }
+
 // the command set (as far as reverse-engineered). Status: bit 0 = OK, bits 6-5 = next
 // phase (60 parameters, 40 sends data, 20 accepts data, 00 done), bit 7 = unrecognized
 // command, bits 1-2 = failure reasons when bit 0 is clear.
@@ -281,6 +305,48 @@ void prom_programmer::command(u8 c)
 		then_call([](prom_programmer &p) {
 			if (p.params[0] < 1 || p.params[0] > MODULE_DEVICES) { p.then_status(0x02); return; }
 			p.then_status(0x01);                   // executing (writes a test pattern) until aborted
+		});
+		break;
+	case 0xe0: case 0xe1:                          // read device (DOS/50 RPROM; E1 = option variant)
+		// parameters: device index (1-based in the module table), first and last address
+		// (3 bytes each); the device contents follow in a data phase
+		then_status(0x61);
+		then_params(7);
+		then_call([](prom_programmer &p) {
+			int dev = p.params[0];
+			u32 lo = be24(p.params, 1), hi = be24(p.params, 4);
+			if (dev < 1 || dev > MODULE_DEVICES || hi < lo || hi >= DEVICES[dev - 1].size) { p.then_status(0x02); return; }
+			std::vector<u8> data;
+			for (u32 a = lo; a <= hi; a++) data.push_back(p.socket_rd(a));
+			p.then_status(0x41);
+			p.then_send(data);
+			p.then_status(0x01);
+		});
+		break;
+	case 0xf0: case 0xf1: case 0xf2: case 0xf3:    // program device (DOS/50 WPROM sends F2)
+		// parameters as for read; then the host sends the data (phase 20). UV EPROM
+		// programming can only clear bits: a byte needing a 0 -> 1 change fails to verify.
+		then_status(0x61);
+		then_params(7);
+		then_call([](prom_programmer &p) {
+			int dev = p.params[0];
+			u32 lo = be24(p.params, 1), hi = be24(p.params, 4);
+			if (dev < 1 || dev > MODULE_DEVICES || hi < lo || hi >= DEVICES[dev - 1].size) { p.then_status(0x02); return; }
+			p.then_status(0x21);
+			p.then_recv(int(hi - lo + 1));
+			p.then_call([lo](prom_programmer &q) {
+				bool ok = true;
+				for (size_t i = 0; i < q.received.size(); i++) {
+					u32 a = lo + u32(i);
+					if (a >= q.socket.size()) q.socket.resize(a + 1, 0xff);
+					u8 want = q.received[i];
+					q.socket[a] &= want;               // programming pulses clear bits
+					if (a + 1 > q.socket_size) q.socket_size = a + 1;
+					if (q.socket[a] != want) ok = false;
+				}
+				q.socket_dirty = true;
+				q.then_status(ok ? 0x01 : 0x04);       // 04: verify failure (bit 2 with bit 0 clear)
+			});
 		});
 		break;
 	default:

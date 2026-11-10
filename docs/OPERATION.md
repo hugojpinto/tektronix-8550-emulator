@@ -165,6 +165,30 @@ Then, on the 8550:
 
 The wire protocol (so you can write your own target, or use FUSE's Spectrum as one) is in `notes/prototype-link.md`.
 
+## 6½. Program PROMs (the 8550F30 PROM programmer)
+
+The programmer is an option, so fit it with `-prom fix`. Then put a device in its socket with `-prom-dev FILE`: a raw image, created erased if it doesn't exist and saved at exit. The emulated characteristic module takes 2708, 2716 and 2732 EPROMs.
+
+1. **Install the PROM commands once** onto your working system disk. Put the PROM disk in drive 1 and run its install file:
+   ```
+   build/tek8550 -rw -0 ../disks/work.img -1 ../sources/bitsavers/disks/062-6036-01_8550F30_prom_programmer_2.1_1982.imd
+   > /VOL/PP/INSTALL1
+   ```
+   The "Error 1D File not found" lines are expected: the script tries every processor directory.
+2. **Use them:**
+   ```
+   build/tek8550 -prom fix -prom-dev my2716.bin -rw -0 ../disks/work.img
+   > PTYPE                        device types on the module
+   > RPROM 1000 2716 0 7FF        read the whole 2716 into program memory 1000-17FF
+   > CPROM 1000 2716 0 7FF        compare device and memory
+   > WPROM 1000 2716 0 7FF        program the device from memory
+   > PSTAT                        "... NO PROM PROGRAMMER ERRORS DETECTED ..."
+   ```
+
+`-prom fix` is needed because the surviving PROM software (V2.1, 1982) was built for a later DOS/50 than our V1.0. On a real 8550 with V1.0 it would hang too; `notes/8301.md` has the details.
+
+One known limitation: after a `WPROM`, a later `RPROM` or `CPROM` in the same session hangs. The device image is already correct, so just restart the emulator.
+
 ## 7. Run the hardware diagnostics
 
 Both diagnostic disks run the complete self-test of every board:

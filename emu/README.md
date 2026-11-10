@@ -23,6 +23,22 @@ build/tek8550 -pm ext -0 ../sources/bitsavers/disks/062-5412-08_8501_1err_DOS50.
 # -ep-prom FILE: a 512-byte dump of the Z80 emulator board's firmware PROM (F800-F9FF)
 ```
 
+## PROM programmer (8550F30)
+- **Options:**
+  - `-prom on` fits the programmer: ports D0/D1, interrupts 13/14, a high-level model of its 8085 controller. With it, PROM.TST (diagnostics, Select mode → 20) passes all 14 options.
+  - `-prom fix` also adapts the 1982 PROM software V2.1 to DOS/50 V1.0 (see `notes/8301.md`).
+  - `-prom-dev FILE` is the device in the ZIF socket: a raw image, created erased (FF) if missing and saved at exit.
+- **Emulated characteristic module:** 2708, 2716 and 2732 EPROMs. Programming only clears bits, as on a UV EPROM.
+- **Install the commands once:** with the system disk in drive 0 and the PROM disk in drive 1, run `/VOL/PP/INSTALL1` (use `-rw` on a copy of the system disk).
+- **Example:**
+```
+build/tek8550 -prom fix -prom-dev my2716.bin -rw -0 ../disks/work.img
+> RPROM 1000 2716 0 7FF      read the device into program memory 1000-17FF
+> CPROM 1000 2716 0 7FF      compare
+> WPROM 1000 2716 0 7FF      program it from 1000-17FF
+> PTYPE / PSTAT              device types / controller status
+```
+
 tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (8501 AUX port), `-dump FILE` (memory images),
 `-type SECONDS TEXT` (type into the terminal at a machine time; `\r` Return, `\e` ESC, `\xHH`), `-trace8301 T FILE`, `-trace8501 T LEN FILE`. Env `TEK_IOTRACE=1` / `TEK_IOTRACE8301=1` trace device I/O.
 Options: `-roms DIR` (default `../roms/8550/8501`), `-0..-3 DISK` (.imd or raw), `-odt` (start halted in ODT),
