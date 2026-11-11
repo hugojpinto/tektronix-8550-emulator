@@ -48,6 +48,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	m_feed_ct = feed_terminal;
 	mdu = std::make_unique<tek8301>();
 	dmu = std::make_unique<tek8501>();
+	dmu->fdc_lle = !opt.fdc_hle;
 	if (!mdu->load_roms(opt.roms + "/8301", err) || !dmu->load_roms(opt.roms + "/8501", err)) return false;
 	for (int d = 0; d < 4; d++) {
 		if (opt.disks[d].empty()) continue;
@@ -157,6 +158,15 @@ void tek8550_system::scripted_events()
 				mdu->poke(addr++, u8(strtoul(pk.text.substr(i, 2).c_str(), nullptr, 16)));
 			pk.text.clear();
 		}
+	for (auto &dc : opt.discs)
+		if (!dc.text.empty() && mdu->cycles() >= dc.at * tek8301::CPU_HZ) {
+			size_t eq = dc.text.find('=');
+			int drive = atoi(dc.text.c_str()) & 3;
+			std::string e;
+			bool ok = eq == std::string::npos ? eject(drive, e) : mount(drive, dc.text.substr(eq + 1), e);
+			if (!ok) fprintf(stderr, "[drive %d: %s]\r\n", drive, e.c_str());
+			dc.text.clear();
+		}
 	for (auto &sn : opt.snaps)
 		if (!sn.text.empty() && mdu->cycles() >= sn.at * tek8301::CPU_HZ) {
 			FILE *f = fopen(sn.text.c_str(), "w"); if (f) { fputs(ct.state().c_str(), f); fclose(f); }
@@ -185,6 +195,14 @@ void tek8550_system::update_outputs()
 		m_out_8501 = b;
 		for (int i = 0; i < 5; i++) out.set("8501:led" + std::to_string(i), !((b >> i) & 1));
 	}
+	// drive activity lamps: selected with the head loaded (low-level controller only)
+	int m = 0;
+	if (dmu->fdc_lle) for (int d = 0; d < 4; d++) if (dmu->fdc.drive_lamp(d)) m |= 1 << d;
+	if (m != m_out_drives) {
+		if (m_out_drives < 0) for (int d = 0; d < 4; d++) out.set("drive" + std::to_string(d) + ":disc", dmu->mounted(d));
+		m_out_drives = m;
+		for (int d = 0; d < 4; d++) out.set("drive" + std::to_string(d) + ":active", (m >> d) & 1);
+	}
 }
 
 void tek8550_system::tick()
@@ -197,6 +215,22 @@ void tek8550_system::tick()
 	m_ticks++;
 	update_outputs();
 	if (m_ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
+}
+
+bool tek8550_system::mount(int drive, const std::string &path, std::string &err)
+{
+	bool wb = opt.writeback && path.find("sources/") == std::string::npos;
+	if (dmu->mounted(drive) && !dmu->eject(drive, err)) return false;
+	if (!dmu->mount(drive, path, err, wb, true)) return false;
+	out.set("drive" + std::to_string(drive) + ":disc", 1);
+	return true;
+}
+
+bool tek8550_system::eject(int drive, std::string &err)
+{
+	bool ok = dmu->eject(drive, err);
+	out.set("drive" + std::to_string(drive) + ":disc", 0);
+	return ok;
 }
 
 bool tek8550_system::input(const std::string &name, int value)

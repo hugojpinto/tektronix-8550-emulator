@@ -49,6 +49,10 @@ public:
 	// Returns false for an unknown name.
 	bool input(const std::string &name, int value = 1);
 
+	// discs: insert at run time (the drive reports a disc change) / write back and remove
+	bool mount(int drive, const std::string &path, std::string &err);
+	bool eject(int drive, std::string &err);
+
 	void show(FILE *f);                            // registers of both CPUs (monitor)
 	tek8301 &mdu_unit() { return *mdu; }
 	tek8501 &dmu_unit() { return *dmu; }
@@ -64,7 +68,7 @@ private:
 	FILE *logf = nullptr, *hsif = nullptr, *auxf = nullptr, *trf = nullptr, *trf11 = nullptr, *outf = nullptr;
 	int last_dir = 0;
 	u64 m_ticks = 0;
-	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1;
+	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1, m_out_drives = -1;
 
 	void scripted_events();
 	void update_outputs();

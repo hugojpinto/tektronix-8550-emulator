@@ -34,6 +34,9 @@ tek8501::tek8501()
 {
 	memset(m_prom, 0xff, sizeof m_prom);
 	aux.char_cycles = printer.char_cycles = int(CPU_HZ * 10 / 9600);   // 9600 baud, 10 bits/char
+	// the controller is a Q-bus DMA master
+	fdc.dma_read = [this](u32 a, u16 &v) { if (a >= 0x10000) return false; bool nxm = false; v = read16(offs_t(a), nxm); return !nxm; };
+	fdc.dma_write = [this](u32 a, u16 v) { if (a >= 0x10000) return false; bool nxm = false; write16(offs_t(a), v, nxm); return !nxm; };
 }
 
 bool tek8501::load_roms(const std::string &dir, std::string &err)
@@ -49,11 +52,30 @@ bool tek8501::load_roms(const std::string &dir, std::string &err)
 	for (int h = 0; h < 2; h++)
 		for (int w = 0; w < 512; w++)
 			m_prom[h][w] = u16(lo[h * 512 + w]) | (u16(hi[h * 512 + w]) << 8);
+	if (fdc_lle && !fdc.load_rom(dir + "/160-0412-00.u2030", err)) return false;
 	return true;
 }
 
-bool tek8501::mount(int drive, const std::string &path, std::string &err, bool writeback)
+bool tek8501::mount(int drive, const std::string &path, std::string &err, bool writeback, bool at_run_time)
 {
+	if (fdc_lle) {
+		flex::drive &fd = fdc.drv[drive & 3];
+		std::vector<u8> lin;
+		if (!load_imd_linear(path, lin, err, &fd.is_imd, &fd.comment)) return false;
+		fd.path = path; fd.writeback = writeback;
+		fd_geometry g;
+		if (lin.empty()) fd.load_unformatted(true);            // blank media: FORMAT it
+		else {
+			// the image size gives the geometry; anything else is taken as DSDD, padded with E5
+			if (lin.size() % 256 || !fd_geometry::from_records(lin.size() / 256, g)) {
+				g = fd_geometry();
+				lin.resize(size_t(g.records()) * 256, 0xe5);
+			}
+			fd.load_linear(lin, g);
+		}
+		fd.disc_change = at_run_time;                          // door opened and closed
+		return true;
+	}
 	drive_t &d = m_drive[drive & 3];
 	if (!load_imd_linear(path, d.data, err, &d.is_imd, &d.comment)) return false;
 	d.path = path; d.present = true; d.changed = true; d.writeback = writeback; d.dirty = false;
@@ -64,6 +86,14 @@ bool tek8501::mount(int drive, const std::string &path, std::string &err, bool w
 		d.data.resize(size_t(d.geom.records()) * 256, 0xe5);
 	}
 	return true;
+}
+
+bool tek8501::eject(int drive, std::string &err)
+{
+	bool ok = flush(err, true);        // write back first
+	if (fdc_lle) { flex::drive &fd = fdc.drv[drive & 3]; fd.present = false; fd.disc_change = true; fd.tracks.clear(); fd.dirty = false; }
+	else { m_drive[drive & 3].present = false; m_drive[drive & 3].dirty = false; }
+	return ok;
 }
 
 void tek8501::power_on()
@@ -86,6 +116,7 @@ void tek8501::bus_reset()
 	m_ltc &= ~0140;                  // INIT clears IE and PROM select (LEDs set on)
 	m_ltc &= 003777;
 	m_fd_busy = false; m_fd_irq = false;
+	if (fdc_lle) fdc.reset();        // BINIT resets the controller's Z80
 	io_reset(true);
 	cpu.set_input(t11_device::VEC_LINE, CLEAR_LINE);
 }
@@ -101,7 +132,7 @@ u16 tek8501::read16(offs_t a, bool &nxm)
 	if (aux.decodes(a)) { u16 v = aux.read(a); update_irq(); return v; }
 	if (printer.decodes(a)) { u16 v = printer.read(a); update_irq(); return v; }
 	if (a == LTC_ADDR) return m_ltc & 0000341;     // LEDs are write-only
-	if (a == CBPR_ADDR) return m_cbpr;
+	if (a == CBPR_ADDR) return fdc_lle ? fdc.cbpr_read() : m_cbpr;
 	if (a >= HSI_BASE && a < HSI_BASE + 16) { u16 v = io_read((a - HSI_BASE) >> 1); update_irq(); return v; }
 	nxm = true;
 	return 0;
@@ -121,7 +152,7 @@ void tek8501::write16(offs_t a, u16 d, bool &nxm)
 		m_ltc = (d & 0174140) | mon | (m_ltc & 1);
 		return;
 	}
-	if (a == CBPR_ADDR) { fd_start(d); return; }
+	if (a == CBPR_ADDR) { if (fdc_lle) fdc.cbpr_write(d); else fd_start(d); return; }
 	if (a >= HSI_BASE && a < HSI_BASE + 16) { io_write((a - HSI_BASE) >> 1, d); update_irq(); return; }
 	nxm = true;
 }
@@ -162,7 +193,7 @@ u16 tek8501::peek16(offs_t a)
 	if (a < RAM_TOP) return m_ram[a >> 1];
 	if (a >= PROM_BASE && a < PROM_END) return m_prom[(m_ltc >> 5) & 1][(a - PROM_BASE) >> 1];
 	if (a == LTC_ADDR) return m_ltc;
-	if (a == CBPR_ADDR) return m_cbpr;
+	if (a == CBPR_ADDR) return fdc_lle ? fdc.cbpr_read() : m_cbpr;
 	return 0;
 }
 
@@ -177,7 +208,7 @@ void tek8501::poke16(offs_t a, u16 v)
 
 void tek8501::update_irq()
 {
-	bool any = m_fd_irq || io_irq() || aux.irq() || printer.irq();
+	bool any = m_fd_irq || (fdc_lle && fdc.irq()) || io_irq() || aux.irq() || printer.irq();
 	cpu.set_input(t11_device::VEC_LINE, any ? ASSERT_LINE : CLEAR_LINE);
 }
 
@@ -185,6 +216,7 @@ int tek8501::iack()
 {
 	int v = -1;
 	if (m_fd_irq) { m_fd_irq = false; v = FD_VECTOR; }
+	else if (fdc_lle && fdc.irq()) v = fdc.iack();
 	else if (m_io.rx_req) { m_io.rx_req = false; v = m_io.vec & 0360; }
 	else if (m_io.tx_req) { m_io.tx_req = false; v = (m_io.vec & 0360) + 4; }
 	else if (m_io.dma_req) { m_io.dma_req = false; v = (m_io.vec & 0360) + 010; }
@@ -211,6 +243,7 @@ void tek8501::run_slice(int cycles)
 		printer.tick(c);
 		io_tick(c);
 		if (m_fd_busy && m_cycles >= m_fd_done_at) fd_execute();
+		if (fdc_lle) fdc.run_until(m_cycles * 40 / 31);           // 4 MHz Z80 vs 3.1 M T11 units
 		if (m_cycles >= m_next_ltc) {
 			m_next_ltc = m_cycles + ltc_period;
 			m_ltc |= 0200;                            // monitor bit
@@ -566,6 +599,20 @@ void tek8501::io_tick(int c)
 bool tek8501::flush(std::string &err, bool force)
 {
 	bool ok = true;
+	if (fdc_lle) {
+		for (int i = 0; i < 4; i++) {
+			flex::drive &d = fdc.drv[i];
+			if (!d.present || !d.writeback || !d.dirty) continue;
+			if (!force && fdc.cycles() - d.last_write < 2 * flex::CLOCK) continue;
+			std::vector<u8> lin; fd_geometry g;
+			int bad = d.to_linear(lin, g);
+			if (bad) fprintf(stderr, "[drive %d: %d sectors could not be decoded; saved as E5]\r\n", i, bad);
+			std::string e;
+			bool r = d.is_imd ? save_imd_8501(d.path, lin, g, d.comment, e) : save_raw(d.path, lin, e);
+			if (r) d.dirty = false; else { ok = false; err = e; }
+		}
+		return ok;
+	}
 	for (auto &d : m_drive) {
 		if (!d.present || !d.writeback || !d.dirty) continue;
 		// unless forced, wait until writes have been quiet for ~2 s (a whole file save)

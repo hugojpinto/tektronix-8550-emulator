@@ -17,6 +17,7 @@ struct tek8550_options
 	std::string ep_prom_file;          // -ep-prom
 	bool prom_on = false, prom_fix = false; std::string prom_dev;
 	bool rtpa_on = false, rtpa_probe = false, tta_on = false;
+	bool fdc_hle = false;               // -fdc hle|lle: flexible disc controller model
 	long long max_cycles = -1;         // -cycles
 	std::string logfile, hsilog, auxlog, dumpfile, outputs_log;
 	std::string termmode;              // -term ct8500|tty (front-end specific)
@@ -25,6 +26,7 @@ struct tek8550_options
 	std::vector<timed_t> typed;        // -type SECONDS TEXT (\r = Return)
 	std::vector<timed_t> snaps;        // -snap SECONDS FILE
 	std::vector<timed_t> pokes;        // -poke SECONDS ADDR=HEXBYTES
+	std::vector<timed_t> discs;        // -mount SECONDS N=FILE, -eject SECONDS N (text "N" alone)
 	double trace_at = -1; std::string tracefile;                          // -trace8301 SECONDS FILE
 	double trace11_at = -1, trace11_len = 0; std::string trace11file;    // -trace8501 START SECONDS FILE
 

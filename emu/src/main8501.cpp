@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	std::string roms = "../roms/8550/8501", tracefile, logfile;
 	std::string disks[4];
 	long long max_cycles = -1; bool writeback = false;
-	bool odt_at_start = false;
+	bool odt_at_start = false, fdc_hle = false;
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];
 		auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
@@ -86,10 +86,12 @@ int main(int argc, char **argv)
 		else if (a == "-cycles") max_cycles = atoll(next().c_str());
 		else if (a == "-log") logfile = next();
 		else if (a == "-odt") odt_at_start = true;
-		else { fprintf(stderr, "usage: %s [-roms DIR] [-0..-3 disk] [-trace FILE] [-cycles N] [-log FILE] [-odt]\n", argv[0]); return 1; }
+		else if (a == "-fdc") fdc_hle = next() == "hle";
+		else { fprintf(stderr, "usage: %s [-roms DIR] [-0..-3 disk] [-trace FILE] [-cycles N] [-log FILE] [-odt] [-fdc lle|hle]\n", argv[0]); return 1; }
 	}
 
 	auto m = std::make_unique<tek8501>();
+	m->fdc_lle = !fdc_hle;
 	std::string err;
 	if (!m->load_roms(roms, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 	for (int d = 0; d < 4; d++)

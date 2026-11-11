@@ -1,0 +1,1850 @@
+; Tektronix 8501 Flexible Disc Controller firmware, ROM 160-0412-00 (U2030 on A50, 4096 x 8).
+; Z80A at 4 MHz. Memory map and register semantics: notes/8501-fdc.md.
+; Disassembled with emu/build/dasm z80 per code region; tables decoded by hand.
+
+; reset: SP=2400; HSR1 bit 0 = 0 -> board self-test at 0FB5
+0000: 31 00 24     ld   sp,$2400
+0003: 3a 00 a0     ld   a,($A000)
+0006: 1f           rra
+0007: 30 37        jr   nc,$0040
+0009: 11 43 20     ld   de,$2043
+000c: 3e 01        ld   a,$01
+000e: 12           ld   (de),a
+000f: 3a 0c e0     ld   a,($E00C)
+0012: db 00        in   a,($00)
+0014: 06 5a        ld   b,$5A
+0016: cd 67 02     call $0267
+0019: af           xor  a
+001a: 32 6b 20     ld   ($206B),a
+001d: 32 3d 20     ld   ($203D),a
+0020: 32 3e 20     ld   ($203E),a
+0023: 32 00 40     ld   ($4000),a
+0026: 32 00 60     ld   ($6000),a
+0029: 06 18        ld   b,$18
+002b: 21 10 20     ld   hl,$2010
+002e: 77           ld   (hl),a
+002f: 23           inc  hl
+0030: 10 fc        djnz $002E
+0032: ed 56        im   1
+0034: 1a           ld   a,(de)
+0035: b7           or   a
+0036: 18 03        jr   $003B
+
+; INT (IM 1): SCF; RETI -- aborts transfer loops through carry
+0038: 37           scf
+0039: ed 4d        reti
+003b: 28 29        jr   z,$0066
+003d: af           xor  a
+003e: 12           ld   (de),a
+003f: 76           halt
+0040: c3 b5 0f     jp   $0FB5
+0043: 01 00 00     ld   bc,$0000
+0046: ed 53 04 e0  ld   ($E004),de
+004a: 3e 0c        ld   a,$0C
+004c: cd 5c 00     call $005C
+004f: 2a 0a e0     ld   hl,($E00A)
+0052: 13           inc  de
+0053: 1f           rra
+0054: cd 5c 00     call $005C
+0057: 2a 08 e0     ld   hl,($E008)
+005a: 18 ea        jr   $0046
+005c: 32 00 60     ld   ($6000),a
+005f: ed 43 06 e0  ld   ($E006),bc
+0063: c3 64 02     jp   $0264
+
+; NMI: the LSI-11 wrote CBPR (a new command)
+0066: 21 43 20     ld   hl,$2043
+0069: cb 46        bit  0,(hl)
+006b: 28 04        jr   z,$0071
+006d: cb 86        res  0,(hl)
+006f: ed 4d        reti
+0071: 2a 0a e0     ld   hl,($E00A)
+0074: 3a 6b 20     ld   a,($206B)
+0077: b7           or   a
+0078: 20 07        jr   nz,$0081
+007a: 22 00 20     ld   ($2000),hl
+007d: 3c           inc  a
+007e: 32 6b 20     ld   ($206B),a
+0081: 22 69 20     ld   ($2069),hl
+
+; command entry: read the block by DMA, dispatch
+0084: 31 00 24     ld   sp,$2400
+0087: af           xor  a
+0088: 32 28 20     ld   ($2028),a
+008b: dd 21 10 20  ld   ix,$2010
+008f: 21 00 00     ld   hl,$0000
+0092: 22 0a 20     ld   ($200A),hl
+0095: 21 00 80     ld   hl,$8000
+0098: cb 4e        bit  1,(hl)
+009a: 28 0b        jr   z,$00A7
+009c: 21 40 80     ld   hl,$8040
+009f: 22 0a 20     ld   ($200A),hl
+00a2: 06 00        ld   b,$00
+00a4: cd 6e 01     call $016E
+00a7: 2a 69 20     ld   hl,($2069)
+00aa: 22 00 20     ld   ($2000),hl
+00ad: 21 02 20     ld   hl,$2002
+00b0: 06 08        ld   b,$08
+00b2: 36 00        ld   (hl),$00
+00b4: 23           inc  hl
+00b5: 10 fb        djnz $00B2
+00b7: 3a 00 c0     ld   a,($C000)
+00ba: db 00        in   a,($00)
+00bc: 21 3d 20     ld   hl,$203D
+00bf: cb 9e        res  3,(hl)
+00c1: 7e           ld   a,(hl)
+00c2: 32 00 40     ld   ($4000),a
+00c5: cd 21 02     call $0221
+00c8: 3a 0b 20     ld   a,($200B)
+00cb: cb 4f        bit  1,a
+00cd: c2 47 01     jp   nz,$0147
+00d0: cd aa 01     call $01AA
+00d3: dd cb 01 a6  res  4,(ix+$01)
+00d7: 3a 41 20     ld   a,($2041)
+00da: e6 2f        and  $2F
+00dc: c4 71 02     call nz,$0271
+00df: 3a 00 80     ld   a,($8000)
+00e2: cb 67        bit  4,a
+00e4: 28 13        jr   z,$00F9
+00e6: cb 77        bit  6,a
+00e8: 28 0f        jr   z,$00F9
+00ea: 3a 03 20     ld   a,($2003)
+00ed: cb 67        bit  4,a
+00ef: 28 08        jr   z,$00F9
+00f1: 21 0a 20     ld   hl,$200A
+00f4: cb ce        set  1,(hl)
+00f6: 23           inc  hl
+00f7: cb fe        set  7,(hl)
+00f9: 3a 41 20     ld   a,($2041)
+00fc: e6 0a        and  $0A
+00fe: 28 0e        jr   z,$010E
+0100: 21 00 80     ld   hl,$8000
+0103: cb 56        bit  2,(hl)
+0105: 28 07        jr   z,$010E
+0107: 21 0b 20     ld   hl,$200B
+010a: cb ee        set  5,(hl)
+010c: cb fe        set  7,(hl)
+010e: 3a 0b 20     ld   a,($200B)
+0111: b7           or   a
+0112: 20 33        jr   nz,$0147
+0114: cd 94 0e     call $0E94
+0117: 3a 41 20     ld   a,($2041)
+011a: e6 17        and  $17
+011c: c4 30 03     call nz,$0330
+011f: 3a 41 20     ld   a,($2041)
+0122: e6 07        and  $07
+0124: 28 12        jr   z,$0138
+0126: cd 0c 04     call $040C
+0129: 3a 41 20     ld   a,($2041)
+012c: e6 03        and  $03
+012e: c4 53 04     call nz,$0453
+0131: 3a 0b 20     ld   a,($200B)
+0134: b7           or   a
+0135: f4 70 04     call p,$0470
+0138: 3a 0b 20     ld   a,($200B)
+013b: 17           rla
+013c: 38 09        jr   c,$0147
+013e: 18 04        jr   $0144
+0140: 2a 3f 20     ld   hl,($203F)
+0143: e9           jp   (hl)
+0144: cd 40 01     call $0140
+0147: 06 01        ld   b,$01
+0149: cd 6e 01     call $016E
+014c: 3a 6c 20     ld   a,($206C)
+014f: b7           or   a
+0150: 28 0b        jr   z,$015D
+0152: 2a 67 20     ld   hl,($2067)
+0155: cb 85        res  0,l
+0157: 22 69 20     ld   ($2069),hl
+015a: c3 84 00     jp   $0084
+015d: 21 03 20     ld   hl,$2003
+0160: cb 76        bit  6,(hl)
+0162: 28 06        jr   z,$016A
+0164: 21 98 00     ld   hl,$0098
+0167: 22 04 e1     ld   ($E104),hl
+016a: cd bb 0e     call $0EBB
+016d: 76           halt
+
+; command end: E00C, write back, DONE, interrupt (E104 = vector 230)
+016e: 3a 00 80     ld   a,($8000)
+0171: 32 48 20     ld   ($2048),a
+0174: 21 3d 20     ld   hl,$203D
+0177: 7e           ld   a,(hl)
+0178: 32 49 20     ld   ($2049),a
+017b: e6 0f        and  $0F
+017d: 77           ld   (hl),a
+017e: 32 00 40     ld   ($4000),a
+0181: 21 03 20     ld   hl,$2003
+0184: cb fe        set  7,(hl)
+0186: 78           ld   a,b
+0187: b7           or   a
+0188: 28 1c        jr   z,$01A6
+018a: 3a 02 20     ld   a,($2002)
+018d: cb 77        bit  6,a
+018f: 28 0d        jr   z,$019E
+0191: 3a 0b 20     ld   a,($200B)
+0194: 17           rla
+0195: 30 0b        jr   nc,$01A2
+0197: 3a 67 20     ld   a,($2067)
+019a: cb 47        bit  0,a
+019c: 20 04        jr   nz,$01A2
+019e: 3a 0c e0     ld   a,($E00C)
+01a1: 05           dec  b
+01a2: 78           ld   a,b
+01a3: 32 6c 20     ld   ($206C),a
+01a6: cd 94 02     call $0294
+01a9: c9           ret
+
+; decode FDCR command and drive
+01aa: 3a 02 20     ld   a,($2002)
+01ad: e6 3f        and  $3F
+01af: 21 f9 01     ld   hl,$01F9
+01b2: 01 0a 00     ld   bc,$000A
+01b5: ed b1        cpir
+01b7: 20 38        jr   nz,$01F1
+01b9: 09           add  hl,bc
+01ba: 09           add  hl,bc
+01bb: 09           add  hl,bc
+01bc: 09           add  hl,bc
+01bd: 4e           ld   c,(hl)
+01be: 23           inc  hl
+01bf: 46           ld   b,(hl)
+01c0: ed 43 3f 20  ld   ($203F),bc
+01c4: 23           inc  hl
+01c5: 7e           ld   a,(hl)
+01c6: 32 41 20     ld   ($2041),a
+01c9: 3a 03 20     ld   a,($2003)
+01cc: e6 0c        and  $0C
+01ce: 0f           rrca
+01cf: 0f           rrca
+01d0: 11 06 00     ld   de,$0006
+01d3: dd 21 0a 20  ld   ix,$200A
+01d7: 06 08        ld   b,$08
+01d9: dd 19        add  ix,de
+01db: cb 00        rlc  b
+01dd: 3d           dec  a
+01de: f2 d9 01     jp   p,$01D9
+01e1: 21 3d 20     ld   hl,$203D
+01e4: 7e           ld   a,(hl)
+01e5: e6 0f        and  $0F
+01e7: b0           or   b
+01e8: 77           ld   (hl),a
+01e9: 32 00 40     ld   ($4000),a
+01ec: cd 9b 07     call $079B
+01ef: 18 07        jr   $01F8
+01f1: 21 0b 20     ld   hl,$200B
+01f4: cb fe        set  7,(hl)
+01f6: cb de        set  3,(hl)
+01f8: c9           ret
+
+; command table: 10 codes (041..063 octal), then 10 x {handler, flags} in reverse order
+01f9: .db 21 23 25 27 29 2b 2d 2f
+0201: .db 31 33 cc 0e 20 59 09 02
+0209: .db 06 05 00 1c 05 00 0a 05
+0211: .db 10 a8 0b 08 a2 0b 08 4c
+0219: .db 05 04 5d 09 02 4c 05 01
+
+; read the 8-word command block (DMA E006 -> E008)
+0221: 21 3e 20     ld   hl,$203E
+0224: 7e           ld   a,(hl)
+0225: e6 97        and  $97
+0227: 77           ld   (hl),a
+0228: 32 00 60     ld   ($6000),a
+022b: 2a 00 20     ld   hl,($2000)
+022e: 22 06 e0     ld   ($E006),hl
+0231: cd 64 02     call $0264
+0234: 2a 08 e0     ld   hl,($E008)
+0237: 22 02 20     ld   ($2002),hl
+023a: cb 75        bit  6,l
+023c: 28 13        jr   z,$0251
+023e: 2a 00 20     ld   hl,($2000)
+0241: 01 0e 00     ld   bc,$000E
+0244: 09           add  hl,bc
+0245: 22 06 e0     ld   ($E006),hl
+0248: cd 64 02     call $0264
+024b: 2a 08 e0     ld   hl,($E008)
+024e: 22 67 20     ld   ($2067),hl
+0251: cd 55 02     call $0255
+0254: c9           ret
+0255: 3a 00 a0     ld   a,($A000)
+0258: cb 7f        bit  7,a
+025a: 28 07        jr   z,$0263
+025c: 21 0b 20     ld   hl,$200B
+025f: cb fe        set  7,(hl)
+0261: cb ce        set  1,(hl)
+0263: c9           ret
+0264: c5           push bc
+0265: c1           pop  bc
+0266: c9           ret
+
+; delay B ms (4 MHz: C=250 x 16 cycles)
+0267: c5           push bc
+0268: 0e fa        ld   c,$FA
+026a: 0d           dec  c
+026b: 20 fd        jr   nz,$026A
+026d: 10 f9        djnz $0268
+026f: c1           pop  bc
+0270: c9           ret
+0271: 01 06 00     ld   bc,$0006
+0274: 11 04 20     ld   de,$2004
+0277: fd 2a 00 20  ld   iy,($2000)
+027b: 21 08 e0     ld   hl,$E008
+027e: fd 23        inc  iy
+0280: fd 23        inc  iy
+0282: fd 22 06 e0  ld   ($E006),iy
+0286: cd 64 02     call $0264
+0289: ed a0        ldi
+028b: ed a0        ldi
+028d: ea 7b 02     jp   pe,$027B
+0290: cd 55 02     call $0255
+0293: c9           ret
+
+; write registers back to the block (DMA E004 -> E006)
+0294: 21 3e 20     ld   hl,$203E
+0297: 7e           ld   a,(hl)
+0298: 32 4a 20     ld   ($204A),a
+029b: e6 9f        and  $9F
+029d: f6 08        or   $08
+029f: 77           ld   (hl),a
+02a0: 32 00 60     ld   ($6000),a
+02a3: 3a 03 20     ld   a,($2003)
+02a6: cb 6f        bit  5,a
+02a8: 28 0e        jr   z,$02B8
+02aa: 3a 41 20     ld   a,($2041)
+02ad: e6 07        and  $07
+02af: 28 07        jr   z,$02B8
+02b1: 3a 28 20     ld   a,($2028)
+02b4: b7           or   a
+02b5: c4 c3 04     call nz,$04C3
+02b8: 3a 41 20     ld   a,($2041)
+02bb: e6 10        and  $10
+02bd: 20 07        jr   nz,$02C6
+02bf: 3a 03 20     ld   a,($2003)
+02c2: cb 6f        bit  5,a
+02c4: 28 1c        jr   z,$02E2
+02c6: 01 06 00     ld   bc,$0006
+02c9: 21 04 20     ld   hl,$2004
+02cc: fd 2a 00 20  ld   iy,($2000)
+02d0: 11 04 e0     ld   de,$E004
+02d3: fd 23        inc  iy
+02d5: fd 23        inc  iy
+02d7: ed a0        ldi
+02d9: ed a0        ldi
+02db: fd 22 06 e0  ld   ($E006),iy
+02df: ea d0 02     jp   pe,$02D0
+02e2: 3a 4a 20     ld   a,($204A)
+02e5: 32 0f 20     ld   ($200F),a
+02e8: 3a 49 20     ld   a,($2049)
+02eb: 32 0e 20     ld   ($200E),a
+02ee: 3a 48 20     ld   a,($2048)
+02f1: 32 0d 20     ld   ($200D),a
+02f4: 3a 00 a0     ld   a,($A000)
+02f7: e6 e0        and  $E0
+02f9: 47           ld   b,a
+02fa: dd 7e 01     ld   a,(ix+$01)
+02fd: e6 1f        and  $1F
+02ff: b0           or   b
+0300: 32 0c 20     ld   ($200C),a
+0303: 01 06 00     ld   bc,$0006
+0306: 50           ld   d,b
+0307: 59           ld   e,c
+0308: 21 0a 20     ld   hl,$200A
+030b: fd 2a 00 20  ld   iy,($2000)
+030f: fd 19        add  iy,de
+0311: 11 04 e0     ld   de,$E004
+0314: fd 23        inc  iy
+0316: fd 23        inc  iy
+0318: ed a0        ldi
+031a: ed a0        ldi
+031c: fd 22 06 e0  ld   ($E006),iy
+0320: ea 11 03     jp   pe,$0311
+0323: 2a 02 20     ld   hl,($2002)
+0326: 22 04 e0     ld   ($E004),hl
+0329: 2a 00 20     ld   hl,($2000)
+032c: 22 06 e0     ld   ($E006),hl
+032f: c9           ret
+
+; drive check: ready, disc change -> recalibrate and probe density
+0330: 3a 00 80     ld   a,($8000)
+0333: cb 77        bit  6,a
+0335: 20 0e        jr   nz,$0345
+0337: 21 0a 20     ld   hl,$200A
+033a: cb c6        set  0,(hl)
+033c: 23           inc  hl
+033d: cb fe        set  7,(hl)
+033f: dd cb 01 9e  res  3,(ix+$01)
+0343: 18 3c        jr   $0381
+0345: dd cb 01 5e  bit  3,(ix+$01)
+0349: 28 07        jr   z,$0352
+034b: 3a 00 80     ld   a,($8000)
+034e: cb 67        bit  4,a
+0350: 28 1d        jr   z,$036F
+0352: cd 46 08     call $0846
+0355: 3a 0a 20     ld   a,($200A)
+0358: cb 57        bit  2,a
+035a: 20 13        jr   nz,$036F
+035c: af           xor  a
+035d: 32 29 20     ld   ($2029),a
+0360: 32 2a 20     ld   ($202A),a
+0363: 3e 04        ld   a,$04
+0365: 32 64 20     ld   ($2064),a
+0368: cd 82 03     call $0382
+036b: dd cb 01 de  set  3,(ix+$01)
+036f: dd cb 01 4e  bit  1,(ix+$01)
+0373: 28 0c        jr   z,$0381
+0375: 21 0a 20     ld   hl,$200A
+0378: cb fe        set  7,(hl)
+037a: 23           inc  hl
+037b: cb fe        set  7,(hl)
+037d: dd cb 01 9e  res  3,(ix+$01)
+0381: c9           ret
+
+; probe density/sides by reading an ID
+0382: cd fb 07     call $07FB
+0385: cd 4e 07     call $074E
+0388: dd cb 01 d6  set  2,(ix+$01)
+038c: 21 3e 20     ld   hl,$203E
+038f: cb ce        set  1,(hl)
+0391: 7e           ld   a,(hl)
+0392: 32 00 60     ld   ($6000),a
+0395: cd 78 08     call $0878
+0398: 7a           ld   a,d
+0399: 17           rla
+039a: 30 15        jr   nc,$03B1
+039c: dd cb 01 56  bit  2,(ix+$01)
+03a0: 28 0f        jr   z,$03B1
+03a2: dd cb 01 96  res  2,(ix+$01)
+03a6: 21 3e 20     ld   hl,$203E
+03a9: cb 8e        res  1,(hl)
+03ab: 7e           ld   a,(hl)
+03ac: 32 00 60     ld   ($6000),a
+03af: 18 e4        jr   $0395
+03b1: 21 64 20     ld   hl,$2064
+03b4: 35           dec  (hl)
+03b5: 28 04        jr   z,$03BB
+03b7: 7a           ld   a,d
+03b8: 17           rla
+03b9: 38 c7        jr   c,$0382
+03bb: dd cb 01 8e  res  1,(ix+$01)
+03bf: 7a           ld   a,d
+03c0: 17           rla
+03c1: 30 04        jr   nc,$03C7
+03c3: dd cb 01 ce  set  1,(ix+$01)
+03c7: 3e 40        ld   a,$40
+03c9: dd cb 01 86  res  0,(ix+$01)
+03cd: dd cb 01 56  bit  2,(ix+$01)
+03d1: 28 05        jr   z,$03D8
+03d3: 07           rlca
+03d4: dd cb 01 c6  set  0,(ix+$01)
+03d8: 32 44 20     ld   ($2044),a
+03db: cd df 03     call $03DF
+03de: c9           ret
+
+; capacity: 1001 / 2002 records (x2-13 if double density)
+03df: 21 e9 03     ld   hl,$03E9
+03e2: 3a 00 80     ld   a,($8000)
+03e5: cb 5f        bit  3,a
+03e7: 28 03        jr   z,$03EC
+03e9: 21 d2 07     ld   hl,$07D2
+03ec: dd cb 01 46  bit  0,(ix+$01)
+03f0: 28 0a        jr   z,$03FC
+03f2: cb 25        sla  l
+03f4: cb 14        rl   h
+03f6: b7           or   a
+03f7: 01 0d 00     ld   bc,$000D
+03fa: ed 42        sbc  hl,bc
+03fc: dd cb 01 4e  bit  1,(ix+$01)
+0400: 28 03        jr   z,$0405
+0402: 21 00 00     ld   hl,$0000
+0405: dd 75 02     ld   (ix+$02),l
+0408: dd 74 03     ld   (ix+$03),h
+040b: c9           ret
+040c: 2a 04 20     ld   hl,($2004)
+040f: 3a 41 20     ld   a,($2041)
+0412: e6 04        and  $04
+0414: 28 08        jr   z,$041E
+0416: 01 01 00     ld   bc,$0001
+0419: ed 4a        adc  hl,bc
+041b: 28 01        jr   z,$041E
+041d: 2b           dec  hl
+041e: 06 00        ld   b,$00
+0420: 4c           ld   c,h
+0421: cb 25        sla  l
+0423: cb 11        rl   c
+0425: cb 10        rl   b
+0427: 3e 00        ld   a,$00
+0429: b5           or   l
+042a: 28 01        jr   z,$042D
+042c: 03           inc  bc
+042d: 78           ld   a,b
+042e: b1           or   c
+042f: 20 01        jr   nz,$0432
+0431: 0c           inc  c
+0432: ed 5b 06 20  ld   de,($2006)
+0436: dd 66 03     ld   h,(ix+$03)
+0439: dd 6e 02     ld   l,(ix+$02)
+043c: b7           or   a
+043d: ed 52        sbc  hl,de
+043f: b7           or   a
+0440: ed 42        sbc  hl,bc
+0442: fa 4b 04     jp   m,$044B
+0445: 3a 07 20     ld   a,($2007)
+0448: 17           rla
+0449: 30 07        jr   nc,$0452
+044b: 21 0b 20     ld   hl,$200B
+044e: cb e6        set  4,(hl)
+0450: cb fe        set  7,(hl)
+0452: c9           ret
+0453: 2a 04 20     ld   hl,($2004)
+0456: 7c           ld   a,h
+0457: b5           or   l
+0458: 28 15        jr   z,$046F
+045a: 2b           dec  hl
+045b: 7c           ld   a,h
+045c: 17           rla
+045d: 38 09        jr   c,$0468
+045f: 29           add  hl,hl
+0460: 23           inc  hl
+0461: ed 4b 08 20  ld   bc,($2008)
+0465: 09           add  hl,bc
+0466: 30 07        jr   nc,$046F
+0468: 21 0b 20     ld   hl,$200B
+046b: cb d6        set  2,(hl)
+046d: cb fe        set  7,(hl)
+046f: c9           ret
+0470: 2a 06 20     ld   hl,($2006)
+0473: b7           or   a
+0474: 01 0d 00     ld   bc,$000D
+0477: ed 42        sbc  hl,bc
+0479: f2 85 04     jp   p,$0485
+047c: 09           add  hl,bc
+047d: 01 00 00     ld   bc,$0000
+0480: cb 25        sla  l
+0482: 2c           inc  l
+0483: 18 2c        jr   $04B1
+0485: 11 0d 00     ld   de,$000D
+0488: dd cb 01 46  bit  0,(ix+$01)
+048c: 28 03        jr   z,$0491
+048e: 11 1a 00     ld   de,$001A
+0491: 19           add  hl,de
+0492: 01 00 ff     ld   bc,$FF00
+0495: 04           inc  b
+0496: b7           or   a
+0497: ed 52        sbc  hl,de
+0499: f2 95 04     jp   p,$0495
+049c: 19           add  hl,de
+049d: dd cb 01 46  bit  0,(ix+$01)
+04a1: 20 02        jr   nz,$04A5
+04a3: cb 25        sla  l
+04a5: 2c           inc  l
+04a6: 3a 00 80     ld   a,($8000)
+04a9: cb 5f        bit  3,a
+04ab: 28 04        jr   z,$04B1
+04ad: cb 38        srl  b
+04af: cb 11        rl   c
+04b1: 78           ld   a,b
+04b2: 32 29 20     ld   ($2029),a
+04b5: 79           ld   a,c
+04b6: 32 2a 20     ld   ($202A),a
+04b9: 7d           ld   a,l
+04ba: 32 2b 20     ld   ($202B),a
+04bd: 3e 01        ld   a,$01
+04bf: 32 28 20     ld   ($2028),a
+04c2: c9           ret
+04c3: 2a 29 20     ld   hl,($2029)
+04c6: 26 00        ld   h,$00
+04c8: 3a 48 20     ld   a,($2048)
+04cb: cb 5f        bit  3,a
+04cd: 28 08        jr   z,$04D7
+04cf: 29           add  hl,hl
+04d0: 3a 2a 20     ld   a,($202A)
+04d3: b7           or   a
+04d4: 28 01        jr   z,$04D7
+04d6: 23           inc  hl
+04d7: e5           push hl
+04d8: d1           pop  de
+04d9: 29           add  hl,hl
+04da: 19           add  hl,de
+04db: 29           add  hl,hl
+04dc: 29           add  hl,hl
+04dd: 19           add  hl,de
+04de: ed 5b 2b 20  ld   de,($202B)
+04e2: 16 00        ld   d,$00
+04e4: 1d           dec  e
+04e5: dd cb 01 46  bit  0,(ix+$01)
+04e9: 28 0a        jr   z,$04F5
+04eb: b7           or   a
+04ec: ed 6a        adc  hl,hl
+04ee: 28 05        jr   z,$04F5
+04f0: 01 0d 00     ld   bc,$000D
+04f3: ed 42        sbc  hl,bc
+04f5: 7c           ld   a,h
+04f6: b5           or   l
+04f7: 28 06        jr   z,$04FF
+04f9: dd cb 01 46  bit  0,(ix+$01)
+04fd: 20 02        jr   nz,$0501
+04ff: cb 3b        srl  e
+0501: 19           add  hl,de
+0502: 22 06 20     ld   ($2006),hl
+0505: c9           ret
+0506: cd 46 08     call $0846
+0509: c9           ret
+
+; STATUS: capacity, version 100
+050a: dd 7e 02     ld   a,(ix+$02)
+050d: 32 06 20     ld   ($2006),a
+0510: dd 7e 03     ld   a,(ix+$03)
+0513: 32 07 20     ld   ($2007),a
+0516: 3e 64        ld   a,$64
+0518: 32 04 20     ld   ($2004),a
+051b: c9           ret
+051c: cd 30 03     call $0330
+051f: dd cb 01 4e  bit  1,(ix+$01)
+0523: 28 23        jr   z,$0548
+0525: 3a 00 80     ld   a,($8000)
+0528: cb 5f        bit  3,a
+052a: 3e 48        ld   a,$48
+052c: 28 02        jr   z,$0530
+052e: 3e 95        ld   a,$95
+0530: 32 64 20     ld   ($2064),a
+0533: cd 82 03     call $0382
+0536: dd cb 01 4e  bit  1,(ix+$01)
+053a: 20 0c        jr   nz,$0548
+053c: 21 0a 20     ld   hl,$200A
+053f: cb be        res  7,(hl)
+0541: 23           inc  hl
+0542: cb be        res  7,(hl)
+0544: dd cb 01 de  set  3,(ix+$01)
+0548: cd 0a 05     call $050A
+054b: c9           ret
+
+; READ / VERIFY
+054c: 06 08        ld   b,$08
+054e: 0e 9f        ld   c,$9F
+0550: cd 6d 06     call $066D
+0553: 2a 04 20     ld   hl,($2004)
+0556: 7c           ld   a,h
+0557: b5           or   l
+0558: 20 05        jr   nz,$055F
+055a: cd 4e 07     call $074E
+055d: 18 54        jr   $05B3
+055f: 06 00        ld   b,$00
+0561: 3a 41 20     ld   a,($2041)
+0564: e6 04        and  $04
+0566: 28 0c        jr   z,$0574
+0568: 2a 04 20     ld   hl,($2004)
+056b: 11 01 00     ld   de,$0001
+056e: b7           or   a
+056f: ed 5a        adc  hl,de
+0571: 20 01        jr   nz,$0574
+0573: 04           inc  b
+0574: 78           ld   a,b
+0575: 32 47 20     ld   ($2047),a
+0578: 3e 08        ld   a,$08
+057a: 32 5a 20     ld   ($205A),a
+057d: cd b4 05     call $05B4
+0580: 3a 0b 20     ld   a,($200B)
+0583: 17           rla
+0584: 38 2d        jr   c,$05B3
+0586: 3a 5c 20     ld   a,($205C)
+0589: b7           or   a
+058a: 28 0b        jr   z,$0597
+058c: 21 0a 20     ld   hl,$200A
+058f: cb de        set  3,(hl)
+0591: 21 5a 20     ld   hl,$205A
+0594: cd 1f 07     call $071F
+0597: 3a 5a 20     ld   a,($205A)
+059a: b7           or   a
+059b: 3a 5c 20     ld   a,($205C)
+059e: 28 03        jr   z,$05A3
+05a0: b7           or   a
+05a1: 20 da        jr   nz,$057D
+05a3: b7           or   a
+05a4: 20 0d        jr   nz,$05B3
+05a6: 2a 04 20     ld   hl,($2004)
+05a9: 7c           ld   a,h
+05aa: b5           or   l
+05ab: 28 06        jr   z,$05B3
+05ad: 3a 42 20     ld   a,($2042)
+05b0: b7           or   a
+05b1: 28 c5        jr   z,$0578
+05b3: c9           ret
+05b4: cd 07 06     call $0607
+05b7: af           xor  a
+05b8: 32 5c 20     ld   ($205C),a
+05bb: cd 82 06     call $0682
+05be: 3a 0b 20     ld   a,($200B)
+05c1: 17           rla
+05c2: 38 3f        jr   c,$0603
+05c4: cd 45 06     call $0645
+05c7: 3a 41 20     ld   a,($2041)
+05ca: e6 06        and  $06
+05cc: 28 02        jr   z,$05D0
+05ce: 0e 00        ld   c,$00
+05d0: 2a 08 20     ld   hl,($2008)
+05d3: cd d1 08     call $08D1
+05d6: 3a 0b 20     ld   a,($200B)
+05d9: b7           or   a
+05da: fa 03 06     jp   m,$0603
+05dd: 22 08 20     ld   ($2008),hl
+05e0: 3a 41 20     ld   a,($2041)
+05e3: e6 02        and  $02
+05e5: 20 07        jr   nz,$05EE
+05e7: 3a 47 20     ld   a,($2047)
+05ea: b7           or   a
+05eb: cc 58 06     call z,$0658
+05ee: cd e8 07     call $07E8
+05f1: dd cb 01 56  bit  2,(ix+$01)
+05f5: 20 06        jr   nz,$05FD
+05f7: 3a 2b 20     ld   a,($202B)
+05fa: 1f           rra
+05fb: 30 be        jr   nc,$05BB
+05fd: 3a 5c 20     ld   a,($205C)
+0600: b7           or   a
+0601: 28 03        jr   z,$0606
+0603: cd 26 06     call $0626
+0606: c9           ret
+0607: 2a 08 20     ld   hl,($2008)
+060a: 22 5d 20     ld   ($205D),hl
+060d: 2a 04 20     ld   hl,($2004)
+0610: 22 5f 20     ld   ($205F),hl
+0613: 3a 29 20     ld   a,($2029)
+0616: 32 61 20     ld   ($2061),a
+0619: 3a 2a 20     ld   a,($202A)
+061c: 32 62 20     ld   ($2062),a
+061f: 3a 2b 20     ld   a,($202B)
+0622: 32 63 20     ld   ($2063),a
+0625: c9           ret
+0626: 2a 5d 20     ld   hl,($205D)
+0629: 22 08 20     ld   ($2008),hl
+062c: 2a 5f 20     ld   hl,($205F)
+062f: 22 04 20     ld   ($2004),hl
+0632: 3a 61 20     ld   a,($2061)
+0635: 32 29 20     ld   ($2029),a
+0638: 3a 62 20     ld   a,($2062)
+063b: 32 2a 20     ld   ($202A),a
+063e: 3a 63 20     ld   a,($2063)
+0641: 32 2b 20     ld   ($202B),a
+0644: c9           ret
+0645: af           xor  a
+0646: 47           ld   b,a
+0647: 3a 44 20     ld   a,($2044)
+064a: 4f           ld   c,a
+064b: 2a 04 20     ld   hl,($2004)
+064e: ed 42        sbc  hl,bc
+0650: f2 57 06     jp   p,$0657
+0653: 3a 04 20     ld   a,($2004)
+0656: 4f           ld   c,a
+0657: c9           ret
+0658: 3a 44 20     ld   a,($2044)
+065b: 4f           ld   c,a
+065c: af           xor  a
+065d: 47           ld   b,a
+065e: 2a 04 20     ld   hl,($2004)
+0661: ed 42        sbc  hl,bc
+0663: f2 69 06     jp   p,$0669
+0666: 21 00 00     ld   hl,$0000
+0669: 22 04 20     ld   ($2004),hl
+066c: c9           ret
+066d: 21 3e 20     ld   hl,$203E
+0670: 7e           ld   a,(hl)
+0671: b0           or   b
+0672: a1           and  c
+0673: 47           ld   b,a
+0674: 3a 03 20     ld   a,($2003)
+0677: 0f           rrca
+0678: 0f           rrca
+0679: 0f           rrca
+067a: e6 60        and  $60
+067c: b0           or   b
+067d: 77           ld   (hl),a
+067e: 32 00 60     ld   ($6000),a
+0681: c9           ret
+
+; find the sector ID (retries, seek error, ID CRC)
+0682: cd 4e 07     call $074E
+0685: af           xor  a
+0686: 32 54 20     ld   ($2054),a
+0689: 3e 1a        ld   a,$1A
+068b: 32 55 20     ld   ($2055),a
+068e: 3e 02        ld   a,$02
+0690: 32 57 20     ld   ($2057),a
+0693: 3e 03        ld   a,$03
+0695: 32 58 20     ld   ($2058),a
+0698: 32 56 20     ld   ($2056),a
+069b: 3e 08        ld   a,$08
+069d: 32 59 20     ld   ($2059),a
+06a0: cd 78 08     call $0878
+06a3: cb 42        bit  0,d
+06a5: 28 0d        jr   z,$06B4
+06a7: 21 0b 20     ld   hl,$200B
+06aa: cb c6        set  0,(hl)
+06ac: 21 57 20     ld   hl,$2057
+06af: cd 1f 07     call $071F
+06b2: 18 40        jr   $06F4
+06b4: cb 63        bit  4,e
+06b6: 28 0c        jr   z,$06C4
+06b8: 21 54 20     ld   hl,$2054
+06bb: cb c6        set  0,(hl)
+06bd: 21 0a 20     ld   hl,$200A
+06c0: cb e6        set  4,(hl)
+06c2: 18 30        jr   $06F4
+06c4: 3a 29 20     ld   a,($2029)
+06c7: 21 37 20     ld   hl,$2037
+06ca: be           cp   (hl)
+06cb: 28 10        jr   z,$06DD
+06cd: 21 0a 20     ld   hl,$200A
+06d0: cb ee        set  5,(hl)
+06d2: cd 46 08     call $0846
+06d5: 21 58 20     ld   hl,$2058
+06d8: cd 1f 07     call $071F
+06db: 18 17        jr   $06F4
+06dd: 3a 2a 20     ld   a,($202A)
+06e0: 21 38 20     ld   hl,$2038
+06e3: be           cp   (hl)
+06e4: 20 0e        jr   nz,$06F4
+06e6: 3a 2b 20     ld   a,($202B)
+06e9: 21 39 20     ld   hl,$2039
+06ec: be           cp   (hl)
+06ed: 20 05        jr   nz,$06F4
+06ef: 3a 0f e0     ld   a,($E00F)
+06f2: 18 2a        jr   $071E
+06f4: 21 55 20     ld   hl,$2055
+06f7: 35           dec  (hl)
+06f8: 20 1d        jr   nz,$0717
+06fa: 3a 54 20     ld   a,($2054)
+06fd: b7           or   a
+06fe: 20 0d        jr   nz,$070D
+0700: 21 0b 20     ld   hl,$200B
+0703: cb f6        set  6,(hl)
+0705: 21 56 20     ld   hl,$2056
+0708: cd 1f 07     call $071F
+070b: 18 0a        jr   $0717
+070d: 21 59 20     ld   hl,$2059
+0710: cd 1f 07     call $071F
+0713: af           xor  a
+0714: 32 54 20     ld   ($2054),a
+0717: 21 0b 20     ld   hl,$200B
+071a: cb 7e        bit  7,(hl)
+071c: 28 82        jr   z,$06A0
+071e: c9           ret
+071f: 35           dec  (hl)
+0720: 20 07        jr   nz,$0729
+0722: 21 0b 20     ld   hl,$200B
+0725: cb fe        set  7,(hl)
+0727: 18 1f        jr   $0748
+0729: 21 29 20     ld   hl,$2029
+072c: 35           dec  (hl)
+072d: fa 3c 07     jp   m,$073C
+0730: cd 4e 07     call $074E
+0733: 21 29 20     ld   hl,$2029
+0736: 34           inc  (hl)
+0737: cd 4e 07     call $074E
+073a: 18 0c        jr   $0748
+073c: 34           inc  (hl)
+073d: 34           inc  (hl)
+073e: cd 4e 07     call $074E
+0741: 21 29 20     ld   hl,$2029
+0744: 35           dec  (hl)
+0745: cd 4e 07     call $074E
+0748: 3e 1a        ld   a,$1A
+074a: 32 55 20     ld   ($2055),a
+074d: c9           ret
+
+; seek to the track in 2029
+074e: 3a 29 20     ld   a,($2029)
+0751: dd be 00     cp   (ix+$00)
+0754: 28 29        jr   z,$077F
+0756: b7           or   a
+0757: 20 05        jr   nz,$075E
+0759: cd 46 08     call $0846
+075c: 18 21        jr   $077F
+075e: 3a 29 20     ld   a,($2029)
+0761: dd 96 00     sub  (ix+$00)
+0764: 21 3d 20     ld   hl,$203D
+0767: cb ce        set  1,(hl)
+0769: f2 70 07     jp   p,$0770
+076c: cb 8e        res  1,(hl)
+076e: ed 44        neg
+0770: 47           ld   b,a
+0771: 7e           ld   a,(hl)
+0772: 32 00 40     ld   ($4000),a
+0775: cd 1f 08     call $081F
+0778: 10 fb        djnz $0775
+077a: 06 0f        ld   b,$0F
+077c: cd 67 02     call $0267
+077f: 21 3d 20     ld   hl,$203D
+0782: 3a 2a 20     ld   a,($202A)
+0785: b7           or   a
+0786: cb 9e        res  3,(hl)
+0788: 28 02        jr   z,$078C
+078a: cb de        set  3,(hl)
+078c: 7e           ld   a,(hl)
+078d: 32 00 40     ld   ($4000),a
+0790: cd 9b 07     call $079B
+0793: 06 08        ld   b,$08
+0795: cd 64 02     call $0264
+0798: 10 fb        djnz $0795
+079a: c9           ret
+
+; set density and precompensation for the track
+079b: 21 3e 20     ld   hl,$203E
+079e: dd 7e 00     ld   a,(ix+$00)
+07a1: b7           or   a
+07a2: 20 07        jr   nz,$07AB
+07a4: 3a 3d 20     ld   a,($203D)
+07a7: cb 5f        bit  3,a
+07a9: 28 06        jr   z,$07B1
+07ab: dd cb 01 46  bit  0,(ix+$01)
+07af: 20 0a        jr   nz,$07BB
+07b1: dd cb 01 96  res  2,(ix+$01)
+07b5: cb 8e        res  1,(hl)
+07b7: 3e 40        ld   a,$40
+07b9: 18 08        jr   $07C3
+07bb: dd cb 01 d6  set  2,(ix+$01)
+07bf: cb ce        set  1,(hl)
+07c1: 3e 80        ld   a,$80
+07c3: 32 44 20     ld   ($2044),a
+07c6: 3a 41 20     ld   a,($2041)
+07c9: e6 0a        and  $0A
+07cb: 28 12        jr   z,$07DF
+07cd: dd cb 01 56  bit  2,(ix+$01)
+07d1: 28 0c        jr   z,$07DF
+07d3: 3e 2a        ld   a,$2A
+07d5: dd be 00     cp   (ix+$00)
+07d8: cb e6        set  4,(hl)
+07da: cb c6        set  0,(hl)
+07dc: fa e3 07     jp   m,$07E3
+07df: cb a6        res  4,(hl)
+07e1: cb 86        res  0,(hl)
+07e3: 7e           ld   a,(hl)
+07e4: 32 00 60     ld   ($6000),a
+07e7: c9           ret
+07e8: af           xor  a
+07e9: 32 42 20     ld   ($2042),a
+07ec: 21 2b 20     ld   hl,$202B
+07ef: 34           inc  (hl)
+07f0: 7e           ld   a,(hl)
+07f1: fe 1b        cp   $1B
+07f3: 20 05        jr   nz,$07FA
+07f5: 36 01        ld   (hl),$01
+07f7: cd fb 07     call $07FB
+07fa: c9           ret
+07fb: 11 01 00     ld   de,$0001
+07fe: 3a 00 80     ld   a,($8000)
+0801: cb 5f        bit  3,a
+0803: 28 06        jr   z,$080B
+0805: 3a 2a 20     ld   a,($202A)
+0808: b7           or   a
+0809: 28 0b        jr   z,$0816
+080b: 1d           dec  e
+080c: 21 29 20     ld   hl,$2029
+080f: 34           inc  (hl)
+0810: 7e           ld   a,(hl)
+0811: fe 4d        cp   $4D
+0813: 20 01        jr   nz,$0816
+0815: 14           inc  d
+0816: 7b           ld   a,e
+0817: 32 2a 20     ld   ($202A),a
+081a: 7a           ld   a,d
+081b: 32 42 20     ld   ($2042),a
+081e: c9           ret
+
+; one step pulse (HCR0 bit 0), 3 ms
+081f: f5           push af
+0820: c5           push bc
+0821: e5           push hl
+0822: 21 00 40     ld   hl,$4000
+0825: 3a 3d 20     ld   a,($203D)
+0828: cb c7        set  0,a
+082a: 77           ld   (hl),a
+082b: cd 64 02     call $0264
+082e: cb 87        res  0,a
+0830: 77           ld   (hl),a
+0831: cb 4f        bit  1,a
+0833: 28 05        jr   z,$083A
+0835: dd 34 00     inc  (ix+$00)
+0838: 18 03        jr   $083D
+083a: dd 35 00     dec  (ix+$00)
+083d: 06 03        ld   b,$03
+083f: cd 67 02     call $0267
+0842: e1           pop  hl
+0843: c1           pop  bc
+0844: f1           pop  af
+0845: c9           ret
+
+; recalibrate to track 0 (HSR0 bit 7)
+0846: 21 3d 20     ld   hl,$203D
+0849: 7e           ld   a,(hl)
+084a: e6 f5        and  $F5
+084c: 77           ld   (hl),a
+084d: 32 00 40     ld   ($4000),a
+0850: 3e 4e        ld   a,$4E
+0852: 21 00 80     ld   hl,$8000
+0855: cb 7e        bit  7,(hl)
+0857: 20 08        jr   nz,$0861
+0859: 3d           dec  a
+085a: 28 05        jr   z,$0861
+085c: cd 1f 08     call $081F
+085f: 18 f4        jr   $0855
+0861: 20 08        jr   nz,$086B
+0863: 21 0a 20     ld   hl,$200A
+0866: cb d6        set  2,(hl)
+0868: 23           inc  hl
+0869: cb fe        set  7,(hl)
+086b: dd 36 00 00  ld   (ix+$00),$00
+086f: cd 9b 07     call $079B
+0872: 06 0f        ld   b,$0F
+0874: cd 67 02     call $0267
+0877: c9           ret
+
+; read an ID field: C000 arm, E102 sync, E002 bytes, E402 CRC
+0878: db 00        in   a,($00)
+087a: 06 05        ld   b,$05
+087c: d9           exx
+087d: 01 0a 00     ld   bc,$000A
+0880: 11 33 20     ld   de,$2033
+0883: dd cb 01 56  bit  2,(ix+$01)
+0887: 20 0c        jr   nz,$0895
+0889: 01 07 00     ld   bc,$0007
+088c: 11 36 20     ld   de,$2036
+088f: cd 64 02     call $0264
+0892: cd 64 02     call $0264
+0895: 3a 00 c0     ld   a,($C000)
+0898: 21 02 e1     ld   hl,$E102
+089b: ed a0        ldi
+089d: 3a 00 a0     ld   a,($A000)
+08a0: e6 60        and  $60
+08a2: 20 29        jr   nz,$08CD
+08a4: 21 02 e0     ld   hl,$E002
+08a7: ed a0        ldi
+08a9: ea a4 08     jp   pe,$08A4
+08ac: 3a 02 e4     ld   a,($E402)
+08af: 11 10 80     ld   de,$8010
+08b2: 3a 00 80     ld   a,($8000)
+08b5: cb 47        bit  0,a
+08b7: 20 0a        jr   nz,$08C3
+08b9: 3a 36 20     ld   a,($2036)
+08bc: fe fe        cp   $FE
+08be: 20 03        jr   nz,$08C3
+08c0: 11 00 00     ld   de,$0000
+08c3: d9           exx
+08c4: 05           dec  b
+08c5: d9           exx
+08c6: 28 04        jr   z,$08CC
+08c8: cb 7a        bit  7,d
+08ca: 20 b1        jr   nz,$087D
+08cc: c9           ret
+08cd: 11 00 81     ld   de,$8100
+08d0: c9           ret
+
+; read a data field into memory by DMA (EI: errors interrupt)
+08d1: 16 01        ld   d,$01
+08d3: dd cb 01 56  bit  2,(ix+$01)
+08d7: 28 02        jr   z,$08DB
+08d9: 16 04        ld   d,$04
+08db: 3a 44 20     ld   a,($2044)
+08de: 47           ld   b,a
+08df: 04           inc  b
+08e0: 2b           dec  hl
+08e1: 2b           dec  hl
+08e2: 3a 00 c0     ld   a,($C000)
+08e5: b7           or   a
+08e6: fb           ei
+08e7: 3a 02 e1     ld   a,($E102)
+08ea: ed 47        ld   i,a
+08ec: 15           dec  d
+08ed: 28 0a        jr   z,$08F9
+08ef: 3a 02 e0     ld   a,($E002)
+08f2: ed 47        ld   i,a
+08f4: 38 42        jr   c,$0938
+08f6: c3 ec 08     jp   $08EC
+08f9: 11 02 e0     ld   de,$E002
+08fc: 1a           ld   a,(de)
+08fd: 32 04 e0     ld   ($E004),a
+0900: 0d           dec  c
+0901: 38 35        jr   c,$0938
+0903: f2 0a 09     jp   p,$090A
+0906: 1a           ld   a,(de)
+0907: 0c           inc  c
+0908: 18 09        jr   $0913
+090a: 23           inc  hl
+090b: 23           inc  hl
+090c: 1a           ld   a,(de)
+090d: 32 05 e0     ld   ($E005),a
+0910: 22 06 e0     ld   ($E006),hl
+0913: 10 e7        djnz $08FC
+0915: 3a 02 e4     ld   a,($E402)
+0918: 23           inc  hl
+0919: 23           inc  hl
+091a: f3           di
+091b: 3a 00 80     ld   a,($8000)
+091e: cb 47        bit  0,a
+0920: 20 10        jr   nz,$0932
+0922: ed 57        ld   a,i
+0924: fe f8        cp   $F8
+0926: 20 06        jr   nz,$092E
+0928: dd cb 01 e6  set  4,(ix+$01)
+092c: 18 09        jr   $0937
+092e: fe fb        cp   $FB
+0930: 28 05        jr   z,$0937
+0932: 3e 01        ld   a,$01
+0934: 32 5c 20     ld   ($205C),a
+0937: c9           ret
+0938: cd 3c 09     call $093C
+093b: c9           ret
+
+; transfer error -> FDER (DMA timeout / not ready / controller timeout)
+093c: 21 0b 20     ld   hl,$200B
+093f: 3a 00 a0     ld   a,($A000)
+0942: cb 7f        bit  7,a
+0944: 20 0a        jr   nz,$0950
+0946: e6 60        and  $60
+0948: 20 0a        jr   nz,$0954
+094a: 2b           dec  hl
+094b: cb d6        set  2,(hl)
+094d: 23           inc  hl
+094e: 18 06        jr   $0956
+0950: cb ce        set  1,(hl)
+0952: 18 02        jr   $0956
+0954: cb c6        set  0,(hl)
+0956: cb fe        set  7,(hl)
+0958: c9           ret
+
+; WRITE CONTROL FIELD (F8 mark); 095D WRITE (FB mark)
+0959: 3e f8        ld   a,$F8
+095b: 18 02        jr   $095F
+095d: 3e fb        ld   a,$FB
+095f: 32 5b 20     ld   ($205B),a
+0962: 06 00        ld   b,$00
+0964: 0e 97        ld   c,$97
+0966: cd 6d 06     call $066D
+0969: 2a 04 20     ld   hl,($2004)
+096c: 7c           ld   a,h
+096d: b5           or   l
+096e: 20 05        jr   nz,$0975
+0970: cd 4e 07     call $074E
+0973: 18 5f        jr   $09D4
+0975: cd 60 0b     call $0B60
+0978: 3e 08        ld   a,$08
+097a: 32 65 20     ld   ($2065),a
+097d: cd d5 09     call $09D5
+0980: 3a 0b 20     ld   a,($200B)
+0983: 17           rla
+0984: 38 4e        jr   c,$09D4
+0986: 21 66 20     ld   hl,$2066
+0989: 34           inc  (hl)
+098a: 3a 02 20     ld   a,($2002)
+098d: cb 7f        bit  7,a
+098f: 2a 04 20     ld   hl,($2004)
+0992: 7c           ld   a,h
+0993: 20 05        jr   nz,$099A
+0995: b5           or   l
+0996: 28 35        jr   z,$09CD
+0998: 18 31        jr   $09CB
+099a: b5           or   l
+099b: 28 0c        jr   z,$09A9
+099d: 3a 2a 20     ld   a,($202A)
+09a0: b7           or   a
+09a1: 20 28        jr   nz,$09CB
+09a3: 3a 2b 20     ld   a,($202B)
+09a6: 3d           dec  a
+09a7: 20 22        jr   nz,$09CB
+09a9: cd 83 0b     call $0B83
+09ac: cd 3d 0a     call $0A3D
+09af: 3a 0b 20     ld   a,($200B)
+09b2: 17           rla
+09b3: 38 1f        jr   c,$09D4
+09b5: cd 60 0b     call $0B60
+09b8: 3a 5c 20     ld   a,($205C)
+09bb: b7           or   a
+09bc: 28 0f        jr   z,$09CD
+09be: 21 65 20     ld   hl,$2065
+09c1: 35           dec  (hl)
+09c2: 20 07        jr   nz,$09CB
+09c4: 21 0b 20     ld   hl,$200B
+09c7: cb fe        set  7,(hl)
+09c9: 18 09        jr   $09D4
+09cb: 18 b0        jr   $097D
+09cd: 2a 04 20     ld   hl,($2004)
+09d0: 7c           ld   a,h
+09d1: b5           or   l
+09d2: 20 a4        jr   nz,$0978
+09d4: c9           ret
+09d5: 06 80        ld   b,$80
+09d7: dd cb 01 46  bit  0,(ix+$01)
+09db: 28 09        jr   z,$09E6
+09dd: 3a 29 20     ld   a,($2029)
+09e0: 21 2a 20     ld   hl,$202A
+09e3: b6           or   (hl)
+09e4: 20 02        jr   nz,$09E8
+09e6: 06 40        ld   b,$40
+09e8: 78           ld   a,b
+09e9: 32 44 20     ld   ($2044),a
+09ec: 3a 29 20     ld   a,($2029)
+09ef: dd be 00     cp   (ix+$00)
+09f2: 28 05        jr   z,$09F9
+09f4: 06 01        ld   b,$01
+09f6: cd 67 02     call $0267
+09f9: cd 07 06     call $0607
+09fc: cd 45 06     call $0645
+09ff: 41           ld   b,c
+0a00: 3a 44 20     ld   a,($2044)
+0a03: 90           sub  b
+0a04: 4f           ld   c,a
+0a05: c5           push bc
+0a06: cd 82 06     call $0682
+0a09: c1           pop  bc
+0a0a: 3a 0b 20     ld   a,($200B)
+0a0d: b7           or   a
+0a0e: fa 39 0a     jp   m,$0A39
+0a11: ed 5b 08 20  ld   de,($2008)
+0a15: cd 82 0a     call $0A82
+0a18: 3a 0b 20     ld   a,($200B)
+0a1b: b7           or   a
+0a1c: fa 39 0a     jp   m,$0A39
+0a1f: ed 53 08 20  ld   ($2008),de
+0a23: cd 58 06     call $0658
+0a26: cd e8 07     call $07E8
+0a29: dd cb 01 56  bit  2,(ix+$01)
+0a2d: 20 06        jr   nz,$0A35
+0a2f: 3a 2b 20     ld   a,($202B)
+0a32: 1f           rra
+0a33: 30 c7        jr   nc,$09FC
+0a35: 3a 0b 20     ld   a,($200B)
+0a38: b7           or   a
+0a39: fc 26 06     call m,$0626
+0a3c: c9           ret
+0a3d: cd b4 05     call $05B4
+0a40: 21 0b 20     ld   hl,$200B
+0a43: cb 7e        bit  7,(hl)
+0a45: 20 3a        jr   nz,$0A81
+0a47: 3a 5c 20     ld   a,($205C)
+0a4a: b7           or   a
+0a4b: 28 05        jr   z,$0A52
+0a4d: 2b           dec  hl
+0a4e: cb de        set  3,(hl)
+0a50: 18 23        jr   $0A75
+0a52: 11 00 00     ld   de,$0000
+0a55: 2a 04 20     ld   hl,($2004)
+0a58: 01 80 00     ld   bc,$0080
+0a5b: b7           or   a
+0a5c: ed 42        sbc  hl,bc
+0a5e: f2 6a 0a     jp   p,$0A6A
+0a61: cb 25        sla  l
+0a63: cb 14        rl   h
+0a65: 54           ld   d,h
+0a66: 5d           ld   e,l
+0a67: 21 00 00     ld   hl,$0000
+0a6a: 22 04 20     ld   ($2004),hl
+0a6d: 2a 08 20     ld   hl,($2008)
+0a70: 24           inc  h
+0a71: 19           add  hl,de
+0a72: 22 08 20     ld   ($2008),hl
+0a75: 21 66 20     ld   hl,$2066
+0a78: 35           dec  (hl)
+0a79: 28 06        jr   z,$0A81
+0a7b: 3a 5c 20     ld   a,($205C)
+0a7e: b7           or   a
+0a7f: 28 bc        jr   z,$0A3D
+0a81: c9           ret
+
+; write a data field: preamble table, DMA words to E020/E021, CRC via E081
+0a82: 3a 00 c0     ld   a,($C000)
+0a85: db 00        in   a,($00)
+0a87: f3           di
+0a88: 78           ld   a,b
+0a89: b7           or   a
+0a8a: 28 06        jr   z,$0A92
+0a8c: ed 53 06 e0  ld   ($E006),de
+0a90: 13           inc  de
+0a91: 13           inc  de
+0a92: 08           ex   af,af'
+0a93: 3a 5b 20     ld   a,($205B)
+0a96: 21 01 e0     ld   hl,$E001
+0a99: d9           exx
+0a9a: ed 73 45 20  ld   ($2045),sp
+0a9e: 31 2c 0b     ld   sp,$0B2C
+0aa1: dd cb 01 56  bit  2,(ix+$01)
+0aa5: 28 03        jr   z,$0AAA
+0aa7: 31 40 0b     ld   sp,$0B40
+0aaa: c1           pop  bc
+0aab: 05           dec  b
+0aac: fa b7 0a     jp   m,$0AB7
+0aaf: e1           pop  hl
+0ab0: 71           ld   (hl),c
+0ab1: 05           dec  b
+0ab2: fa aa 0a     jp   m,$0AAA
+0ab5: 18 f9        jr   $0AB0
+0ab7: 77           ld   (hl),a
+0ab8: e1           pop  hl
+0ab9: 08           ex   af,af'
+0aba: 28 13        jr   z,$0ACF
+0abc: 3a 08 e0     ld   a,($E008)
+0abf: 77           ld   (hl),a
+0ac0: ed 7b 45 20  ld   sp,($2045)
+0ac4: fb           ei
+0ac5: d9           exx
+0ac6: 3a 09 e0     ld   a,($E009)
+0ac9: 77           ld   (hl),a
+0aca: 05           dec  b
+0acb: 20 0e        jr   nz,$0ADB
+0acd: 18 26        jr   $0AF5
+0acf: 36 00        ld   (hl),$00
+0ad1: ed 7b 45 20  ld   sp,($2045)
+0ad5: fb           ei
+0ad6: d9           exx
+0ad7: 36 00        ld   (hl),$00
+0ad9: 18 1e        jr   $0AF9
+0adb: ed 53 06 e0  ld   ($E006),de
+0adf: 13           inc  de
+0ae0: 13           inc  de
+0ae1: 38 45        jr   c,$0B28
+0ae3: dd cb 01 56  bit  2,(ix+$01)
+0ae7: 20 03        jr   nz,$0AEC
+0ae9: cd 64 02     call $0264
+0aec: 2a 08 e0     ld   hl,($E008)
+0aef: 22 20 e0     ld   ($E020),hl
+0af2: 05           dec  b
+0af3: 20 e6        jr   nz,$0ADB
+0af5: 21 00 00     ld   hl,$0000
+0af8: 0c           inc  c
+0af9: 0d           dec  c
+0afa: ca 0e 0b     jp   z,$0B0E
+0afd: dd cb 01 56  bit  2,(ix+$01)
+0b01: 20 06        jr   nz,$0B09
+0b03: cd 64 02     call $0264
+0b06: cd 64 02     call $0264
+0b09: 22 20 e0     ld   ($E020),hl
+0b0c: 18 eb        jr   $0AF9
+0b0e: 32 01 e0     ld   ($E001),a
+0b11: 3e ff        ld   a,$FF
+0b13: dd cb 01 56  bit  2,(ix+$01)
+0b17: 28 02        jr   z,$0B1B
+0b19: 3e 4e        ld   a,$4E
+0b1b: 32 81 e0     ld   ($E081),a
+0b1e: 32 81 e0     ld   ($E081),a
+0b21: 32 01 e0     ld   ($E001),a
+0b24: f3           di
+0b25: 38 01        jr   c,$0B28
+0b27: c9           ret
+0b28: cd 3c 09     call $093C
+0b2b: c9           ret
+
+; write-sector preamble, FM: {byte, count} {address} entries; count 0 = end
+0b2c: .db ff 01 00 e0 ff 01 21 e0
+0b34: .db ff 02 01 e0 00 06 01 e0
+0b3c: .db 00 00 01 ef
+
+; write-sector preamble, MFM
+0b40: .db 4e 01 00 e0 4e 01 21 e0
+0b48: .db 4e 02 01 e0 00 12 01 e0
+0b50: .db a1 01 01 e0 a1 01 41 e1
+0b58: .db a1 01 41 e0 00 00 01 e0
+0b60: 3a 2b 20     ld   a,($202B)
+0b63: 32 2e 20     ld   ($202E),a
+0b66: 2a 04 20     ld   hl,($2004)
+0b69: 22 2f 20     ld   ($202F),hl
+0b6c: 3a 2a 20     ld   a,($202A)
+0b6f: 32 2d 20     ld   ($202D),a
+0b72: 2a 08 20     ld   hl,($2008)
+0b75: 22 31 20     ld   ($2031),hl
+0b78: 3a 29 20     ld   a,($2029)
+0b7b: 32 2c 20     ld   ($202C),a
+0b7e: af           xor  a
+0b7f: 32 66 20     ld   ($2066),a
+0b82: c9           ret
+0b83: 3a 2e 20     ld   a,($202E)
+0b86: 32 2b 20     ld   ($202B),a
+0b89: 2a 2f 20     ld   hl,($202F)
+0b8c: 22 04 20     ld   ($2004),hl
+0b8f: 3a 2d 20     ld   a,($202D)
+0b92: 32 2a 20     ld   ($202A),a
+0b95: 2a 31 20     ld   hl,($2031)
+0b98: 22 08 20     ld   ($2008),hl
+0b9b: 3a 2c 20     ld   a,($202C)
+0b9e: 32 29 20     ld   ($2029),a
+0ba1: c9           ret
+
+; FORMAT DD (0BA8 SD)
+0ba2: dd cb 01 c6  set  0,(ix+$01)
+0ba6: 18 04        jr   $0BAC
+0ba8: dd cb 01 86  res  0,(ix+$01)
+0bac: 3a 00 80     ld   a,($8000)
+0baf: cb 77        bit  6,a
+0bb1: 20 0b        jr   nz,$0BBE
+0bb3: 21 0a 20     ld   hl,$200A
+0bb6: cb c6        set  0,(hl)
+0bb8: 23           inc  hl
+0bb9: cb fe        set  7,(hl)
+0bbb: c3 5b 0c     jp   $0C5B
+0bbe: 2a 06 20     ld   hl,($2006)
+0bc1: 7c           ld   a,h
+0bc2: 17           rla
+0bc3: 38 11        jr   c,$0BD6
+0bc5: 11 4d 00     ld   de,$004D
+0bc8: 3a 00 80     ld   a,($8000)
+0bcb: cb 5f        bit  3,a
+0bcd: 28 02        jr   z,$0BD1
+0bcf: cb 23        sla  e
+0bd1: ed 52        sbc  hl,de
+0bd3: fa df 0b     jp   m,$0BDF
+0bd6: 21 0b 20     ld   hl,$200B
+0bd9: cb e6        set  4,(hl)
+0bdb: cb fe        set  7,(hl)
+0bdd: 18 7c        jr   $0C5B
+0bdf: 3a 00 80     ld   a,($8000)
+0be2: cb 67        bit  4,a
+0be4: 20 06        jr   nz,$0BEC
+0be6: dd cb 01 5e  bit  3,(ix+$01)
+0bea: 20 07        jr   nz,$0BF3
+0bec: cd 46 08     call $0846
+0bef: dd cb 01 de  set  3,(ix+$01)
+0bf3: dd cb 01 8e  res  1,(ix+$01)
+0bf7: cd df 03     call $03DF
+0bfa: 06 00        ld   b,$00
+0bfc: 3a 06 20     ld   a,($2006)
+0bff: 21 00 80     ld   hl,$8000
+0c02: cb 5e        bit  3,(hl)
+0c04: 28 04        jr   z,$0C0A
+0c06: cb 3f        srl  a
+0c08: cb 10        rl   b
+0c0a: 32 29 20     ld   ($2029),a
+0c0d: 78           ld   a,b
+0c0e: 32 2a 20     ld   ($202A),a
+0c11: af           xor  a
+0c12: 32 4f 20     ld   ($204F),a
+0c15: 06 01        ld   b,$01
+0c17: cd 67 02     call $0267
+0c1a: cd 4e 07     call $074E
+0c1d: 2a 04 20     ld   hl,($2004)
+0c20: 7c           ld   a,h
+0c21: b5           or   l
+0c22: 28 1c        jr   z,$0C40
+0c24: cd 5c 0c     call $0C5C
+0c27: 3a 00 80     ld   a,($8000)
+0c2a: cb 77        bit  6,a
+0c2c: 28 12        jr   z,$0C40
+0c2e: cd fb 07     call $07FB
+0c31: 3a 42 20     ld   a,($2042)
+0c34: b7           or   a
+0c35: 20 09        jr   nz,$0C40
+0c37: 2a 04 20     ld   hl,($2004)
+0c3a: 2b           dec  hl
+0c3b: 22 04 20     ld   ($2004),hl
+0c3e: 18 d5        jr   $0C15
+0c40: 2a 4f 20     ld   hl,($204F)
+0c43: 26 00        ld   h,$00
+0c45: 22 04 20     ld   ($2004),hl
+0c48: 3a 29 20     ld   a,($2029)
+0c4b: 21 00 80     ld   hl,$8000
+0c4e: cb 5e        bit  3,(hl)
+0c50: 28 06        jr   z,$0C58
+0c52: cb 27        sla  a
+0c54: 21 2a 20     ld   hl,$202A
+0c57: 86           add  a,(hl)
+0c58: 32 06 20     ld   ($2006),a
+0c5b: c9           ret
+0c5c: 01 42 0e     ld   bc,$0E42
+0c5f: 11 5e 0e     ld   de,$0E5E
+0c62: dd cb 01 56  bit  2,(ix+$01)
+0c66: 28 06        jr   z,$0C6E
+0c68: 01 d4 0d     ld   bc,$0DD4
+0c6b: 11 f4 0d     ld   de,$0DF4
+0c6e: ed 43 4b 20  ld   ($204B),bc
+0c72: ed 53 4d 20  ld   ($204D),de
+0c76: 3e 08        ld   a,$08
+0c78: 32 51 20     ld   ($2051),a
+0c7b: 3a 44 20     ld   a,($2044)
+0c7e: 0f           rrca
+0c7f: 0f           rrca
+0c80: 47           ld   b,a
+0c81: 0e 00        ld   c,$00
+0c83: 3a 29 20     ld   a,($2029)
+0c86: 57           ld   d,a
+0c87: 3a 2a 20     ld   a,($202A)
+0c8a: 5f           ld   e,a
+0c8b: 2e 01        ld   l,$01
+0c8d: 26 00        ld   h,$00
+0c8f: dd cb 01 56  bit  2,(ix+$01)
+0c93: 28 01        jr   z,$0C96
+0c95: 24           inc  h
+0c96: d9           exx
+0c97: af           xor  a
+0c98: 32 50 20     ld   ($2050),a
+0c9b: cd 26 0d     call $0D26
+0c9e: 3a 02 20     ld   a,($2002)
+0ca1: cb 7f        bit  7,a
+0ca3: 28 64        jr   z,$0D09
+0ca5: 3e 01        ld   a,$01
+0ca7: 32 52 20     ld   ($2052),a
+0caa: cd 78 08     call $0878
+0cad: 21 0a 20     ld   hl,$200A
+0cb0: 7e           ld   a,(hl)
+0cb1: b3           or   e
+0cb2: 77           ld   (hl),a
+0cb3: 23           inc  hl
+0cb4: 7e           ld   a,(hl)
+0cb5: cb ba        res  7,d
+0cb7: b2           or   d
+0cb8: 77           ld   (hl),a
+0cb9: 06 00        ld   b,$00
+0cbb: 3a 37 20     ld   a,($2037)
+0cbe: 21 29 20     ld   hl,$2029
+0cc1: be           cp   (hl)
+0cc2: 20 12        jr   nz,$0CD6
+0cc4: 3a 38 20     ld   a,($2038)
+0cc7: 21 2a 20     ld   hl,$202A
+0cca: be           cp   (hl)
+0ccb: 20 09        jr   nz,$0CD6
+0ccd: 3a 39 20     ld   a,($2039)
+0cd0: 21 52 20     ld   hl,$2052
+0cd3: be           cp   (hl)
+0cd4: 28 01        jr   z,$0CD7
+0cd6: 04           inc  b
+0cd7: 7b           ld   a,e
+0cd8: b2           or   d
+0cd9: 28 01        jr   z,$0CDC
+0cdb: 04           inc  b
+0cdc: 78           ld   a,b
+0cdd: 32 50 20     ld   ($2050),a
+0ce0: 0e 00        ld   c,$00
+0ce2: cd d1 08     call $08D1
+0ce5: 3a 00 80     ld   a,($8000)
+0ce8: cb 47        bit  0,a
+0cea: 28 0a        jr   z,$0CF6
+0cec: 21 0a 20     ld   hl,$200A
+0cef: cb de        set  3,(hl)
+0cf1: 3e 01        ld   a,$01
+0cf3: 32 50 20     ld   ($2050),a
+0cf6: 21 52 20     ld   hl,$2052
+0cf9: 34           inc  (hl)
+0cfa: 7e           ld   a,(hl)
+0cfb: fe 1b        cp   $1B
+0cfd: 28 06        jr   z,$0D05
+0cff: 3a 50 20     ld   a,($2050)
+0d02: b7           or   a
+0d03: 28 a5        jr   z,$0CAA
+0d05: 21 51 20     ld   hl,$2051
+0d08: 35           dec  (hl)
+0d09: 3a 51 20     ld   a,($2051)
+0d0c: b7           or   a
+0d0d: 28 07        jr   z,$0D16
+0d0f: 3a 50 20     ld   a,($2050)
+0d12: b7           or   a
+0d13: c2 7b 0c     jp   nz,$0C7B
+0d16: 3a 50 20     ld   a,($2050)
+0d19: b7           or   a
+0d1a: 28 09        jr   z,$0D25
+0d1c: 21 0b 20     ld   hl,$200B
+0d1f: cb fe        set  7,(hl)
+0d21: 21 4f 20     ld   hl,$204F
+0d24: 34           inc  (hl)
+0d25: c9           ret
+
+; format one track from index to index
+0d26: d9           exx
+0d27: 78           ld   a,b
+0d28: 32 53 20     ld   ($2053),a
+0d2b: 7a           ld   a,d
+0d2c: d9           exx
+0d2d: fd 21 01 e0  ld   iy,$E001
+0d31: 21 00 80     ld   hl,$8000
+0d34: cb 6e        bit  5,(hl)
+0d36: 20 fc        jr   nz,$0D34
+0d38: cb 76        bit  6,(hl)
+0d3a: ca cb 0d     jp   z,$0DCB
+0d3d: cb 6e        bit  5,(hl)
+0d3f: 28 f7        jr   z,$0D38
+0d41: ed 73 45 20  ld   ($2045),sp
+0d45: ed 7b 4b 20  ld   sp,($204B)
+0d49: 18 04        jr   $0D4F
+0d4b: e1           pop  hl
+0d4c: 71           ld   (hl),c
+0d4d: 10 fd        djnz $0D4C
+0d4f: c1           pop  bc
+0d50: 05           dec  b
+0d51: 28 24        jr   z,$0D77
+0d53: f2 4b 0d     jp   p,$0D4B
+0d56: 79           ld   a,c
+0d57: 32 81 e0     ld   ($E081),a
+0d5a: d9           exx
+0d5b: 7d           ld   a,l
+0d5c: d9           exx
+0d5d: fe 1b        cp   $1B
+0d5f: 28 53        jr   z,$0DB4
+0d61: 79           ld   a,c
+0d62: d9           exx
+0d63: 32 01 e0     ld   ($E001),a
+0d66: 3a 53 20     ld   a,($2053)
+0d69: 47           ld   b,a
+0d6a: 7a           ld   a,d
+0d6b: d9           exx
+0d6c: c1           pop  bc
+0d6d: e1           pop  hl
+0d6e: 71           ld   (hl),c
+0d6f: 05           dec  b
+0d70: ed 7b 4d 20  ld   sp,($204D)
+0d74: 71           ld   (hl),c
+0d75: 18 d5        jr   $0D4C
+0d77: e1           pop  hl
+0d78: 77           ld   (hl),a
+0d79: 79           ld   a,c
+0d7a: d9           exx
+0d7b: b7           or   a
+0d7c: 20 18        jr   nz,$0D96
+0d7e: fd 73 00     ld   (iy+$00),e
+0d81: fd 75 00     ld   (iy+$00),l
+0d84: 7c           ld   a,h
+0d85: d9           exx
+0d86: 47           ld   b,a
+0d87: d9           exx
+0d88: 7a           ld   a,d
+0d89: d9           exx
+0d8a: fd 70 00     ld   (iy+$00),b
+0d8d: c3 4f 0d     jp   $0D4F
+0d90: fd 71 00     ld   (iy+$00),c
+0d93: fd 72 00     ld   (iy+$00),d
+0d96: fd 71 00     ld   (iy+$00),c
+0d99: fd 73 00     ld   (iy+$00),e
+0d9c: fd 71 00     ld   (iy+$00),c
+0d9f: fd 75 00     ld   (iy+$00),l
+0da2: fd 71 00     ld   (iy+$00),c
+0da5: fd 74 00     ld   (iy+$00),h
+0da8: 05           dec  b
+0da9: 20 e5        jr   nz,$0D90
+0dab: 2c           inc  l
+0dac: d9           exx
+0dad: fd 36 00 00  ld   (iy+$00),$00
+0db1: c3 4f 0d     jp   $0D4F
+0db4: 79           ld   a,c
+0db5: 06 03        ld   b,$03
+0db7: 32 01 e0     ld   ($E001),a
+0dba: 21 00 80     ld   hl,$8000
+0dbd: cb 6e        bit  5,(hl)
+0dbf: 28 f6        jr   z,$0DB7
+0dc1: 32 01 e0     ld   ($E001),a
+0dc4: 10 fb        djnz $0DC1
+0dc6: ed 7b 45 20  ld   sp,($2045)
+0dca: c9           ret
+0dcb: 21 0a 20     ld   hl,$200A
+0dce: cb c6        set  0,(hl)
+0dd0: 23           inc  hl
+0dd1: cb fe        set  7,(hl)
+0dd3: c9           ret
+
+; FORMAT MFM: track start (gap 4a, sync, C2 C2 C2 FC index mark, gap 1); {byte, count+1} {address}
+0dd4: .db 4e 02 00 e0 4e 02 21 e0
+0ddc: .db 4e 4f 01 e0 00 0d 01 e0
+0de4: .db c2 02 01 e0 c2 03 01 e8
+0dec: .db fc 02 01 e8 4e 33 01 e0
+
+; FORMAT MFM: per sector (ID field, gap 2, data field, gap 3); count 1 = variable part
+0df4: .db 00 0d 01 e0 a1 02 01 e0
+0dfc: .db a1 02 41 e1 a1 02 41 e0
+0e04: .db fe 02 41 e0 00 01 01 e0
+0e0c: .db 00 02 01 e0 00 02 81 e0
+0e14: .db 4e 02 81 e0 4e 16 01 e0
+0e1c: .db 00 0d 01 e0 a1 02 01 e0
+0e24: .db a1 02 41 e1 a1 02 41 e0
+0e2c: .db fb 02 41 e0 01 01 01 e0
+0e34: .db 00 02 01 e0 00 02 81 e0
+0e3c: .db 4e 00 4e 33 01 e0
+
+; FORMAT FM: track start (FC index mark with D7 clock)
+0e42: .db ff 02 00 e0 ff 02 21 e0
+0e4a: .db ff 27 01 e0 00 07 01 e0
+0e52: .db fc 02 01 e0 ff 02 01 ea
+0e5a: .db ff 1a 01 e0
+
+; FORMAT FM: per sector
+0e5e: .db 00 07 01 e0 fe 02 01 e0
+0e66: .db 00 01 01 ef 00 02 01 e0
+0e6e: .db 00 02 81 e0 ff 02 81 e0
+0e76: .db ff 0b 01 e0 00 07 01 e0
+0e7e: .db fb 02 01 e0 01 01 01 ef
+0e86: .db 00 02 01 e0 00 02 81 e0
+0e8e: .db ff 00 ff 18 01 e0
+
+; load the head (35 ms)
+0e94: 3a 41 20     ld   a,($2041)
+0e97: e6 10        and  $10
+0e99: 28 0d        jr   z,$0EA8
+0e9b: 3a 00 80     ld   a,($8000)
+0e9e: cb 67        bit  4,a
+0ea0: 20 06        jr   nz,$0EA8
+0ea2: dd cb 01 5e  bit  3,(ix+$01)
+0ea6: 20 12        jr   nz,$0EBA
+0ea8: 21 3d 20     ld   hl,$203D
+0eab: cb 56        bit  2,(hl)
+0ead: 20 0b        jr   nz,$0EBA
+0eaf: cb d6        set  2,(hl)
+0eb1: 7e           ld   a,(hl)
+0eb2: 32 00 40     ld   ($4000),a
+0eb5: 06 23        ld   b,$23
+0eb7: cd 67 02     call $0267
+0eba: c9           ret
+
+; ~3 s, then unload the head
+0ebb: 06 4d        ld   b,$4D
+0ebd: cd 67 02     call $0267
+0ec0: 10 fb        djnz $0EBD
+0ec2: 21 3d 20     ld   hl,$203D
+0ec5: cb 96        res  2,(hl)
+0ec7: 7e           ld   a,(hl)
+0ec8: 32 00 40     ld   ($4000),a
+0ecb: c9           ret
+
+; DIAGNOSTIC: FDWCR 1-4 scope loops, 5 load Z80 RAM 2080, 6 jump to FDDMAR
+0ecc: dd cb 01 9e  res  3,(ix+$01)
+0ed0: 2a 04 20     ld   hl,($2004)
+0ed3: 11 01 00     ld   de,$0001
+0ed6: b7           or   a
+0ed7: ed 52        sbc  hl,de
+0ed9: 28 1c        jr   z,$0EF7
+0edb: ed 52        sbc  hl,de
+0edd: 28 1d        jr   z,$0EFC
+0edf: ed 52        sbc  hl,de
+0ee1: 28 26        jr   z,$0F09
+0ee3: ed 52        sbc  hl,de
+0ee5: 28 27        jr   z,$0F0E
+0ee7: ed 52        sbc  hl,de
+0ee9: 28 38        jr   z,$0F23
+0eeb: ed 52        sbc  hl,de
+0eed: 28 77        jr   z,$0F66
+0eef: 21 0b 20     ld   hl,$200B
+0ef2: cb de        set  3,(hl)
+0ef4: cb fe        set  7,(hl)
+0ef6: c9           ret
+0ef7: cd 6a 0f     call $0F6A
+0efa: 18 03        jr   $0EFF
+0efc: cd 6f 0f     call $0F6F
+0eff: 3a 00 c0     ld   a,($C000)
+0f02: db 00        in   a,($00)
+0f04: 3a 02 e0     ld   a,($E002)
+0f07: 18 f6        jr   $0EFF
+0f09: cd 6a 0f     call $0F6A
+0f0c: 18 03        jr   $0F11
+0f0e: cd 6f 0f     call $0F6F
+0f11: ed 5b 08 20  ld   de,($2008)
+0f15: 21 01 e0     ld   hl,$E001
+0f18: 3a 00 c0     ld   a,($C000)
+0f1b: db 00        in   a,($00)
+0f1d: 73           ld   (hl),e
+0f1e: c5           push bc
+0f1f: c1           pop  bc
+0f20: 72           ld   (hl),d
+0f21: 18 f5        jr   $0F18
+0f23: 06 00        ld   b,$00
+0f25: 0e 97        ld   c,$97
+0f27: cd 6d 06     call $066D
+0f2a: 2a 06 20     ld   hl,($2006)
+0f2d: 11 61 03     ld   de,$0361
+0f30: 7c           ld   a,h
+0f31: 17           rla
+0f32: 38 2c        jr   c,$0F60
+0f34: ed 52        sbc  hl,de
+0f36: f2 60 0f     jp   p,$0F60
+0f39: ed 4b 06 20  ld   bc,($2006)
+0f3d: 11 80 20     ld   de,$2080
+0f40: 2a 08 20     ld   hl,($2008)
+0f43: 22 06 e0     ld   ($E006),hl
+0f46: 23           inc  hl
+0f47: 23           inc  hl
+0f48: cd 64 02     call $0264
+0f4b: 3a 08 e0     ld   a,($E008)
+0f4e: 12           ld   (de),a
+0f4f: 13           inc  de
+0f50: 0b           dec  bc
+0f51: 78           ld   a,b
+0f52: b1           or   c
+0f53: 28 0a        jr   z,$0F5F
+0f55: 3a 09 e0     ld   a,($E009)
+0f58: 12           ld   (de),a
+0f59: 13           inc  de
+0f5a: 0b           dec  bc
+0f5b: 78           ld   a,b
+0f5c: b1           or   c
+0f5d: 20 e4        jr   nz,$0F43
+0f5f: c9           ret
+0f60: 21 0b 20     ld   hl,$200B
+0f63: cb fe        set  7,(hl)
+0f65: c9           ret
+0f66: 2a 08 20     ld   hl,($2008)
+0f69: e9           jp   (hl)
+0f6a: cd 46 08     call $0846
+0f6d: 18 0b        jr   $0F7A
+0f6f: cd 46 08     call $0846
+0f72: 3e 4c        ld   a,$4C
+0f74: 32 29 20     ld   ($2029),a
+0f77: cd 4e 07     call $074E
+0f7a: 3a 06 20     ld   a,($2006)
+0f7d: 32 29 20     ld   ($2029),a
+0f80: 3a 07 20     ld   a,($2007)
+0f83: 1f           rra
+0f84: 3e 00        ld   a,$00
+0f86: 17           rla
+0f87: 32 2a 20     ld   ($202A),a
+0f8a: cd 4e 07     call $074E
+0f8d: 3a 07 20     ld   a,($2007)
+0f90: 21 3e 20     ld   hl,$203E
+0f93: cb 8e        res  1,(hl)
+0f95: cb 4f        bit  1,a
+0f97: 28 02        jr   z,$0F9B
+0f99: cb ce        set  1,(hl)
+0f9b: cb a6        res  4,(hl)
+0f9d: cb 57        bit  2,a
+0f9f: 28 02        jr   z,$0FA3
+0fa1: cb e6        set  4,(hl)
+0fa3: cb 86        res  0,(hl)
+0fa5: cb 5f        bit  3,a
+0fa7: 28 02        jr   z,$0FAB
+0fa9: cb c6        set  0,(hl)
+0fab: 3a 3e 20     ld   a,($203E)
+0fae: 32 00 60     ld   ($6000),a
+0fb1: 3a 0c e0     ld   a,($E00C)
+0fb4: c9           ret
+
+; board self-test: ROM checksum, RAM test
+0fb5: 21 ff 0f     ld   hl,$0FFF
+0fb8: 01 ff ff     ld   bc,$FFFF
+0fbb: af           xor  a
+0fbc: 86           add  a,(hl)
+0fbd: 09           add  hl,bc
+0fbe: 38 fc        jr   c,$0FBC
+0fc0: 20 fe        jr   nz,$0FC0
+0fc2: 3e 80        ld   a,$80
+0fc4: 32 00 60     ld   ($6000),a
+0fc7: 21 cf 0f     ld   hl,$0FCF
+0fca: d9           exx
+0fcb: af           xor  a
+0fcc: 57           ld   d,a
+0fcd: 18 0d        jr   $0FDC
+0fcf: 21 d6 0f     ld   hl,$0FD6
+0fd2: d9           exx
+0fd3: 3d           dec  a
+0fd4: 18 06        jr   $0FDC
+0fd6: 21 43 00     ld   hl,$0043
+0fd9: d9           exx
+0fda: 16 03        ld   d,$03
+0fdc: 01 00 04     ld   bc,$0400
+0fdf: 21 00 20     ld   hl,$2000
+0fe2: 77           ld   (hl),a
+0fe3: 82           add  a,d
+0fe4: 23           inc  hl
+0fe5: 0d           dec  c
+0fe6: 20 fa        jr   nz,$0FE2
+0fe8: 10 f8        djnz $0FE2
+0fea: 01 00 04     ld   bc,$0400
+0fed: 2b           dec  hl
+0fee: 92           sub  d
+0fef: be           cp   (hl)
+0ff0: 20 fe        jr   nz,$0FF0
+0ff2: 0d           dec  c
+0ff3: 20 f8        jr   nz,$0FED
+0ff5: 10 f6        djnz $0FED
+0ff7: d9           exx
+0ff8: e9           jp   (hl)
+
+; padding: the ROM bytes sum to 00 (checked by the self-test)
+0ff9: .db 00 04 12 00 ff 00 cc

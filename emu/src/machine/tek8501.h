@@ -2,12 +2,14 @@
 // Board structure follows the real unit so it can later become MAME devices:
 //   Utility board  : PROMs 160-0399/0400, LTC/LED register, AUX + PRINTER serial ports
 //   Memory board   : 32 KW RAM (000000-167776 visible)
-//   Flexible Disc Controller : HLE of the Z80A controller's command-block interface
+//   Flexible Disc Controller : the real board (Z80A + ROM 160-0412-00, tek8501_fdc), or
+//                              with fdc_lle = false the old HLE of its command-block interface
 //   I/O board      : HSI (high speed serial link to the 8301) -- stub for now
 #ifndef TEK_TEK8501_H
 #define TEK_TEK8501_H
 #include "emu.h"
 #include "machine/imd.h"
+#include "machine/tek8501_fdc.h"
 #include "cpu/t11/t11.h"
 #include "machine/serial.h"
 #include <vector>
@@ -27,10 +29,17 @@ public:
 
 	tek8501();
 	bool load_roms(const std::string &dir, std::string &err);
-	bool mount(int drive, const std::string &path, std::string &err, bool writeback = false);
+	// at_run_time: the door was opened and a disc inserted (the drive reports a disc change)
+	bool mount(int drive, const std::string &path, std::string &err, bool writeback = false, bool at_run_time = false);
+	bool eject(int drive, std::string &err);   // writes the disc back first
+	bool mounted(int drive) const { return fdc_lle ? fdc.drv[drive & 3].present : m_drive[drive & 3].present; }
 	// write modified, write-back drives to their image files; returns false on error
 	bool flush(std::string &err, bool force = false);
-	bool dirty(int drive) const { return m_drive[drive & 3].dirty; }
+	bool dirty(int drive) const { return fdc_lle ? fdc.drv[drive & 3].dirty : m_drive[drive & 3].dirty; }
+
+	// flexible disc controller: low-level (the real board) unless set false before load_roms/mount
+	bool fdc_lle = true;
+	tek8501_fdc fdc;
 	void power_on();
 	void restart();          // front-panel RESTART: PC = 173000, LTC<5> = 0
 	void run_slice(int cycles);

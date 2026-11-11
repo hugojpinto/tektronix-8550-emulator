@@ -61,6 +61,8 @@ build/tek8550 -prom fix -prom-dev my2716.bin -rw -0 ../disks/work.img
 
 tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (8501 AUX port), `-dump FILE` (memory images),
 `-type SECONDS TEXT` (type into the terminal at a machine time; `\r` Return, `\e` ESC, `\xHH`), `-trace8301 T FILE`, `-trace8501 T LEN FILE`.
+`-fdc lle|hle` picks the floppy controller: `lle` (default) runs the real board's Z80 firmware against modelled drives, `hle` the old high-level shim.
+`-mount SECONDS N=FILE` inserts a disc at a machine time (the drive reports a disc change), `-eject SECONDS N` writes it back and removes it; the monitor has `m N FILE` and `e N`. Mount blank (empty) images after DOS/50 has booted: an unformatted disc at power-up delays the 8501 so much that the 8301 boot gives up, as on the real lab.
 `-outputs FILE` logs the front-panel lamps (`8301:led0..4`, `8301:selftest`, `8301:ramled0..4`, `8501:led0..4`; 1 = lit) with their machine times.
 The tek8550 monitor adds `o` (show the lamps) and `p NAME [VALUE]` (inputs: `8301:restart`, `8501:restart`, `8301:modesw`).
 The whole system lives in `src/system/` (`tek8550.*`, `options.*`, `outputs.h`); `main8550.cpp` is only the tty front end. Env `TEK_IOTRACE=1` / `TEK_IOTRACE8301=1` trace device I/O.

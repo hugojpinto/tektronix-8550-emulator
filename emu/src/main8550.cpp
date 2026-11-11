@@ -13,7 +13,7 @@
 
 static void monitor_help()
 {
-	printf("[monitor] c continue | q quit | r regs | R restart both | o outputs | p NAME [VALUE] input (8301:restart, 8501:restart, 8301:modesw)\n");
+	printf("[monitor] c continue | q quit | r regs | R restart both | o outputs | p NAME [VALUE] input (8301:restart, 8501:restart, 8301:modesw) | m N FILE mount | e N eject\n");
 }
 
 int main(int argc, char **argv)
@@ -61,6 +61,12 @@ int main(int argc, char **argv)
 					if (line[0] == 'r') sys.show(stdout);
 					if (line[0] == 'R') sys.input("restart");
 					if (line[0] == 'o') for (auto &kv : sys.out.all()) printf("  %-16s %d\n", kv.first.c_str(), kv.second);
+					if (line[0] == 'm' || line[0] == 'e') {
+						char path[1024] = ""; int n = -1; std::string e;
+						int got = sscanf(line + 1, "%d %1023[^\n]", &n, path);
+						if (n < 0 || n > 3 || (line[0] == 'm' && got < 2)) printf("usage: m N FILE | e N\n");
+						else if (!(line[0] == 'm' ? sys.mount(n, path, e) : sys.eject(n, e))) printf("%s\n", e.c_str());
+					}
 					if (line[0] == 'p') {
 						char name[64]; int v = 1;
 						if (sscanf(line + 1, "%63s %i", name, &v) >= 1 && !sys.input(name, v)) printf("unknown input %s\n", name);
