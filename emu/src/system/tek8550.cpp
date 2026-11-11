@@ -130,6 +130,8 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	};
 	mdu->power_on();
 	dmu->power_on();
+	out.set("8501:acon", 1);                      // AC ON lamp (rear mains switch)
+	out.set("8501:on", 1);                       // DC on
 	update_outputs();
 	return true;
 }
@@ -176,12 +178,12 @@ void tek8550_system::scripted_events()
 
 void tek8550_system::update_outputs()
 {
-	// 8301 port ED: D0-4 LEDs (1 = on), D5 front panel SELF TEST (notes/8301.md)
+	// 8301 port ED: D0-4 LEDs (1 = on), D5 front panel SELF TEST (0 = lit; notes/8301.md)
 	int a = mdu->leds();
 	if (a != m_out_8301) {
 		m_out_8301 = a;
 		for (int i = 0; i < 5; i++) out.set("8301:led" + std::to_string(i), (a >> i) & 1);
-		out.set("8301:selftest", (a >> 5) & 1);
+		out.set("8301:selftest", !((a >> 5) & 1));         // active low: lit from RESET until the tests pass
 	}
 	// 8301 system RAM board, port D2 D3-7 (1 = off)
 	int r = mdu->ram_leds();
@@ -194,6 +196,18 @@ void tek8550_system::update_outputs()
 	if (b != m_out_8501) {
 		m_out_8501 = b;
 		for (int i = 0; i < 5; i++) out.set("8501:led" + std::to_string(i), !((b >> i) & 1));
+	}
+	// front panels: 8301 SYSTEM (2650 running), PROGRAM (emulator processor running),
+	// DMA (a transfer this slice) -- 070-2976 Fig. 1-3; 8501 PROCESSOR BUSY (LSI-11 running)
+	bool dma = mdu->dma_transfers != m_dma_seen; m_dma_seen = mdu->dma_transfers;
+	int p = (!mdu->cpu.halted() ? 1 : 0) | (mdu->lp_running() ? 2 : 0) | (dma ? 4 : 0) | (!dmu->cpu.halted() ? 8 : 0);
+	if (p != m_out_panel) {
+		int ch = m_out_panel < 0 ? 15 : p ^ m_out_panel;
+		m_out_panel = p;
+		if (ch & 1) out.set("8301:system", p & 1);
+		if (ch & 2) out.set("8301:program", (p >> 1) & 1);
+		if (ch & 4) out.set("8301:dma", (p >> 2) & 1);
+		if (ch & 8) out.set("8501:busy", (p >> 3) & 1);
 	}
 	// drive activity lamps: selected with the head loaded (low-level controller only)
 	int m = 0;

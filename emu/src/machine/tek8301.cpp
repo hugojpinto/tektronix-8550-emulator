@@ -683,10 +683,10 @@ void tek8301::dma_service()
 		for (int guard = 0; guard < 4; guard++) {
 			if ((m_e9 & 0x10) && m_dma.is_read(2) && m_hsi_tbre && m_hsi_tx_timer == 0 && (!hsi_cts || hsi_cts())) {
 				u8 b = mem_rd({ m_dma.ch[2].addr, sys, true });
-				m_hsi_thr = b; m_hsi_tbre = false; m_hsi_tx_timer = hsi_char_cycles;
+				m_hsi_thr = b; m_hsi_tbre = false; m_hsi_tx_timer = hsi_char_cycles; dma_transfers++;
 				if (m_dma.step(2) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			} else if ((m_e9 & 0x20) && m_dma.is_write(2) && m_hsi_da) {
-				mem_wr({ m_dma.ch[2].addr, sys, true }, m_hsi_rbr); m_hsi_da = false;
+				mem_wr({ m_dma.ch[2].addr, sys, true }, m_hsi_rbr); m_hsi_da = false; dma_transfers++;
 				if (m_dma.step(2) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			} else break;
 			if (!m_dma.enabled(2)) break;
@@ -705,7 +705,7 @@ void tek8301::dma_service()
 		}
 		for (int i = 0; i < 0x4000 && m_dma.enabled(0) && m_dma.enabled(1); i++) {
 			u8 b = mem_rd({ m_dma.ch[0].addr, src_sys, true });
-			mem_wr({ m_dma.ch[1].addr, dst_sys, true }, b);
+			mem_wr({ m_dma.ch[1].addr, dst_sys, true }, b); dma_transfers++;
 			bool tc0 = m_dma.step(0), tc1 = m_dma.step(1);
 			if ((tc0 || tc1) && (m_e9 & 0x08)) m_pending |= 1u << INT_DMA;
 			if (tc0 || tc1) break;

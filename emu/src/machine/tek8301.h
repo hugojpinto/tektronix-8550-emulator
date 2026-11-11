@@ -56,6 +56,7 @@ public:
 	int  hsi_char_cycles = 150;   // 153.6 kbaud, ~11 bits/char at 2 MHz
 
 	u8 leds() const { return m_led; }
+	u64 dma_transfers = 0;        // bytes moved by the 8257 (front panel DMA lamp)
 	u8 ram_leds() const { return m_d2; }
 	u64 cycles() const { return m_cycles; }
 

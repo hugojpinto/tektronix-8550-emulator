@@ -8,6 +8,8 @@ const uint8_t font[96][8] = {
 };
 }
 
+const uint8_t *ct8500_raster::glyph(uint8_t c) { return font[(c >= 0x20 && c < 0x80) ? c - 0x20 : '?' - 0x20]; }
+
 void ct8500_raster::draw(const ct8500 &t, bool blink_on, uint8_t *dots)
 {
 	memset(dots, 0, size_t(W) * H);

@@ -68,7 +68,8 @@ private:
 	FILE *logf = nullptr, *hsif = nullptr, *auxf = nullptr, *trf = nullptr, *trf11 = nullptr, *outf = nullptr;
 	int last_dir = 0;
 	u64 m_ticks = 0;
-	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1, m_out_drives = -1;
+	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1, m_out_drives = -1, m_out_panel = -1;
+	u64 m_dma_seen = 0;
 
 	void scripted_events();
 	void update_outputs();

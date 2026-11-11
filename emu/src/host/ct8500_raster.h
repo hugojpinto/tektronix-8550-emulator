@@ -11,5 +11,7 @@ constexpr int W = ct8500::COLS * 8, H = ct8500::VIEW * 10;
 // dots[W*H]: 0 off, 1 dim, 2 bright. blink_on: blinking characters are lit in this
 // phase. The cursor is a steady block in inverse video, as in the screenshots.
 void draw(const ct8500 &t, bool blink_on, uint8_t *dots);
+// the glyph of an ASCII character: 8 rows of 5 dots, bit 4 = leftmost
+const uint8_t *glyph(uint8_t c);
 }
 #endif

@@ -40,12 +40,12 @@ $(BUILD)/tools/%.o: tools/%.cpp
 # optional graphical front end (SDL3 via pkg-config); never part of 'all'
 SDL_CFLAGS = $(shell pkg-config --cflags sdl3 2>/dev/null)
 SDL_LIBS   = $(shell pkg-config --libs sdl3 2>/dev/null)
-GUI_OBJ := $(BUILD)/frontend/sdl/main_gui.o $(BUILD)/host/ct8500_raster.o
+GUI_OBJ := $(BUILD)/frontend/sdl/main_gui.o $(BUILD)/frontend/sdl/layout.o $(BUILD)/host/ct8500_raster.o
 gui: $(BUILD)/tek8550-gui
 $(BUILD)/tek8550-gui: $(GUI_OBJ) $(SYS8550) $(M8301) $(M8501) $(T11_OBJ) $(DASM_OBJ)
 	@pkg-config --exists sdl3 || { echo "make gui needs SDL3 (pkg-config sdl3): brew install sdl3 / apt install libsdl3-dev / pacman -S mingw-w64-x86_64-SDL3"; exit 1; }
 	$(CXX) -o $@ $^ $(SDL_LIBS)
-$(BUILD)/frontend/sdl/main_gui.o: CPPFLAGS += $(SDL_CFLAGS)
+$(BUILD)/frontend/sdl/main_gui.o $(BUILD)/frontend/sdl/layout.o: CPPFLAGS += $(SDL_CFLAGS)
 
 test: $(BUILD)/flexdrive_roundtrip
 	$(BUILD)/flexdrive_roundtrip

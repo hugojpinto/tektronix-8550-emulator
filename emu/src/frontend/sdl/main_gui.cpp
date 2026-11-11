@@ -1,13 +1,16 @@
 // tek8550-gui: the complete 8550 MDL with a graphical CT8500 (SDL3).
 // The same system and options as the tty front end (system/tek8550.*); this file only
 // draws the terminal, takes the keyboard and paces the emulation to real time.
-//   tek8550-gui [tek8550 options] [-style crt|sharp] [-scale F] [-shot SECONDS FILE.bmp]
+//   tek8550-gui [tek8550 options] [-style crt|sharp] [-scale F] [-panels on|off] [-artwork DIR] [-shot SECONDS FILE.bmp]
 // With -cycles the run is flat out (batch); -shot saves the window at a machine time
 // (SDL_VIDEODRIVER=offscreen runs it with no display).
 // Hotkeys (Cmd on macOS, Ctrl+Alt elsewhere): V paste, C copy the screen, T turbo,
-// F full screen, S sharp/CRT, R restart both units, Q quit.
+// F full screen, S sharp/CRT, P front panels, R restart both units, Q quit.
+// Front panels: artwork/8301.lay and 8501.lay (MAME .lay subset, frontend/sdl/layout.h);
+// click RESTART, drop a disc image on a drive bay to insert it, click the bay to eject.
 #include "system/tek8550.h"
 #include "host/ct8500_raster.h"
+#include "frontend/sdl/layout.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <cstdio>
@@ -16,6 +19,8 @@
 #include <vector>
 #include <deque>
 #include <cmath>
+#include <map>
+#include <algorithm>
 
 namespace {
 
@@ -97,6 +102,21 @@ struct bell_sound {
 	void ring() { if (stream && SDL_GetAudioStreamQueued(stream) < 4000) SDL_PutAudioStreamData(stream, wave.data(), int(wave.size() * 2)); }
 };
 
+// a front-panel window drawn from a .lay view
+struct panel {
+	std::string tag;
+	SDL_Window *win = nullptr; SDL_Renderer *ren = nullptr;
+	lay::layout l; const lay::view *v = nullptr;
+	const lay::item *pressed = nullptr;
+	bool shown = true;
+};
+
+std::string base_name(const std::string &p)
+{
+	size_t s = p.find_last_of("/\\");
+	return s == std::string::npos ? p : p.substr(s + 1);
+}
+
 std::string screen_text(const ct8500 &t)
 {
 	std::string s;
@@ -117,7 +137,7 @@ std::string screen_text(const ct8500 &t)
 int main(int argc, char **argv)
 {
 	// front-end options first; the rest are the system's
-	std::string style = "crt"; double scale = 1.25;
+	std::string style = "crt", artwork = "artwork"; double scale = 1.25; bool panels_on = true;
 	struct shot_t { double at; std::string file; };
 	std::vector<shot_t> shots;
 	std::vector<char *> rest = { argv[0] };
@@ -125,13 +145,15 @@ int main(int argc, char **argv)
 		std::string a = argv[i];
 		if (a == "-style" && i + 1 < argc) style = argv[++i];
 		else if (a == "-scale" && i + 1 < argc) scale = atof(argv[++i]);
+		else if (a == "-panels" && i + 1 < argc) panels_on = std::string(argv[++i]) != "off";
+		else if (a == "-artwork" && i + 1 < argc) artwork = argv[++i];
 		else if (a == "-shot" && i + 2 < argc) { double t = atof(argv[++i]); shots.push_back({ t, argv[++i] }); }
 		else rest.push_back(argv[i]);
 	}
 	tek8550_options opt;
 	std::string bad;
 	if (!opt.parse(int(rest.size()), rest.data(), bad)) {
-		fprintf(stderr, "usage: %s %s [-style crt|sharp] [-scale F] [-shot SECONDS FILE.bmp]\n", argv[0], tek8550_options::usage()); return 1;
+		fprintf(stderr, "usage: %s %s [-style crt|sharp] [-scale F] [-panels on|off] [-artwork DIR] [-shot SECONDS FILE.bmp]\n", argv[0], tek8550_options::usage()); return 1;
 	}
 
 	tek8550_system sys(opt);
@@ -151,6 +173,39 @@ int main(int argc, char **argv)
 	SDL_StartTextInput(win);
 	bell_sound bell; bell.open();
 
+	// front panels, to the right of the terminal
+	std::vector<panel> panels;
+	std::string disc[4];
+	for (int d = 0; d < 4; d++) disc[d] = opt.disks[d].empty() ? "" : base_name(opt.disks[d]);
+	if (panels_on) {
+		int tx = 0, ty = 0, tw = 0, th = 0;
+		SDL_GetWindowPosition(win, &tx, &ty); SDL_GetWindowSize(win, &tw, &th);
+		int py = ty;
+		for (const char *tag : { "8301", "8501" }) {
+			panel p; p.tag = tag;
+			std::string e;
+			if (!p.l.load(artwork + "/" + tag + ".lay", e) || p.l.views.empty()) { fprintf(stderr, "[panel %s: %s]\n", tag, e.c_str()); continue; }
+			panels.push_back(std::move(p));
+		}
+		for (panel &p : panels) {
+			p.v = &p.l.views[0];
+			const float ps = 0.75f;
+			if (!SDL_CreateWindowAndRenderer(p.v->name.c_str(), int(p.v->b.w * ps), int(p.v->b.h * ps), SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY, &p.win, &p.ren)) continue;
+			SDL_SetRenderLogicalPresentation(p.ren, int(p.v->b.w), int(p.v->b.h), SDL_LOGICAL_PRESENTATION_LETTERBOX);
+			SDL_SetWindowPosition(p.win, tx + tw + 12, py);
+			py += int(p.v->b.h * ps) + 40;
+		}
+		SDL_RaiseWindow(win);
+	}
+	// lamps: the fraction of the frame each output was on, with a short afterglow
+	std::vector<std::string> lamp_names;
+	for (panel &p : panels) for (auto &it : p.v->items) if (!it.output.empty()) lamp_names.push_back(it.output);
+	std::vector<double> lamp_acc(lamp_names.size()), lamp_level(lamp_names.size());
+	std::map<std::string, size_t> lamp_index;
+	for (size_t i = 0; i < lamp_names.size(); i++) lamp_index[lamp_names[i]] = i;
+	long frame_ticks = 0;
+	auto panel_of = [&](SDL_WindowID id) -> panel * { for (panel &p : panels) if (p.win && SDL_GetWindowID(p.win) == id) return &p; return nullptr; };
+
 	std::deque<uint8_t> paste;                   // pasted text, typed at the line rate
 	double next_paste = 0;
 	const double char_time = 10.0 / 9600;        // the terminal port's 9600 baud
@@ -166,6 +221,37 @@ int main(int argc, char **argv)
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
 			case SDL_EVENT_QUIT: quit = true; break;
+			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+				if (panel *p = panel_of(e.window.windowID)) { SDL_HideWindow(p->win); p->shown = false; }
+				else quit = true;
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP: {
+				panel *p = panel_of(e.button.windowID);
+				if (!p) break;
+				SDL_ConvertEventToRenderCoordinates(p->ren, &e);
+				if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) { p->pressed = nullptr; break; }
+				const lay::item *it = lay::hit(*p->v, e.button.x, e.button.y, [](const lay::item &i) { return !i.input.empty(); });
+				if (!it) break;
+				p->pressed = it;
+				if (it->input.compare(0, 5, "drive") == 0 && it->input.find(":eject") != std::string::npos) {
+					int d = it->input[5] - '0'; std::string er;
+					if (!disc[d].empty() && !sys.eject(d, er)) fprintf(stderr, "[drive %d: %s]\n", d, er.c_str());
+					disc[d].clear();
+				} else sys.input(it->input, 1);
+				break;
+			}
+			case SDL_EVENT_DROP_FILE: {
+				panel *p = panel_of(e.drop.windowID);
+				if (!p || !e.drop.data) break;
+				std::string path = e.drop.data;
+				SDL_ConvertEventToRenderCoordinates(p->ren, &e);
+				const lay::item *it = lay::hit(*p->v, e.drop.x, e.drop.y, [](const lay::item &i) { return i.drive >= 0; });
+				if (!it) break;
+				std::string er;
+				if (sys.mount(it->drive, path, er)) disc[it->drive] = base_name(path);
+				else fprintf(stderr, "[drive %d: %s]\n", it->drive, er.c_str());
+				break;
+			}
 			case SDL_EVENT_TEXT_INPUT:
 				for (const char *p = e.text.text; *p; p++)
 					if (uint8_t(*p) < 0x80) ct.type(uint8_t(*p));
@@ -191,6 +277,7 @@ int main(int argc, char **argv)
 					else if (k == SDLK_F) { fullscreen = !fullscreen; SDL_SetWindowFullscreen(win, fullscreen); }
 					else if (k == SDLK_S) { view.crt = !view.crt; SDL_SetTextureScaleMode(tex, view.crt ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST); redraw = true; }
 					else if (k == SDLK_R) sys.input("restart");
+					else if (k == SDLK_P) for (panel &p : panels) { p.shown = true; SDL_ShowWindow(p.win); }
 					break;
 				}
 				// keys the CT8500 sends as control codes or escape sequences
@@ -244,6 +331,16 @@ int main(int argc, char **argv)
 				next_paste = sys.now() + char_time + (c == '\r' ? 0.25 : 0);   // let the line be taken
 			}
 			sys.tick();
+			for (size_t i = 0; i < lamp_names.size(); i++) lamp_acc[i] += sys.out.get(lamp_names[i]);
+			frame_ticks++;
+		}
+		if (frame_ticks) {
+			for (size_t i = 0; i < lamp_names.size(); i++) {
+				double duty = lamp_acc[i] / double(frame_ticks);
+				lamp_level[i] = std::max(duty, lamp_level[i] * 0.55);
+				lamp_acc[i] = 0;
+			}
+			frame_ticks = 0;
 		}
 		if (turbo || sys.now() < target - 0.25) resync();      // never try to catch up a backlog
 		if (ct.take_bell()) bell.ring();
@@ -261,15 +358,34 @@ int main(int argc, char **argv)
 		SDL_RenderClear(ren);
 		SDL_FRect dst = { float(OVER_X), float(OVER_Y), float(TW), float(TH) };
 		SDL_RenderTexture(ren, tex, nullptr, &dst);
+		auto level = [&](const lay::item &it) -> float {
+			if (!it.output.empty()) return float(lamp_level[lamp_index[it.output]]);
+			for (panel &p : panels) if (p.pressed == &it) return 1.f;
+			return 0.f;
+		};
+		auto caption = [&](const lay::item &it) -> std::string { return it.drive >= 0 ? (disc[it.drive].empty() ? "(empty)" : disc[it.drive]) : ""; };
+		for (panel &p : panels) {
+			if (!p.shown || !p.ren) continue;
+			SDL_SetRenderDrawColor(p.ren, 30, 30, 32, 255);
+			SDL_RenderClear(p.ren);
+			lay::draw(p.ren, p.l, *p.v, level, caption);
+		}
 		for (auto &sh : shots)
 			if (!sh.file.empty() && sys.now() >= sh.at) {
 				if (SDL_Surface *sf = SDL_RenderReadPixels(ren, nullptr)) { SDL_SaveBMP(sf, sh.file.c_str()); SDL_DestroySurface(sf); }
+				for (panel &p : panels) {                      // FILE.bmp -> FILE_8301.bmp, FILE_8501.bmp
+					std::string f = sh.file; size_t dot = f.rfind('.');
+					f = (dot == std::string::npos ? f : f.substr(0, dot)) + "_" + p.tag + ".bmp";
+					if (SDL_Surface *sf = SDL_RenderReadPixels(p.ren, nullptr)) { SDL_SaveBMP(sf, f.c_str()); SDL_DestroySurface(sf); }
+				}
 				sh.file.clear();
 			}
+		for (panel &p : panels) if (p.shown && p.ren) SDL_RenderPresent(p.ren);
 		SDL_RenderPresent(ren);                                // paced by vsync...
 		if (!turbo && SDL_GetTicksNS() - frame0 < 4'000'000) SDL_Delay(4);   // ...unless the window is hidden
 	}
 
+	for (panel &p : panels) { if (p.ren) SDL_DestroyRenderer(p.ren); if (p.win) SDL_DestroyWindow(p.win); }
 	SDL_DestroyTexture(tex);
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);

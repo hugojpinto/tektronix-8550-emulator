@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!-- Tektronix 8501 Data Management Unit, front panel. Drawn after photos of a real unit (the owner's,
+     from the VCFed thread "Tektronix 85xx MDL system", and sources/tekwiki/8550/8550_1.jpg): two Qume
+     8" drives stacked on the left (slot band with DRIVE 0/1, latch bar, red activity lamp), grilles and
+     the control panel on the right: ON (green) + DC rocker | AC ON, PROCESSOR BUSY | RESTART, HALT/RUN.
+     The five diagnostic LEDs are inside, on the Utility board (061-2355-00): shown on a strip below. -->
+<mamelayout version="2">
+<element name="frame"><rect><color red="0.66" green="0.65" blue="0.60"/></rect></element>
+<element name="face"><rect><color red="0.86" green="0.85" blue="0.80"/></rect></element>
+<element name="recess"><rect><color red="0.80" green="0.79" blue="0.73"/></rect></element>
+<element name="panel"><rect><color red="0.88" green="0.88" blue="0.85"/></rect><rect><color red="0.70" green="0.70" blue="0.68"/><bounds x="0" y="0" width="100" height="1"/></rect></element>
+<element name="dark"><rect><color red="0.14" green="0.14" blue="0.15"/></rect></element>
+<element name="black"><rect><color red="0.06" green="0.06" blue="0.07"/></rect></element>
+<element name="grille_v"><rect><color red="0.14" green="0.14" blue="0.15"/><bounds x="0" y="0" width="100" height="100"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="4" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="10.6" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="17.2" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="23.8" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="30.4" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="37" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="43.6" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="50.2" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="56.8" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="63.4" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="70" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="76.6" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="83.2" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="89.8" y="5" width="2.6" height="90"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="96.4" y="5" width="2.6" height="90"/></rect></element>
+<element name="grille_h"><rect><color red="0.14" green="0.14" blue="0.15"/><bounds x="0" y="0" width="100" height="100"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="4" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="9.4" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="14.8" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="20.2" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="25.6" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="31" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="36.4" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="41.8" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="47.2" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="52.6" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="58" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="63.4" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="68.8" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="74.2" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="79.6" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="85" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="90.4" width="90" height="2.2"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="5" y="95.8" width="90" height="2.2"/></rect></element>
+<element name="led_red"><disk state="0"><color red="0.30" green="0.07" blue="0.05"/></disk><disk state="1"><color red="1.00" green="0.20" blue="0.10"/></disk></element>
+<element name="led_green"><disk state="0"><color red="0.07" green="0.22" blue="0.12"/></disk><disk state="1"><color red="0.30" green="1.00" blue="0.45"/></disk></element>
+<element name="toggle"><rect><color red="0.08" green="0.08" blue="0.09"/><bounds x="0" y="0" width="10" height="12"/></rect><rect state="0"><color red="0.30" green="0.30" blue="0.32"/><bounds x="2" y="1.5" width="6" height="4.5"/></rect><rect state="1"><color red="0.30" green="0.30" blue="0.32"/><bounds x="2" y="6" width="6" height="4.5"/></rect><rect state="0"><color red="0.55" green="0.55" blue="0.57"/><bounds x="3" y="2" width="4" height="1.2"/></rect><rect state="1"><color red="0.55" green="0.55" blue="0.57"/><bounds x="3" y="9" width="4" height="1.2"/></rect></element>
+<element name="toggle_run"><rect><color red="0.08" green="0.08" blue="0.09"/><bounds x="0" y="0" width="10" height="12"/></rect><rect><color red="0.30" green="0.30" blue="0.32"/><bounds x="2" y="6" width="6" height="4.5"/></rect><rect><color red="0.55" green="0.55" blue="0.57"/><bounds x="3" y="9" width="4" height="1.2"/></rect></element>
+<element name="rocker"><rect><color red="0.05" green="0.05" blue="0.06"/><bounds x="0" y="0" width="10" height="10"/></rect><rect><color red="0.16" green="0.16" blue="0.17"/><bounds x="1.2" y="1.2" width="7.6" height="7.6"/></rect><rect><color red="0.24" green="0.24" blue="0.25"/><bounds x="1.2" y="1.2" width="7.6" height="3"/></rect></element>
+<element name="drive"><rect><color red="0.84" green="0.83" blue="0.78"/><bounds x="0" y="0" width="100" height="40"/></rect><rect><color red="0.14" green="0.14" blue="0.15"/><bounds x="2" y="9" width="96" height="10"/></rect><rect><color red="0.05" green="0.05" blue="0.06"/><bounds x="52" y="17" width="12" height="2.2"/></rect><rect><color red="0.05" green="0.05" blue="0.06"/><bounds x="42" y="27" width="17" height="3"/></rect></element>
+<element name="t_drive0"><text string="DRIVE 0"><color red="0.90" green="0.90" blue="0.88"/></text></element>
+<element name="t_drive1"><text string="DRIVE 1"><color red="0.90" green="0.90" blue="0.88"/></text></element>
+<element name="t_tek"><text string="Tektronix"><color red="0.20" green="0.45" blue="0.75"/></text></element>
+<element name="t_model"><text string="8501 DATA MANAGEMENT UNIT"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_on"><text string="ON"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_dc"><text string="DC"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_acon"><text string="AC ON"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_busy1"><text string="PROCESSOR"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_busy2"><text string="BUSY"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_restart"><text string="RESTART"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_halt"><text string="HALT"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_run"><text string="RUN"><color red="0.20" green="0.20" blue="0.22"/></text></element>
+<element name="t_diag"><text string="UTILITY BOARD LEDS (INSIDE)"><color red="0.75" green="0.75" blue="0.72"/></text></element>
+<view name="Tektronix 8501 Data Management Unit"><bounds x="0" y="0" width="1000" height="620"/>
+<element ref="frame"><bounds x="0" y="0" width="1000" height="560"/></element><element ref="face"><bounds x="10" y="10" width="980" height="540"/></element><element ref="recess"><bounds x="36" y="28" width="532" height="506"/></element>
+<element ref="drive" drive="0" inputtag="drive0:eject"><bounds x="48" y="40" width="508" height="206"/></element>
+<element ref="t_drive0"><bounds x="440" y="120" width="70" height="13"/></element>
+<element ref="led_red" name="drive0:active"><bounds x="84" y="200" width="16" height="16"/></element>
+<element ref="drive" drive="1" inputtag="drive1:eject"><bounds x="48" y="280" width="508" height="206"/></element>
+<element ref="t_drive1"><bounds x="440" y="360" width="70" height="13"/></element>
+<element ref="led_red" name="drive1:active"><bounds x="84" y="440" width="16" height="16"/></element>
+<element ref="recess"><bounds x="48" y="250" width="508" height="22"/></element>
+<element ref="t_tek"><bounds x="60" y="494" width="120" height="18"/></element><element ref="t_model"><bounds x="330" y="494" width="220" height="16"/></element>
+<element ref="grille_v"><bounds x="600" y="48" width="350" height="190"/></element><element ref="grille_v"><bounds x="600" y="358" width="350" height="170"/></element>
+<element ref="panel"><bounds x="588" y="250" width="374" height="98"/></element>
+<element ref="dark"><bounds x="688" y="256" width="2" height="86"/></element><element ref="dark"><bounds x="772" y="256" width="2" height="86"/></element>
+<element ref="t_on"><bounds x="596" y="288" width="26" height="12"/></element><element ref="led_green" name="8501:on"><bounds x="602" y="304" width="13" height="13"/></element>
+<element ref="t_dc"><bounds x="634" y="260" width="30" height="12"/></element><element ref="rocker"><bounds x="626" y="276" width="46" height="46"/></element>
+<element ref="t_acon"><bounds x="696" y="260" width="70" height="12"/></element><element ref="led_red" name="8501:acon"><bounds x="724" y="276" width="12" height="12"/></element>
+<element ref="t_busy1"><bounds x="694" y="296" width="74" height="11"/></element><element ref="t_busy2"><bounds x="706" y="308" width="50" height="11"/></element><element ref="led_red" name="8501:busy"><bounds x="724" y="322" width="12" height="12"/></element>
+<element ref="t_restart"><bounds x="786" y="260" width="76" height="12"/></element><element ref="toggle" inputtag="8501:restart"><bounds x="800" y="276" width="40" height="48"/></element>
+<element ref="t_halt"><bounds x="880" y="260" width="50" height="12"/></element><element ref="toggle_run"><bounds x="886" y="276" width="40" height="48"/></element><element ref="t_run"><bounds x="884" y="328" width="44" height="12"/></element>
+<element ref="t_diag"><bounds x="24" y="580" width="300" height="14"/></element>
+<element ref="led_red" name="8501:led4"><bounds x="350" y="578" width="16" height="16"/></element>
+<element ref="led_red" name="8501:led3"><bounds x="380" y="578" width="16" height="16"/></element>
+<element ref="led_red" name="8501:led2"><bounds x="410" y="578" width="16" height="16"/></element>
+<element ref="led_red" name="8501:led1"><bounds x="440" y="578" width="16" height="16"/></element>
+<element ref="led_red" name="8501:led0"><bounds x="470" y="578" width="16" height="16"/></element>
+</view></mamelayout>
