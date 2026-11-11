@@ -252,7 +252,7 @@ The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
 | Z80A (LP and emulator board) | `emu/src/cpu/z80/superzazu` | passes zexall exactly; full 16-bit I/O address and M1 marker |
 | 8301 boards | `emu/src/machine/tek8301.*` | register level, checked by passing the full diagnostic suites |
 | 8501 boards | `emu/src/machine/tek8501.*` | register level, except the floppy controller, which is **high-level**: command blocks are executed directly against the disk image |
-| Z80 emulator board firmware | `tek8301::ep_firmware` | **high-level**: no dump survives. Its behaviour was reverse-engineered from DOS/50 (`notes/8301.md`) |
+| Z80 emulator board firmware | `epz80_board::firmware` | **high-level**: no dump survives. Its behaviour was reverse-engineered from DOS/50 (`notes/8301.md`) |
 | Probe and prototype | `emu/src/host/ipc_target.*` | an external process over a socket (`notes/prototype-link.md`) |
 | REMOTE port / host computer | `emu/src/host/serial_link.*` | a byte stream over a socket; DOS/50 COMM and HOST (`notes/host-link.md`) |
 | RTPA | `emu/src/machine/rtpa.*` | register level, reverse-engineered from RTPA.TST and DOS/50; passes its diagnostic (`notes/rtpa.md`) |

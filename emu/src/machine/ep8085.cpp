@@ -52,6 +52,12 @@ void ep8085_board::bus_t::io_write(u8 port, u8 d)
 	}
 }
 
+void ep8085_board::io_write(u8, u8 d)
+{
+	if (mdu.ep_trace) fprintf(stderr, "[%.3f E5 <- %02x]\n", mdu.m_cycles / tek8301::CPU_HZ, d);
+	control = d;
+}
+
 // firmware PROM (not dumped) in F800-FBFF while E5<7> = 1, E5<4> = 0
 bool ep8085_board::prom_window(u16 a, u8 &v) const
 {

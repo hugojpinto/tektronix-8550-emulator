@@ -3,7 +3,7 @@
 How other programs and new hardware join the emulated 8550. Written for people adding:
 - **a target system**: another emulator, or a model of your board, acting as the prototype the 8550 debugs;
 - **a host computer**: a program that exchanges files with DOS/50 over the REMOTE port;
-- **a new emulator processor board** inside the 8301, such as the 6800, 8080 or 8086;
+- **a new emulator processor board** inside the 8301, such as the 6800 or 8080;
 - **front-panel lamps and buttons** for any of the above.
 
 | Surface | Where it attaches | Transport | Reference implementation | Detailed notes |
@@ -155,7 +155,7 @@ The details a host implementation must respect were found by tracing DOS/50's ow
 
 ## 3. New emulator processor boards
 
-The 8550 debugged other processors through plug-in **emulator processor boards**. The Z80 board (8300E04) and the 8085 board (8300E06) are emulated. The 6800, 8080, 8086 and others are not yet; see the [roadmap](../ROADMAP.md). A new board has two partners: **DOS/50**, which drives it through its control port and its firmware, and the **Emulator Controller**, which supplies breakpoints, single-cycling and the SVC mechanism to whichever board is fitted.
+The 8550 debugged other processors through plug-in **emulator processor boards**. The Z80 board (8300E04), the 8085 board (8300E06) and the 8086/8088 emulator are emulated. The 6800, 8080 and others are not yet; see the [roadmap](../ROADMAP.md). Most boards have two partners: **DOS/50**, which drives it through its control port and its firmware, and the **Emulator Controller**, which supplies breakpoints, single-cycling and the SVC mechanism to whichever board is fitted.
 
 ### What DOS/50 expects from a board
 
@@ -186,6 +186,8 @@ DS                   DOS/50 reads the register block and shows it
 
 Events are reported in a fixed order, after the instruction completes: SVC immediately, then BP1 > BP2 > single cycle > halt.
 
+**Not every board works this way.** The 8086/8088 emulator (`ep8086.*`, `notes/8086.md`) bypasses the Emulator Controller. It has its own ports (A7, 80–8F) and runs a kernel from its own PROM, with which the 2650 talks through a command port and a shared RAM. Find out which kind a board is from its diagnostic before writing code.
+
 **Board-specific parts.** Each of these must be found for the new board:
 - **Control port and "present" bit:** the diagnostics detect each board with one port test. The 3.0 diagnostic's configuration probe lists all of them, which tells you the new board's control port before you write any code:
 
@@ -203,22 +205,22 @@ Events are reported in a fixed order, after the instruction completes: SVC immed
 | 8086 / 80186 | A7 ← 7F, `A7 ≠ 0` / 27 ← 7F, `27 ≠ 0` |
 | NSC800 | A8 ← 7F, `A8 ≠ 0` |
 
-- **Firmware PROM:** visible in program memory at F800 in firmware mode (control bit 7 = 1, bit 4 = 0). Its **entries** are reached by forced jump: restore, dump and, for the prototype, get/put. Each answers with a debug SVC (7 for dump/restore, 8 for get/put). Until the PROM is dumped, emulate the entries at high level, as `tek8301::ep_firmware` and `ep85_firmware` do. The board's diagnostic checksums the PROM, so that one test keeps failing (as 07/00D0 and 06/00D0 do today); say so plainly.
+- **Firmware PROM:** visible in program memory at F800 in firmware mode (control bit 7 = 1, bit 4 = 0). Its **entries** are reached by forced jump: restore, dump and, for the prototype, get/put. Each answers with a debug SVC (7 for dump/restore, 8 for get/put). Until the PROM is dumped, emulate the entries at high level, as `epz80_board::firmware` and `ep8085_board::firmware` do. The board's diagnostic checksums the PROM, so that one test keeps failing (as 07/00D0 and 06/00D0 do today); say so plainly.
 - **Register block:** the board's saved CPU state, at program memory 0000 upwards, swapped by DOS/50 around each firmware call. Its layout is CPU-specific: 27 bytes for the Z80, 14 for the 8085. Find it by filling the block with marker bytes and reading the `DS` display.
 - **Forced interrupt:** what F9 D1 drives on this CPU (NMI on the Z80, TRAP on the 8085). The diagnostic tests it.
 
 ### Where it goes in the code
 
 1. **CPU core.** Port it from MAME into `emu/src/cpu/<name>/`, changed as little as possible. Mark each change `[tek8550]`, keep the BSD-3 headers, and record the MAME commit in `reference/mame/SOURCE.txt`. Run the core's own tests (the 8085 core passes TST8080 and 8080PRE).
-2. **The board class.** Derive from `emulator_board` (`emu/src/machine/emulator_board.h`), as the 8085 board does (`ep8085.{h,cpp}`); add it as a friend and a member of `tek8301`, and to `tek8301::active_slave()`. It supplies:
-   - `enabled()` from its control register, the control port's read and write in `io_read`/`io_write` (present and halted bits), and `prom_window()` for its firmware PROM;
+2. **The board class.** Derive from `emulator_board` (`emu/src/machine/emulator_board.h`), as the Z80 and 8085 boards do (`epz80.*`, `ep8085.*`; a Z80-based board derives from `z80_slave`). Add it as a friend and a member of `tek8301`, to `tek8301::active_slave()`, and to the board port decode in `tek8301::io_read`/`io_write` and `restart()`. It supplies:
+   - its control port: `decodes()`, `io_read()`/`io_write()` (present and halted bits), `restart()`, and `enabled()` from it; `prom_window()` for its firmware PROM; `prototype_mode()`/`prototype_all()` when its modes 1/2 send memory to the prototype;
    - its processor: `step()`, `pc()`, `halted()`, `cycles()`, `clock_hz()`;
    - what the Emulator Controller's F9 commands mean for it: `forced_reset()`, `forced_jump()` (including entries into its firmware), `forced_interrupt()` (NMI, TRAP...);
    - its bus routed through the 8301's `slave_rd`/`slave_wr` and `bp_check`, so the memory map, write protection and breakpoints apply, and SVCs (`OUT` into the F3 block) through `ec_interrupt`;
    - whether the RTPA and the TTA see it (`rtpa_visible`, `tta_visible`), with the TTA's `target_bus` calls in its bus.
 
    `tek8301::slave_run` does the rest, the same for every board: the forced actions, running in step with the 2650, and every Emulator Controller event (SVC, breakpoints, single cycle, halt, RTPA/TTA breaks).
-3. **Firmware.** Write `<name>_firmware(entry)`, decoding the entries by address and answering with the debug SVC.
+3. **Firmware.** Write the board's `firmware(entry)`, decoding the entries by address and answering with the debug SVC.
 4. **Modes 1 and 2.** Route the board's prototype cycles to `prototype_bus` (`emu/src/machine/prototype.h`). The prototype link carries Z80 pin semantics; a board with other pins (the 8085's RST 5.5–7.5, SID/SOD) needs a new protocol version first. This is why the 8085 board's modes 1 and 2 are still open.
 5. **Emulator Specifics.** Implement `emulator_specifics` (`emu/src/machine/emulator_specifics.*`) for the processor:
    - its name and clock;
@@ -226,8 +228,8 @@ Events are reported in a fixed order, after the instruction completes: SVC immed
    - DOS/50's trace line for it (copy the columns from what DOS/50 prints with the board's support installed);
    - whether that support names TTA breaks.
 
-   Return it from `tek8301::emulator()` while the board is enabled. The TTA's commands (trace lines, `disp`'s mnemonics) then work with the new processor without changes. To let the TTA watch the board, call `tta_board.instr_begin`/`target_bus`/`instr_end` around its instructions and bus cycles, as `ep85_run` and the 8085 bus interface do.
-6. **Option.** Extend `-ep` in `emu/src/system/options.cpp` and `tek8550.cpp` (`-ep z80|8085|none` today).
+   Return it from `tek8301::emulator()` while the board is enabled. The TTA's commands (trace lines, `disp`'s mnemonics) then work with the new processor without changes. To let the TTA watch the board, return true from `tta_visible()` and call `tta_board.target_bus` in its bus cycles, as the Z80 and 8085 buses do; `slave_run` brackets each instruction with `instr_begin`/`instr_end`.
+6. **Option.** Extend `-ep` in `emu/src/system/options.cpp` and `tek8550.cpp` (`-ep z80|8085|8086|8088|none` today).
 7. **Validate**, the way the existing boards were:
    - the board's diagnostic from the diagnostic disc (Select mode, with the test number in the table above);
    - Automatic System Verification detecting it;

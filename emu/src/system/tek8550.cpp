@@ -126,7 +126,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	lines(printer, dmu->printer);
 	mdu->mode_switch = u8(opt.sw);
 	mdu->pm_ext_comparator = opt.pm_ext;
-	if (opt.no_ep) mdu->ep_present = false;
+	if (opt.no_ep) mdu->m_epz80.present = false;
 	mdu->board8085().present = opt.ep85;
 	if (opt.ep86) {
 		// the 8086/8088 emulator's kernel: two 1 KB PROMs, 160-1312-00 the even bytes and
@@ -157,7 +157,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	if (!opt.ep_prom_file.empty()) {
 		FILE *f = fopen(opt.ep_prom_file.c_str(), "rb");
 		if (!f) { err = "cannot read " + opt.ep_prom_file; return false; }
-		mdu->ep_prom.resize(512); size_t n = fread(mdu->ep_prom.data(), 1, 512, f); fclose(f);
+		mdu->m_epz80.prom.resize(512); size_t n = fread(mdu->m_epz80.prom.data(), 1, 512, f); fclose(f);
 		if (n != 512) { err = opt.ep_prom_file + ": expected 512 bytes, got " + std::to_string(n); return false; }
 	}
 	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;

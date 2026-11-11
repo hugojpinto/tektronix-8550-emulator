@@ -53,7 +53,7 @@ std::string emulator_specifics::opcode(u8 op) const
 }
 
 namespace {
-// ---- Z80 emulator board (8300E01): DOS/50's Z80 trace line
+// ---- Z80 emulator board (8300E04): DOS/50's Z80 trace line
 class z80_specifics : public emulator_specifics
 {
 public:

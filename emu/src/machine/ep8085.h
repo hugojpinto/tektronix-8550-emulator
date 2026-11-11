@@ -17,7 +17,10 @@ public:
 	explicit ep8085_board(tek8301 &m);
 	bool present = false;
 	u8 control = 0;                            // E5 as written
-	u8 control_read() const { return present ? u8((control & 0x80) && cpu.halted() ? 0x10 : 0x00) : 0x00; }
+	bool decodes(u8 port) const override { return port == 0xe5; }
+	u8 io_read(u8) override { return present ? u8((control & 0x80) && cpu.halted() ? 0x10 : 0x00) : 0x00; }   // 10 halted
+	void io_write(u8 port, u8 d) override;
+	void restart() override { control = 0; }
 
 	const char *name() const override { return "8085"; }
 	bool enabled() const override { return present && (control & 0x80); }

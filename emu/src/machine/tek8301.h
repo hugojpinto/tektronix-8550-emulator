@@ -29,7 +29,8 @@ extern "C" {
 #include "machine/emulator_specifics.h"
 #include "machine/ep8085.h"
 #include "machine/ep8086.h"
-#include "machine/z80_slaves.h"
+#include "machine/z80_slave.h"
+#include "machine/epz80.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
@@ -81,26 +82,24 @@ public:
 	int sense() override { return int((m_cycles / u64(CPU_HZ * 0.020)) & 1); }
 
 	// Language Processor / Emulator Controller
-	// the Language Processor (E7) and the Z80 emulator processor board (E3), and their processors
+	// the Language Processor (E7): the 8301's own Z80
 	language_processor m_slave_lp{*this};
-	z80_board m_slave_ep{*this};
-	z80 &lp = m_slave_lp.cpu, &ep = m_slave_ep.cpu;
+	z80 &lp = m_slave_lp.cpu;
 	// the Emulator Controller's slaves: emulator processor boards and the Language Processor
 	// (machine/emulator_board.h); the Emulator Controller's behaviour around them is slave_run
-	friend class emulator_board; friend class ep8085_board; friend class z80_slave; friend class z80_board; friend class language_processor;
+	friend class emulator_board; friend class z80_slave; friend class language_processor;
+	friend class epz80_board; friend class ep8085_board;
+	epz80_board m_epz80{*this};               // Z80 board (8300E04, control port E3)
 	ep8085_board m_ep85{*this};               // 8085 board (8300E06, control port E5)
 	ep8085_board &board8085() { return m_ep85; }
 	friend class ep8086_board;
 	ep8086_board m_ep86{*this};               // 8086/8088 emulator (boards I-III, ports 80-8F and A7)
 	emulator_board *active_slave() const;      // the one the Emulator Controller drives, if any
 	void slave_run(emulator_board &b, int cycles2650);
-	std::unique_ptr<emulator_specifics> m_spec_z80 = make_z80_specifics(ep);
 	prototype_bus *target = &m_no_target;   // probe side (modes 1/2)
-	// E3 (emulator board control), as DOS/50 V1.0 drives it: 80 firmware call / 92 run in mode 0,
-	// C0 firmware call / B2 run in modes 1-2 -> bit 6 or bit 5 selects the prototype
-	bool proto_mode() const { return ep_enabled() && (m_e3 & 0x60); }
-	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
-	bool ep_present = true;
+	// the active slave runs with the prototype (modes 1/2), or (mode 2) all memory is the prototype's
+	bool proto_mode() const { const emulator_board *b = active_slave(); return b && b->prototype_mode(); }
+	bool proto_all() const { const emulator_board *b = active_slave(); return b && b->prototype_all(); }
 	prom_programmer prom;      // 8550F30 PROM programmer controller (ports D0/D1, ints 13/14)
 	rtpa rtpa_board;           // Real-Time Prototype Analyzer option (ports C0-C7)
 	tta tta_board;             // Trigger Trace Analyzer option (ports 70-77, RAM at E800-F9FF)
@@ -112,8 +111,6 @@ public:
 	u8 bank_lines() const { return u8(~m_f4); }   // extended address A23-A16 as driven (F4 is written active low)
 	u64 now_cycles() const { return m_in_cpu ? m_cycles + u64(m_chunk - cpu.icount()) : m_cycles; }
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
-	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
-	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	// the active emulator processor's specifics (disassembler, DOS/50 trace line, clock); none without a board
 	const emulator_specifics *emulator() const;
 	bool slave_enabled() const { return active_slave() != nullptr; }
@@ -138,11 +135,9 @@ private:
 	std::vector<u8> m_boot, m_diag, m_sysram, m_progmem;
 	std::vector<u8> m_par;        // per-byte: parity-complement state when written
 	u16 m_par_addr = 0;
-	u8 m_e3 = 0;
 	bool m_svc_stop = false;   // an SVC stops the slave until the next F9 write (Z80 diag 07/0070)
 	bool m_fr_pending = false, m_fj_pending = false, m_fi_pending = false;   // forced reset / jump / interrupt
 	u8 m_f5 = 0xff;
-	void ep_firmware(u16 entry);
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;
 	u8 m_b8 = 0, m_b9 = 0, m_eb_out = 0;
 	u8 m_f4 = 0xff;               // Emulator Controller extended bank (A16-A23) for system-side accesses
@@ -162,11 +157,7 @@ private:
 		return (c & 0x40) || ext == PROG_BANK;
 	}
 	u8 prog_rd(u8 ext, u16 a) const {
-		// Z80 emulator board firmware PROM: 512 bytes at F800-F9FF of program memory while
-		// the board is in firmware mode (E3<7> = 1, E3<4> = 0). Not dumped: reads FF unless
-		// -ep-prom supplies an image (Z80 diag 07/00D0 checksums it, expecting 0852).
-		if (ep_present && (m_e3 & 0x90) == 0x80 && (a & 0xfe00) == 0xf800) return ep_prom.empty() ? 0xff : ep_prom[(a - 0xf800) % ep_prom.size()];
-		{ u8 v; if (m_ep85.prom_window(a, v)) return v; }   // other boards' firmware PROMs
+		{ u8 v; if (m_epz80.prom_window(a, v) || m_ep85.prom_window(a, v)) return v; }   // the boards' firmware PROMs
 		{ u8 v; if (m_ep86.overlay_read(a, v)) return v; }  // 8086 board RAMs (RAMINH)
 		return prog_present(ext, a) ? m_progmem[a] : 0xff;
 	}
@@ -185,24 +176,9 @@ private:
 	bool m_lp_live = false;       // Z80 out of reset (forced reset / activation done)
 	double m_lp_frac = 0;
 	void lp_reset();
-	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
 	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
 	void tta_interrupt();
-	static u8 lp_read(void *u, u16 a) {
-		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false);
-		bool m1 = m->lp.m1 || m->ep.m1;
-		u8 v = m->slave_rd(a, m1);
-		if (m->m_rtpa_watch) m->rtpa_board.bus(a, v, m1, false, false);
-		if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, a, v, m1 ? tta::FETCH : tta::MREAD);
-		return v;
-	}
-	static void lp_write(void *u, u16 a, u8 d) {
-		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true);
-		if (m->m_rtpa_watch) m->rtpa_board.bus(a, d, false, true, false);
-		if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, a, d, tta::MWRITE);
-		m->slave_wr(a, d);
-	}
 	bool m_rtpa_watch = false;     // the emulator processor is stepping: the RTPA sees its cycles
 	bool m_tta_watch = false;      // ... and the TTA, in run mode (emulator processor only)
 	u8   slave_rd(u16 a, bool m1 = false);   // m1: opcode fetch
@@ -212,11 +188,7 @@ private:
 	// block = (addr<7:0> << 1) | addr<8>  (DOS/50 writes even blocks at FExx, odd at FFxx).
 	u8 m_map[512] = {};
 	bool m_wp_hit = false;
-	bool m_nmi_prev = false;
 	prototype_bus m_no_target;
-	bool m_trst_prev = false;   // v3 target RESET edge
-	static u8 lp_in(z80 *z, u16 port);     // full 16-bit address (A8-A15 from A or B)
-	static void lp_out(z80 *z, u16 port, u8 d);
 
 	// HSI UART
 	u8 m_hsi_rbr = 0; bool m_hsi_da = false, m_hsi_oe = false; bool m_hsi_tbre = true;

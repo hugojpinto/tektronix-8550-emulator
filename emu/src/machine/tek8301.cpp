@@ -51,7 +51,7 @@ tek8301::~tek8301() = default;
 emulator_board *tek8301::active_slave() const
 {
 	if (m_ep85.enabled()) return const_cast<ep8085_board *>(&m_ep85);
-	if (m_slave_ep.enabled()) return const_cast<z80_board *>(&m_slave_ep);
+	if (m_epz80.enabled()) return const_cast<epz80_board *>(&m_epz80);
 	if (m_slave_lp.enabled()) return const_cast<language_processor *>(&m_slave_lp);
 	return nullptr;
 }
@@ -59,115 +59,13 @@ emulator_board *tek8301::active_slave() const
 const emulator_specifics *tek8301::emulator() const { const emulator_board *b = active_slave(); return b ? b->specifics() : nullptr; }
 bool tek8301::slave_halted() const { const emulator_board *b = active_slave(); return b ? b->halted() : lp.halted; }
 
-void tek8301::z80_setup(z80 &z)
-{
-	z80_init(&z);
-	z.read_byte = &tek8301::lp_read;
-	z.write_byte = &tek8301::lp_write;
-	z.port_in = &tek8301::lp_in;
-	z.port_out = &tek8301::lp_out;
-	z.userdata = this;
-}
-
 void tek8301::lp_reset()
 {
-	z80_setup(lp);
-	z80_setup(ep);
-}
-
-// Emulator processor firmware (not dumped): high-level emulation of what DOS/50
-// expects. DOS/50 lends program memory 0000-001A to the board as a register block
-//   0 IM  1 IFF1<7>/IFF2<6>  2 R  3 I  4..11 L' H' E' D' C' B' A' F'
-//   12-13 IY  14-15 IX  16..23 L H E D C B A F  24-25 SP  26 ?
-// and forces a jump to the entry (FB:FA/F5 written active low) with E3<7> set:
-//   F800 PUT byte to prototype memory   (4-byte block: 0 data, 1-2 address high first,
-//        3 status: firmware writes 0 after a good read-back -- DOS/50 MOV checks it)
-//   F803 GET byte from prototype memory (result in block 0, status in block 3)
-//   F806 restore registers, F809 dump registers. the firmware restores the registers
-// and must answer with an SVC (DOS/50 7138 waits for any SVC, error 45 on HALT).
-void tek8301::ep_firmware(u16 entry)
-{
-	auto pm = [&](int o) { return m_progmem[o & 0xffff]; };
-	if (ep_trace) {
-		fprintf(stderr, "[%.3f EP firmware entry %04x, block:", m_cycles / CPU_HZ, entry);
-		for (int i = 0; i < 27; i++) fprintf(stderr, " %02x", pm(i));
-		fprintf(stderr, "]\n");
-	}
-	if (entry == 0xf806) {                       // restore
-		ep.interrupt_mode = pm(0) & 3;
-		ep.iff1 = pm(1) & 0x80; ep.iff2 = pm(1) & 0x40;
-		ep.r = pm(2); ep.i = pm(3);
-		ep.l_ = pm(4); ep.h_ = pm(5); ep.e_ = pm(6); ep.d_ = pm(7); ep.c_ = pm(8); ep.b_ = pm(9); ep.a_ = pm(10); ep.f_ = pm(11);
-		ep.iy = u16(pm(12) | (pm(13) << 8)); ep.ix = u16(pm(14) | (pm(15) << 8));
-		ep.l = pm(16); ep.h = pm(17); ep.e = pm(18); ep.d = pm(19); ep.c = pm(20); ep.b = pm(21); ep.a = pm(22);
-		u8 f = pm(23);
-		ep.sf = f & 0x80; ep.zf = f & 0x40; ep.yf = f & 0x20; ep.hf = f & 0x10; ep.xf = f & 0x08; ep.pf = f & 0x04; ep.nf = f & 0x02; ep.cf = f & 0x01;
-		ep.sp = u16(pm(24) | (pm(25) << 8));
-		ep.halted = false;
-		ec_interrupt(INT_SVC1 + 6, false);       // Debug SVC 1 (dump/restore) = SVC 7, int 22 (8301 Table 7-x; Z80 diag 07/00E1)
-	} else if (entry == 0xf809) {                // dump (after a break)
-		auto put = [&](int o, u8 v) { m_progmem[o] = v; };
-		put(0, ep.interrupt_mode); put(1, u8((ep.iff1 ? 0x80 : 0) | (ep.iff2 ? 0x40 : 0)));
-		put(2, ep.r); put(3, ep.i);
-		put(4, ep.l_); put(5, ep.h_); put(6, ep.e_); put(7, ep.d_); put(8, ep.c_); put(9, ep.b_); put(10, ep.a_); put(11, ep.f_);
-		put(12, u8(ep.iy)); put(13, u8(ep.iy >> 8)); put(14, u8(ep.ix)); put(15, u8(ep.ix >> 8));
-		put(16, ep.l); put(17, ep.h); put(18, ep.e); put(19, ep.d); put(20, ep.c); put(21, ep.b); put(22, ep.a);
-		put(23, u8((ep.sf ? 0x80 : 0) | (ep.zf ? 0x40 : 0) | (ep.yf ? 0x20 : 0) | (ep.hf ? 0x10 : 0) |
-		           (ep.xf ? 0x08 : 0) | (ep.pf ? 0x04 : 0) | (ep.nf ? 0x02 : 0) | (ep.cf ? 0x01 : 0)));
-		put(24, u8(ep.sp)); put(25, u8(ep.sp >> 8));
-		ec_interrupt(INT_SVC1 + 6, false);       // Debug SVC 1 (dump/restore) = SVC 7
-	} else if (entry == 0xf800) {                // PUT: write block[0] at block[1]:block[2], verify -> block[3] = 0 ok
-		u16 a = u16((pm(1) << 8) | pm(2));
-		target->mem_write(a, pm(0));
-		m_progmem[3] = (target->mem_read(a) == pm(0)) ? 0x00 : 0x01;   // DOS/50 MOV: nonzero = error 3C
-		ec_interrupt(INT_SVC1 + 7, false);       // Debug SVC 2 (get/put) = SVC 8, int 23
-	} else if (entry == 0xf803) {                // GET: read prototype memory at block[1]:block[2] into block[0]
-		m_progmem[0] = target->mem_read(u16((pm(1) << 8) | pm(2)));
-		m_progmem[3] = 0x00;
-		ec_interrupt(INT_SVC1 + 7, false);       // Debug SVC 2 (get/put) = SVC 8
-	} else if (ep_trace) fprintf(stderr, "[EP firmware entry %04x unknown]\n", entry);
-	if (entry == 0xf800 || entry == 0xf803 || entry == 0xf806 || entry == 0xf809)
-		m_svc_stop = true;                       // the firmware's SVC OUT stops the board like any SVC
-	if (ep_trace) {
-		fprintf(stderr, "[   block now:");
-		for (int i = 0; i < 27; i++) fprintf(stderr, " %02x", pm(i));
-		fprintf(stderr, "]\n");
-	}
+	m_slave_lp.setup();
+	m_epz80.setup();
 }
 
 static const bool rem_trace = getenv("TEK_REMTRACE") != nullptr;
-static const bool slave_io_trace = getenv("TEK_SLAVEIO") != nullptr;   // trace LP/EP port I/O that goes nowhere
-
-u8 tek8301::lp_in(z80 *z, u16 port)
-{
-	tek8301 *m = static_cast<tek8301 *>(z->userdata);
-	if (m->m_tta_watch) {   // the TTA sees the I/O cycle; the data is what the port answers
-		u8 v = (z == &m->ep && m->proto_mode()) ? m->target->io_read(port) : 0xff;
-		m->tta_board.target_bus(m->ep.cyc, port, v, tta::IOREAD);
-		return v;
-	}
-	if (z == &m->ep && m->proto_mode()) return m->target->io_read(port);
-	if (slave_io_trace) fprintf(stderr, "[%.3f %s in  %04x @%04x]\n", m->m_cycles / CPU_HZ, z == &m->ep ? "EP" : "LP", port, z->pc);
-	return 0xff;
-}
-
-void tek8301::lp_out(z80 *z, u16 port, u8 d)
-{
-	tek8301 *m = static_cast<tek8301 *>(z->userdata);
-	if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, port, d, tta::IOWRITE);
-	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
-	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
-	// (SVC decode uses A0-A7 only; A8-A15 = A are ignored)
-	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
-		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
-		// on the emulator board an SVC also stops the processor until the next F9 command
-		// (Z80 diag 07/0070); the Language Processor resumes when the SVC is taken (DOS/50 tools)
-		if (z == &m->ep) m->m_svc_stop = true;
-		return;
-	}
-	if (slave_io_trace && !(z == &m->ep && m->proto_mode())) fprintf(stderr, "[%.3f %s out %04x <- %02x @%04x]\n", m->m_cycles / CPU_HZ, z == &m->ep ? "EP" : "LP", port, d, z->pc);
-	if (z == &m->ep && m->proto_mode()) m->target->io_write(port, d);   // modes 1/2: target I/O
-}
 
 void tek8301::bp_check(u16 a, bool write)
 {
@@ -303,9 +201,9 @@ void tek8301::restart()
 	remote.write(0, 3); aux.write(0, 3); term.write(0, 3);
 	m_dma.reset();
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
-	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_ep85.control = 0; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
+	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
 	lp_reset();
-	m_ep86.restart();
+	m_epz80.restart(); m_ep85.restart(); m_ep86.restart();
 	cpu.reset();
 }
 
@@ -379,6 +277,8 @@ u8 tek8301::io_read(offs_t port)
 	// shows the TTA's break there, so DOS/50 prints <BREAK TRIGn>. An emulator bridge, not hardware.
 	else if (port == 0xc2 && tta_board.present && tta_board.break_status()) v = tta_board.break_status();
 	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; v = tta_board.read(port & 7, now_cycles()); }
+	else if (m_epz80.decodes(u8(port))) v = m_epz80.io_read(u8(port));   // emulator boards' control ports
+	else if (m_ep85.decodes(u8(port))) v = m_ep85.io_read(u8(port));
 	else if (m_ep86.decodes(u8(port))) v = m_ep86.io_read(u8(port));
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
@@ -401,9 +301,6 @@ u8 tek8301::io_read(offs_t port)
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
 	case 0xf2: v = u8(~(m_ec_pend | (tta_board.requesting() ? 0x04 : 0))); break;   // pending, active low (bit 2 also the TTA's request)
-	case 0xe5: v = m_ep85.control_read(); break;
-	// E3 bit 4: processor inactive (HALT, or held by an RTPA break)
-	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && (ep.halted || rtpa_board.stopped() || tta_board.stopped()) ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
 	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
@@ -423,6 +320,8 @@ void tek8301::io_write(offs_t port, u8 d)
 	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
 	if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; rtpa_board.write(port & 7, d); update_irq(); return; }
+	if (m_epz80.decodes(u8(port))) { m_epz80.io_write(u8(port), d); update_irq(); return; }   // emulator boards' control ports
+	if (m_ep85.decodes(u8(port))) { m_ep85.io_write(u8(port), d); update_irq(); return; }
 	if (m_ep86.decodes(u8(port))) { m_ep86.io_write(u8(port), d); update_irq(); return; }
 	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; tta_board.write(port & 7, d, now_cycles()); if (tta_board.take_irq()) tta_interrupt(); update_irq(); return; }
 	switch (port) {
@@ -456,7 +355,7 @@ void tek8301::io_write(offs_t port, u8 d)
 		m_svc_stop = false;                 // ... and a slave stopped by an SVC
 		rtpa_board.release();               // ... or held by an RTPA break
 		tta_board.release();                // ... or a TTA break
-		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_e3);
+		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_epz80.control);
 		if (!(d & 0x01)) { m_fr_pending = true; m_fj_pending = false; m_lp_live = true; }   // FR: forced reset (taken by the slave)
 		if (!(d & 0x04) && (d & 0x01)) { m_fj_pending = true; m_lp_live = true; }          // FJ: forced jump (FB:FA, F5); reset wins
 		// FI: forced interrupt (D1 = 0). On the Z80 emulator board it is the CPU's NMI
@@ -464,14 +363,6 @@ void tek8301::io_write(offs_t port, u8 d)
 		if (!(d & 0x02) && (d & 0x01)) { m_fi_pending = true; m_lp_live = true; }
 		break;
 	case 0xf5: m_f5 = d; break;
-	case 0xe5:
-		if (ep_trace) fprintf(stderr, "[%.3f E5 <- %02x]\n", m_cycles / CPU_HZ, d);
-		m_ep85.control = d;
-		break;
-	case 0xe3:
-		if (ep_trace) fprintf(stderr, "[%.3f E3 <- %02x]\n", m_cycles / CPU_HZ, d);
-		m_e3 = d;
-		break;
 	case 0xd0:
 		if (prom_dos50_fix && prom.present) {
 			// PROM software V2.1 (1982) was built for a later DOS/50 V1.x whose resident

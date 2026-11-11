@@ -13,7 +13,6 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 
 ## Fidelity
 - **Floppies:** the controller runs its real firmware, but the drive is a byte-cell model. IMD discs now round-trip track by track (deleted marks, CRC errors, layouts). Open: flux-level media (weak bits, speed variation, mixed density within a track), which needs a flux image format (HFE, SCP) first; no 8501 disc is known to need it.
-- **The Z80 emulator board** is still partly inside `tek8301` (E3, its PROM window, firmware calls, prototype-mode tests); it should be a self-contained board like the 8085 and 8086 ones.
 - **Undumped firmware** is emulated at high level: the Z80 and 8085 emulator boards (their PROM checksum tests 07/00D0 and 06/00D0 fail) and the PROM programmer's controller. A dump would replace each with the real thing; see "Wanted" in the [README](README.md#wanted).
 - **Unknown bits:** Z80 board E3 bits 4/1 and register-block byte 26; 8085 register block bytes 8 and 13; DOS/50 label byte 0x1C.
 - **CT8500:** the character ROM was never dumped, monitor mode (control characters shown as symbols) is not modelled, and the learn-status display is an approximation.
