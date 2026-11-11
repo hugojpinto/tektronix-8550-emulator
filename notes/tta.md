@@ -50,6 +50,23 @@
 - **Trigger k = event k AND counter k's output.** With port 71 bit (3+k) set, trigger k also needs trigger k−1 on an earlier access (module 31's four sequences E0, D0, B0, 70). Triggers set port 73's latches.
 - **Event latches hold across port 70 writes while bit 0 stays 1**, even with the clock (bit 2) stopped: module 46 case 4 leaves all events high, and case 5 (active-low gating) relies on that. Writing bit 0 = 0 clears them (module 45's SRC tests need the rising edge after a RAM initialisation).
 
+### Run mode at register level (8086 diagnostic module 70)
+The 8086/8088 diagnostic's TTA interface test (on `8550_DIAG.IMD`, Select mode 17, module 70 at 38E0) is the only code we have that programs run mode by registers. It establishes or suggests:
+- **Run mode is port 70 = 01:** comparators on, test bit 2 clear. The test sets everything up with 03 (RAM selected) and reads the acquisitions back with 02.
+- **Its setup:**
+  - page 73 = 10 in every row (event 1 for any probe value), page 74 = 00, pages 76 = 80 and 70 = 01 (rows x5: 11); other pages 0;
+  - port 71 = 03: bit 1 acquires every cycle;
+  - port 72 = 91;
+  - the Am9513 counter 1 in mode 0502 (count SRC5, TC toggled output, down), loaded with 22 (0016), output cleared (E1), and armed (21).
+- **What it expects:** 24 acquisitions, the 22nd of which triggers. Then a break of the program at the emulator board (REASON2 08), with no interrupt to the 2650: INT 29 is "unexpected".
+- **Hence, as emulated** (`tta::target_cycle`):
+  - **SRC5 is the bus-cycle clock** *(inferred: it is the only thing that can count 22 cycles here)*;
+  - **page 73 is addressed by the probe lines**, as in TTA.TST module 70; page 74's run-mode index is not exercised (taken as the probe too, inferred);
+  - **port 72's high nibble enables a break per trigger**, and such a break does not interrupt the 2650 *(both inferred from 91)*;
+  - **the acquisition record** is page 68 activity, 69 bus status, 6A probe, 6B/6C data, 6D–6F address. The bus status byte is the emulator's own (for the 8086: `notes/8086.md`).
+- Which inputs address pages 70–72 and 76–79 in run mode, and the range codes, are still not exercised by anything we have.
+- The TTA command software (`system/tta_console.*`) keeps its own functional run mode (port 70 = 05, `tta_run`) and doesn't watch the 8086, which has no DOS/50 software anyway.
+
 ### Interrupt (module 50)
 - **INT 29**, shared with the RTPA (2650 vector 3A), **when a new trigger occurs with its port 72 bit set**. Triggers already latched when the enables are written, and bits the 2650 writes into port 73 (module 10 walks 70/72/73 together), do not interrupt.
 - **F2 bit 2 (read active low) shows the TTA's request flip-flop**, which a write to port 72 clears. It is not an Emulator Controller latch. Part 3 of the module enables all four triggers with all latched and expects no request.

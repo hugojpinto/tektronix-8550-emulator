@@ -15,7 +15,7 @@ Modified for tek8550 (marked [tek8550]):
   data bus width, which in MAME only changes the address space configuration: same timing tables.
 - Public interface added: reset(), run(cycles) (returns cycles executed), set_input_line(),
   register getters/setters, flags()/set_flags(), pc(), halted(), locked(), mid_instruction()
-  (a prefix has run but not its instruction), trace_hook,
+  (a prefix has run but not its instruction), bus_segment() (m_easeg: the S4/S3 segment), trace_hook,
   create_disassembler() made public. update_pc() moved to the common base for the setters.
 - endianness.h: NATIVE_ENDIAN_VALUE_LE_BE and swapendian_int16 are in emu.h; INPUT_LINE_IRQ0 = 0,
   INPUT_LINE_NMI = 32 defined in i86.h.

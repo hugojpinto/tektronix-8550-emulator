@@ -28,7 +28,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 
 ## Resuming work (state on 2026-11-11)
 Most recent first:
-0. **8086/8088 emulator: first pass done** (`notes/8086.md`, `-ep 8086|8088`). It runs the real kernel (`roms/emulator_processor/8088/160-1311/1312`) on MAME's 8086 core. Diagnostic Select mode 17 option 0 and module 33 pass. Then the Z80 board was moved out of `tek8301` into a self-contained `epz80.*`, like the others (separate commit). Open: the TTA interface (module 70), prototype modes, the 8087.
+0. **8086/8088 emulator: first pass done** (`notes/8086.md`, `-ep 8086|8088`). It runs the real kernel (`roms/emulator_processor/8088/160-1311/1312`) on MAME's 8086 core. Diagnostic Select mode 17 option 0 and module 33 pass. Then the Z80 board was moved out of `tek8301` into a self-contained `epz80.*`, like the others (separate commit). The TTA interface (module 70) passes too. Open: prototype modes, the 8087.
 1. **GUI front end (SDL3): done** (`make gui`, `emu/README.md`): CT8500 window and the 8301/8501 front panels (`emu/artwork/*.lay`). All panel switches operate (POWER, DC, HALT/RUN, RESTART; `-input`/`-press` script them). The CT8500 keyboard is mapped from the Operators Manual 070-3737 (`make test` checks it). Open: a run on real Windows.
 2. **Floppy controller: done, low level** (`notes/8501-fdc.md`). The real board's Z80 runs ROM 160-0412-00; `flexdrive.*` models the Qume drives and byte-cell tracks. `-fdc hle` keeps the old shim (byte-identical to before). Runtime discs: `-mount T N=FILE`, `-eject T N`, monitor `m`/`e`.
 3. **System layer: done** (`emu/src/system/`): `tek8550_system` drives both units with no wall-clock notion; `main8550.cpp` is just the tty front end.
@@ -83,7 +83,7 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 5. **TTA:** the same diagnostic command with `-tta` and `-type 31 '2\r' -type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'` (Select mode 6, option 0) and `-cycles $((200*2000000))` must show no `Error Code` (about 30 iterations of modules 00–60). Option 7 with `-tta probe` (`-type 51 '7\r' ... -type 71 '\r'`) must show no `Error Code`. ASV with `-tta` must complete. Without `-tta`, nothing may change. `tools/make_tta_shots.sh` regenerates the pictures in `docs/TTA.md` (its tutorial session doubles as a run-mode check: counter 3 must read 00197T in `u8_timing`).
 6. **GUI (if SDL3 is installed):** `make gui`, then `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -0 ../disks/System_Fixed.img -cycles $((45*2000000)) -type 32 'LDIR\r' -shot 44 x.bmp` must show the LDIR listing.
 7. **Floppy:** `make test` (track build/decode round trip, all four geometries). After controller changes, also FORMAT a blank in drive 1 after boot (`-mount 30 1=blank.img -type 34 'FORMAT /DEV/FLX1\r' -type 40 'Y\r'`) and check it with `../tekmato/tekmato -open blank.img -check`; `-fdc hle` must stay byte-identical to the shim.
-8. **8086 board:** `build/tek8550 -ep 8086 -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((150*2000000)) -type 31 '2\r' -type 41 '17\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (option 0, modules 00–62, several iterations); the same with `-ep 8088`. ASV with `-ep 8086` must complete.
+8. **8086 board:** `build/tek8550 -ep 8086 -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((150*2000000)) -type 31 '2\r' -type 41 '17\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (option 0, modules 00–62, several iterations); the same with `-ep 8088`, and with `-tta` (module 70, the TTA interface, also runs). ASV with `-ep 8086` must complete.
 9. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
 
 ## Conventions
@@ -103,7 +103,7 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 ## Known gaps
 **Not emulated:**
 - the TTA's run mode (`-tta` emulates the test mode TTA.TST exercises, `notes/tta.md`). RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
-- the 6800 and 8080 emulator boards; the 8086 board's TTA interface (diag module 70), prototype modes and 8087 (its software, on the EMU.8086 disc, needs the lost DOS/50 V2);
+- the 6800 and 8080 emulator boards; the 8086 board's prototype modes and 8087 (its software, on the EMU.8086 disc, needs the lost DOS/50 V2);
 - target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
 
 **High-level, with known limits:**

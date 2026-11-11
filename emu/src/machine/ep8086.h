@@ -12,6 +12,7 @@
 #define TEK_MACHINE_EP8086_H
 #include "emu.h"
 #include "cpu/i86/i86.h"
+#include "machine/tta.h"
 #include <memory>
 #include <vector>
 
@@ -84,10 +85,11 @@ private:
 	u32 m_pc_last = 0;
 	u8 m_armed = 0, m_svc = 0;
 	int m_brk_count = 0;                       // instructions until a scheduled break
-	u8 m_brk_r1 = 0, m_brk_r2 = 0;
 	enum { FETCH, READ, WRITE, IOR, IOW };
 	bool user_cycle(u32 a, int kind);
 	void schedule_break(int after, u8 reason1, u8 reason2);
+	void tta_cycle(u32 a, int kind, u8 d);
+	bool m_first_fetch = false;
 	u32 user_addr(u32 a) const;
 	void kernel_reset();
 	void request_break(u8 reason1, u8 reason2);

@@ -63,7 +63,7 @@ void ep8086_board::io_write(u8 port, u8 d)
 		const u8 old = m_master;
 		m_master = u8(d & 0x7f);
 		m_a7_shot = mdu.now_cycles() + u64(tek8301::CPU_HZ / 1000);   // 1 ms (duration not known)
-		if (m_master & 0x01) { kernel_reset(); m_cmd = 0; }    // RESET held; clears the command port (module 11)
+		if (m_master & 0x01) { kernel_reset(); m_cmd = 0; m_reason1 = m_reason2 = 0; }   // RESET held; clears the command port and the break reasons (modules 11, 14)
 		else if (old & 0x01) kernel_reset();                    // released: the kernel starts at FFFF0
 		break;
 	}
@@ -160,9 +160,34 @@ bool ep8086_board::user_cycle(u32 a, int kind)
 	return allow;
 }
 
+// Board I's TTA connectors: each bus cycle of the program as the TTA acquires it. The bus
+// status byte, decoded by the 8540's 8088 support (160-1461, table after "CS]ES]DS]SS]"):
+// bit 0 first byte of an instruction, bits 3-1 S2-S0 (000 IA, 001 IR, 010 IW, 011 HT,
+// 100 fetch, 101 RD, 110 WT), bits 5-4 segment (11 ES, 10 SS, 01 CS, 00 DS), bit 6 BHE
+// and bit 7 TEST, both active low. Activity byte: bit 7 INT, bit 6 LOCK (active low),
+// bit 0 set (diag module 70 expects 01 under mask 83). Fetches are the instruction bytes
+// as the queue hands them out (module 70: one per byte, 19 then 18).
+void ep8086_board::tta_cycle(u32 a, int kind, u8 d)
+{
+	tta &t = mdu.tta_board;
+	if (!m_user || m_entering || !t.target_registers()) return;
+	static const u8 s20[] = { 0x08, 0x0a, 0x0c, 0x02, 0x04 };   // FETCH READ WRITE IOR IOW -> S2-S0 << 1
+	const int seg = kind == FETCH ? 1 : kind == IOR || kind == IOW ? 1 : m_cpu->bus_segment();   // ES 0 CS 1 SS 2 DS 3
+	static const u8 segbits[] = { 0x30, 0x10, 0x20, 0x00 };
+	tta::sample s;
+	s.addr = a & (kind == IOR || kind == IOW ? 0xffff : 0xfffff);
+	s.data = d;
+	s.bus = u8(s20[kind] | segbits[seg & 3] | (kind == FETCH && m_first_fetch ? 0x01 : 0x00) | ((a & 1) ? 0x00 : 0x40));
+	s.activity = u8(0x01 | (m_lock ? 0x00 : 0x40));
+	if (kind == FETCH) m_first_fetch = false;
+	t.target_cycle(mdu.now_cycles(), s);
+	if (t.take_target_break()) schedule_break(kind == FETCH ? 1 : 2, 0x00, 0x08);
+}
+
+// the reason latches are set when the condition occurs; the break itself follows
 void ep8086_board::schedule_break(int after, u8 reason1, u8 reason2)
 {
-	m_brk_r1 |= reason1; m_brk_r2 |= reason2;
+	m_reason1 |= reason1; m_reason2 |= reason2;
 	if (!m_brk_count || after < m_brk_count) m_brk_count = after;
 }
 
@@ -176,7 +201,13 @@ u8 ep8086_board::bus_t::read(int space, u32 a)
 		if (k.m_user) k.enter_kernel();
 		if (a == 0x0000b) k.m_entering = false;
 	}
-	if (k.m_user) { k.user_cycle(a, space == i8086_cpu_device::SP_OPCODES ? FETCH : READ); return k.user_read(a); }
+	if (k.m_user) {
+		const int kind = space == i8086_cpu_device::SP_OPCODES ? FETCH : READ;
+		k.user_cycle(a, kind);
+		const u8 v = k.user_read(a);
+		if (!k.m_entering) k.tta_cycle(a, kind, v);
+		return v;
+	}
 	switch (space) {
 	case i8086_cpu_device::SP_OPCODES: return k.prom.empty() ? 0xff : k.prom[a & 0x7ff];
 	case i8086_cpu_device::SP_STACK: if (k.m_lock) k.m_locked_pops++; return k.m_common[a & 0x1f];
@@ -201,7 +232,7 @@ void ep8086_board::bus_t::write(int space, u32 a, u8 d)
 		if (!k.m_stack_latched) { k.m_stack_latched = true; k.m_stack_latch = u8(a); }
 		k.m_common[a & 0x1f] = d; return;
 	}
-	if (k.m_user) { if (k.user_cycle(a, WRITE)) k.user_write(a, d); return; }
+	if (k.m_user) { if (k.user_cycle(a, WRITE)) k.user_write(a, d); k.tta_cycle(a, WRITE, d); return; }
 	switch (space) {
 	case i8086_cpu_device::SP_STACK: k.m_common[a & 0x1f] = d; return;
 	case i8086_cpu_device::SP_EXTRA: if (k.m_lock) { k.user_write(a, d); return; } break;
@@ -217,7 +248,7 @@ void ep8086_board::bus_t::write(int space, u32 a, u8 d)
 u8 ep8086_board::bus_t::io_read(u16 port)
 {
 	ep8086_board &k = *b;
-	if (k.m_user) k.user_cycle(port, IOR);
+	if (k.m_user) { k.user_cycle(port, IOR); k.tta_cycle(port, IOR, 0xff); }
 	if (k.m_user || k.m_lock) return 0xff;              // the prototype's I/O (none in mode 0)
 	if (port == 0) return k.m_stack_latch;
 	return 0xff;
@@ -226,8 +257,7 @@ u8 ep8086_board::bus_t::io_read(u16 port)
 void ep8086_board::bus_t::io_write(u16 port, u8 d)
 {
 	ep8086_board &k = *b;
-	if (k.m_user) k.user_cycle(port, IOW);
-	(void)d;
+	if (k.m_user) { k.user_cycle(port, IOW); k.tta_cycle(port, IOW, d); }
 }
 
 // LOCK marks the kernel's accesses to the user's side (ES memory, I/O). A LOCKed IRET (its
@@ -240,7 +270,7 @@ void ep8086_board::bus_t::lock(int state)
 	if (state) { k.m_locked_pops = 0; return; }
 	if (!k.m_user && k.m_locked_pops >= 6) {
 		k.m_user = true;
-		k.m_armed = 0; k.m_brk_count = 0; k.m_brk_r1 = k.m_brk_r2 = 0;
+		k.m_armed = 0; k.m_brk_count = 0; k.m_reason1 = k.m_reason2 = 0;
 		if (k.trace) fprintf(stderr, "[86 user mode at %05x]\n", unsigned(k.m_cpu->pc()));
 	}
 }
@@ -249,7 +279,7 @@ void ep8086_board::bus_t::lock(int state)
 void ep8086_board::request_break(u8 reason1, u8 reason2)
 {
 	if (!m_user || m_entering) return;
-	m_reason1 = reason1; m_reason2 = reason2;
+	m_reason1 |= reason1; m_reason2 |= reason2;
 	m_entering = true; m_stack_latched = false;
 	m_cpu->set_input_line(INPUT_LINE_NMI, ASSERT_LINE);
 	m_cpu->set_input_line(INPUT_LINE_NMI, CLEAR_LINE);
@@ -276,13 +306,14 @@ void ep8086_board::run(int cycles2650)
 			// an instruction in non-existent memory is not executed: its fetch breaks first
 			if (m_map[(m_cpu->pc() >> 12) & 0xff] & 0x01) { request_break(0, 0x02); continue; }
 			m_pc_last = m_cpu->pc();
+			m_first_fetch = true;
 		}
 		int c = 0;
 		do { const int n = m_cpu->run(1); c += n > 0 ? n : 1; } while (m_cpu->mid_instruction());
 		m_t += u64(c);
 		m_frac -= c;
 		if (user && m_user && !m_entering) {
-			if (m_brk_count && --m_brk_count == 0) { request_break(m_brk_r1, m_brk_r2); m_brk_r1 = m_brk_r2 = 0; }
+			if (m_brk_count && --m_brk_count == 0) request_break(0, 0);
 			else if (m_master & 0x04) request_break(0x40, 0x00);   // trace (MASTER<2>): after each instruction
 		}
 	}

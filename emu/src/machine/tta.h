@@ -60,6 +60,19 @@ public:
 	void port_write(int r, u8 d) { write(r, d, m_last); }   // for the command software
 	u8 port_read(int r) { return read(r, m_last); }
 
+	// ---- run mode at register level (port 70 = 01: comparators on, test bit 2 clear), as the
+	// 8086 diagnostic's TTA interface test (module 70) programs it; the emulator board hands
+	// over each of the program's bus cycles in the TTA's acquisition format (notes/tta.md)
+	struct sample {
+		u32 addr;        // A23-0 (pages 6F, 6E, 6D)
+		u16 data;        // D15-0 (pages 6C, 6B)
+		u8 bus;          // the emulator's bus status (page 69); for the 8086: notes/8086.md
+		u8 activity;     // page 68
+	};
+	bool target_registers() const { return present && (m_reg[0] & 0x05) == 0x01; }
+	void target_cycle(u64 now, const sample &s);
+	bool take_target_break() { bool b = m_tbreak; m_tbreak = false; return b; }
+
 	am9513_device stc{ 5'000'000 };
 	// the P6451 data acquisition probe's eight lines; unset = nothing clipped on (read high)
 	std::function<u8()> probe;
@@ -74,6 +87,7 @@ private:
 	u8 m_acq_ptr = 0;                         // next acquisition sample (port 75)
 	bool m_stopped = false, m_break = false;
 	u8 m_brk_status = 0;
+	bool m_tbreak = false;                    // a trigger with its break enabled (port 72 bit 4+k)
 	void triggers(u8 ev, int row_or_minus1);
 	u8 m_ev = 0;                              // event outputs 4-1, latched at each RAM access in test mode
 	void set_events(u8 ev);                           // trigger N has armed trigger N+1 (cyclic)

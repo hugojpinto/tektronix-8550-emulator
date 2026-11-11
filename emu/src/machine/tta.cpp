@@ -122,6 +122,40 @@ void tta::ram_access(u64 now, u16 a)
 }
 
 // trigger k = event k AND counter k's output, armed by trigger k-1 when port 71 asks
+// Run mode at register level (8086 diag module 70, notes/tta.md):
+// - page 73 is addressed by the probe lines, as in TTA.TST module 70; page 74's run-mode
+//   index is not known (the test fills it uniformly) and is taken as the probe too (inferred);
+// - the counter chip's SRC5 is the bus-cycle clock: one pulse per cycle (inferred: module 70
+//   counts SRC5 to its trigger, 22 cycles);
+// - with port 71 bit 1 every cycle is acquired (else those on which event 4 fires): page
+//   68 activity, 69 bus status, 6A probe, 6B/6C data, 6D-6F address (A7-0 ... A23-16);
+// - a new trigger whose port 72 bit 4+k is set breaks the program (inferred from 72 = 91),
+//   without interrupting the 2650.
+void tta::target_cycle(u64 now, const sample &s)
+{
+	sync(now);
+	const u8 pr = probe ? probe() : 0xff;
+	const u8 p73 = page(0x73, pr), p74 = page(0x74, pr);
+	u8 ev = 0;
+	for (int k = 0; k < 4; k++)
+		if (((p73 >> (4 + k)) & 1) && !((p74 >> (2 * k)) & 3)) ev |= u8(1 << k);
+	set_events(ev);
+	src_w(4, 1); src_w(4, 0);                     // SRC5: the cycle clock
+	if ((m_reg[1] & 0x02) || (ev & 0x08)) {
+		const u8 rec[8] = { s.activity, s.bus, pr, u8(s.data), u8(s.data >> 8), u8(s.addr), u8(s.addr >> 8), u8(s.addr >> 16) };
+		for (int p = 0; p < 8; p++) m_ram[(p << 8) | m_acq_ptr] = rec[p];
+		if (trace) fprintf(stderr, "[%.7f TTA acquire %06x %04x bus %02x at %02x]\n", double(m_last) / 2e6, unsigned(s.addr), s.data, s.bus, m_acq_ptr);
+		m_acq_ptr++;
+	}
+	// a trigger here goes to the emulator board as a break; it does not interrupt the 2650
+	// (module 70 sets port 72 = 91 and takes INT 29 as unexpected; inferred)
+	const u8 before = m_trig;
+	const bool irq = m_irq, req = m_req;
+	triggers(ev, -1);
+	m_irq = irq; m_req = req;
+	if (u8(m_trig & ~before) & u8(m_reg[2] >> 4)) m_tbreak = true;
+}
+
 void tta::triggers(u8 ev, int)
 {
 	if (!ev) return;

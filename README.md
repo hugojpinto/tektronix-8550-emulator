@@ -63,7 +63,7 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 | **CT8500** | the terminal's command set and host-control mode (ACE works), drawn as text or as its dot raster |
 
 **Not (yet) emulated:**
-- the 6800 and 8080 emulator boards, and the 8086 board's TTA interface and prototype modes;
+- the 6800 and 8080 emulator boards, and the 8086 board's prototype modes;
 - most of the Trigger Trace Analyzer;
 - 8085 target modes 1 and 2.
 

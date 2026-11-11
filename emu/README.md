@@ -41,7 +41,7 @@ build/tek8550 -pm ext -0 ../sources/bitsavers/disks/062-5412-08_8501_1err_DOS50.
 ```
 
 ## 8085 emulator processor board (8300E06)
-`-ep 8086` (or `-ep 8088`) fits the 8086/8088 emulator instead of the Z80 board. It runs the board's real kernel from `roms/emulator_processor/8088/`. The diagnostic's 8086 test (Select mode → 17) passes everything except, with `-tta`, the TTA interface module 70. Its software needs DOS/50 V2, which is lost (`notes/8086.md`).
+`-ep 8086` (or `-ep 8088`) fits the 8086/8088 emulator instead of the Z80 board. It runs the board's real kernel from `roms/emulator_processor/8088/`. The diagnostic's 8086 test (Select mode → 17) passes every module, including the TTA interface (module 70) with `-tta`. Its software needs DOS/50 V2, which is lost (`notes/8086.md`).
 
 `-ep 8085` fits the 8085 board instead of the Z80 board. First install DOS/50's 8085 support once: with the 8085 disk in drive 1, run `/VOL/EMU.8085/INSTALL`, using `-rw` on a copy of the system disk. Then `SEL 8085`, and ASM, LINK, LOAD, GO, BK, DS and TRACE work as for the Z80. The diagnostic (Select mode → 7) passes all but 06/00D0, the firmware PROM checksum: that PROM was not dumped.
 

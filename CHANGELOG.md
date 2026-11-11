@@ -2,6 +2,8 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **8086 TTA interface.** The TTA watches the 8086 at register level. The bus status byte's layout comes from the decode table in the 8540's 8088 support ROM; run mode at register level comes from the 8086 diagnostic's TTA test. The diagnostic's module 70 now passes, and with it the whole of option 0, with `-tta`.
+- 2026-11-11: **tekmato 0.2.1:** names with DOS/50's abbreviation brackets (`ATT[RIBUTE]`, `DS[]`) can be created; quote them in the shell. DOS/50 itself applies abbreviations only to command lookup, not to paths.
 - 2026-11-11: **8086/8088 emulator.** The board set (`-ep 8086`, `-ep 8088`) runs its real kernel. The kernel is a 2 KB 8086 program in two PROMs that had been in `roms/emulator_processor/8088/` all along (160-1312-00 even bytes, 160-1311-00 odd).
   - **Core:** MAME's 8086/8088 core and x86 disassembler are ported (`cpu/i86`, `cpu/i386`). On the way, a MAME bug that sent every segment override to the code space is fixed, and the LOCK pin is modelled for every instruction; the board depends on it. `build/dasm i86` disassembles 8086 code.
   - **The board** (`machine/ep8086.*`; `notes/8086.md`) was worked out from the kernel and the 1983 diagnostic's 8086 test:
