@@ -125,6 +125,89 @@ inline bool save_imd_8501(const std::string &path, const std::vector<u8> &lin, c
 	return true;
 }
 
+// ---- track-level IMD: every sector as recorded, with its ID, marks and errors ----
+// IMD sector records: 0 unavailable, 1 data, 2 compressed, 3/4 deleted-data mark,
+// 5/6 data error (bad CRC), 7/8 deleted with data error.
+struct imd_sector {
+	u8 cyl = 0, head = 0, id = 1, size = 0;   // the ID field (size code: 128 << size bytes)
+	bool deleted = false;                     // F8 (control/deleted) data mark instead of FB
+	bool bad_crc = false;                     // data field recorded with a CRC error
+	bool no_data = false;                     // ID field only (IMD "unavailable")
+	std::vector<u8> data;
+};
+struct imd_track {
+	u8 mode = 0, cyl = 0, head = 0;           // IMD mode: 0-2 FM, 3-5 MFM
+	bool mfm() const { return mode >= 3; }
+	std::vector<imd_sector> secs;             // in recorded (physical) order
+};
+
+inline bool parse_imd_tracks(const std::vector<u8> &d, std::vector<imd_track> &out, std::string &err)
+{
+	out.clear();
+	size_t i = 0; while (i < d.size() && d[i] != 0x1a) i++;
+	i++;
+	while (i + 5 <= d.size()) {
+		imd_track t; t.mode = d[i]; t.cyl = d[i+1]; t.head = d[i+2] & 1;
+		u8 flags = d[i+2], ns = d[i+3], sz = d[i+4]; i += 5;
+		if (sz > 6) { err = "IMD sector size tables are not supported"; return false; }
+		if (i + ns * (1 + !!(flags & 0x80) + !!(flags & 0x40)) > d.size()) { err = "IMD file truncated"; return false; }
+		std::vector<u8> smap(d.begin() + long(i), d.begin() + long(i + ns)); i += ns;
+		std::vector<u8> cmap, hmap;
+		if (flags & 0x80) { cmap.assign(d.begin() + long(i), d.begin() + long(i + ns)); i += ns; }
+		if (flags & 0x40) { hmap.assign(d.begin() + long(i), d.begin() + long(i + ns)); i += ns; }
+		size_t bs = size_t(128) << sz;
+		for (size_t k = 0; k < ns; k++) {
+			if (i >= d.size()) { err = "IMD file truncated"; return false; }
+			imd_sector s; s.id = smap[k]; s.size = sz;
+			s.cyl = cmap.empty() ? t.cyl : cmap[k]; s.head = hmap.empty() ? t.head : hmap[k];
+			u8 ty = d[i++];
+			if (ty > 8) { err = "bad IMD sector record"; return false; }
+			if (ty == 0) s.no_data = true;
+			else if (ty % 2 == 0) { if (i >= d.size()) { err = "IMD file truncated"; return false; } s.data.assign(bs, d[i++]); }
+			else { if (i + bs > d.size()) { err = "IMD file truncated"; return false; } s.data.assign(d.begin() + long(i), d.begin() + long(i + bs)); i += bs; }
+			s.deleted = ty == 3 || ty == 4 || ty == 7 || ty == 8;
+			s.bad_crc = ty >= 5;
+			t.secs.push_back(s);
+		}
+		out.push_back(t);
+	}
+	return true;
+}
+
+// Write tracks as IMD (atomic: temp file + rename). Tracks are written in the order given.
+inline bool save_imd_tracks(const std::string &path, const std::vector<imd_track> &trks, const std::string &comment, std::string &err)
+{
+	std::string tmp = path + ".tmp";
+	FILE *f = fopen(tmp.c_str(), "wb");
+	if (!f) { err = "cannot write " + tmp; return false; }
+	time_t now = time(nullptr); struct tm *t = localtime(&now);
+	fprintf(f, "IMD 1.18: %02d/%02d/%04d %02d:%02d:%02d\r\n%s", t->tm_mday, t->tm_mon + 1, t->tm_year + 1900, t->tm_hour, t->tm_min, t->tm_sec, comment.c_str());
+	fputc(0x1a, f);
+	for (const imd_track &tr : trks) {
+		if (tr.secs.empty()) continue;
+		u8 sz = tr.secs[0].size;
+		bool cmap = false, hmap = false;
+		for (const imd_sector &s : tr.secs) { cmap |= s.cyl != tr.cyl; hmap |= s.head != tr.head; }
+		fputc(tr.mode, f); fputc(tr.cyl, f); fputc(tr.head | (cmap ? 0x80 : 0) | (hmap ? 0x40 : 0), f);
+		fputc(int(tr.secs.size()), f); fputc(sz, f);
+		for (const imd_sector &s : tr.secs) fputc(s.id, f);
+		if (cmap) for (const imd_sector &s : tr.secs) fputc(s.cyl, f);
+		if (hmap) for (const imd_sector &s : tr.secs) fputc(s.head, f);
+		size_t bs = size_t(128) << sz;
+		for (const imd_sector &s : tr.secs) {
+			if (s.no_data || s.data.size() != bs) { fputc(0, f); continue; }
+			int ty = s.deleted ? (s.bad_crc ? 7 : 3) : (s.bad_crc ? 5 : 1);
+			bool same = std::all_of(s.data.begin(), s.data.end(), [&](u8 b) { return b == s.data[0]; });
+			if (same) { fputc(ty + 1, f); fputc(s.data[0], f); }
+			else { fputc(ty, f); fwrite(s.data.data(), 1, bs, f); }
+		}
+	}
+	bool ok = !ferror(f);
+	fclose(f);
+	if (!ok || !replace_file(tmp, path)) { err = "cannot replace " + path; return false; }
+	return true;
+}
+
 inline bool save_raw(const std::string &path, const std::vector<u8> &lin, std::string &err)
 {
 	std::string tmp = path + ".tmp";

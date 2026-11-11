@@ -105,7 +105,7 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 **High-level, with known limits:**
 - **Board firmware:** the Z80 and 8085 boards' firmware was never dumped. Their tests fail only the PROM checksums 07/00D0 and 06/00D0.
 - **PROM programmer:** its controller is simulated, and only the 2708/2716/2732 module exists. Under `-prom fix`, a read after a write in one session hangs, because the PROM software V2.1 expects a later DOS/50.
-- **Floppy controller:** the real board runs its firmware, but the drive is a byte-cell model (no flux, weak bits or speed variation; one density per track). Deleted-data (control field) marks are lost when an image is saved. An unformatted disc mounted at power-up makes the 8301 boot time out (as it would on the real lab): mount blanks after booting. A few board details are inferred (`notes/8501-fdc.md`).
+- **Floppy controller:** the real board runs its firmware, but the drive is a byte-cell model (no flux, weak bits or speed variation; one density per track). IMD discs keep deleted-data marks, CRC errors and odd layouts through a save; raw `.img` discs cannot hold them. An unformatted disc mounted at power-up makes the 8301 boot time out (as it would on the real lab): mount blanks after booting. A few board details are inferred (`notes/8501-fdc.md`).
 
 **Unknown:**
 - Z80 board: E3 bits 4/1 and register-block byte 26;

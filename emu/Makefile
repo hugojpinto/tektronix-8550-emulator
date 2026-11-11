@@ -95,7 +95,7 @@ endif
 $(GUI_OBJ): CPPFLAGS += $(SDL_CFLAGS)
 
 test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE)
-	$(BUILD)/flexdrive_roundtrip$(EXE)
+	$(BUILD)/flexdrive_roundtrip$(EXE) $(wildcard ../sources/bitsavers/disks/*.imd ../sources/bitsavers/disks/*.IMD)
 	$(BUILD)/ct8500_keys$(EXE)
 $(BUILD)/ct8500_keys$(EXE): $(BUILD)/tests/ct8500_keys.o $(BUILD)/host/ct8500.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)

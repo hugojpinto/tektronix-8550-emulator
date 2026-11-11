@@ -41,6 +41,11 @@ struct track {
 // IBM 3740 (FM) / System 34 (MFM) track, laid out exactly as the controller's own
 // FORMAT tables write it (160-0412-00 at 0DD4 / 0E42). Sector n is secs[n-1].
 void build_track(track &t, bool mfm, int cyl, int side, const std::vector<const u8 *> &secs);
+// Any track as recorded (an IMD track): the sectors in order, with their ID fields,
+// deleted-data (F8) marks, CRC errors and missing data fields; same gaps as above.
+void build_track(track &t, bool mfm, const std::vector<imd_sector> &secs);
+// Every sector found on a track, in physical order from the index: what an IMD records.
+void read_track(const track &t, std::vector<imd_sector> &out);
 // Decode the sectors of a track: id 1..26 -> data; false if any is missing, of the
 // wrong size or has a bad CRC (problems are counted in *bad).
 bool decode_track(const track &t, int cyl, int side, int ssize, std::vector<std::vector<u8>> &secs, int *bad);
@@ -65,6 +70,9 @@ public:
 	// load a linear 8501 image (records of 256 bytes in physical order) of geometry g
 	void load_linear(const std::vector<u8> &lin, const fd_geometry &g);
 	void load_unformatted(bool ds);      // blank media
+	// an IMD image, track by track (deleted marks, CRC errors and odd layouts survive)
+	void load_imd(const std::vector<imd_track> &trks);
+	void to_imd(std::vector<imd_track> &out) const;
 	// back to a linear image; geometry from the media. Returns the number of
 	// sectors that could not be decoded (filled with E5).
 	int to_linear(std::vector<u8> &lin, fd_geometry &g) const;

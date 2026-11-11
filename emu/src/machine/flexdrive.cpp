@@ -17,11 +17,10 @@ struct writer {
 };
 }
 
-void build_track(track &t, bool mfm, int cyl, int side, const std::vector<const u8 *> &secs)
+void build_track(track &t, bool mfm, const std::vector<imd_sector> &secs)
 {
 	t.erase(mfm);
 	writer w(t);
-	const int ssize = mfm ? 256 : 128;
 	if (mfm) {
 		w.fill(0x4e, 80); w.fill(0x00, 12);
 		for (int i = 0; i < 3; i++) w.put(0xc2, M_MFM_C2);
@@ -30,19 +29,80 @@ void build_track(track &t, bool mfm, int cyl, int side, const std::vector<const 
 		w.fill(0xff, 40); w.fill(0x00, 6);
 		w.put(0xfc, M_FM_D7); w.fill(0xff, 26);
 	}
-	for (int s = 1; s <= 26; s++) {
+	for (const imd_sector &s : secs) {
 		// ID field
 		if (mfm) { w.fill(0x00, 12); w.preset(); for (int i = 0; i < 3; i++) w.put(0xa1, M_MFM_A1); w.put(0xfe); }
 		else { w.fill(0x00, 6); w.preset(); w.put(0xfe, M_FM_C7); }
-		w.put(u8(cyl)); w.put(u8(side)); w.put(u8(s)); w.put(mfm ? 1 : 0); w.put_crc();
+		w.put(s.cyl); w.put(s.head); w.put(s.id); w.put(s.size); w.put_crc();
 		w.fill(mfm ? 0x4e : 0xff, mfm ? 22 : 11);
-		// data field
-		if (mfm) { w.fill(0x00, 12); w.preset(); for (int i = 0; i < 3; i++) w.put(0xa1, M_MFM_A1); w.put(0xfb); }
-		else { w.fill(0x00, 6); w.preset(); w.put(0xfb, M_FM_C7); }
-		const u8 *p = size_t(s - 1) < secs.size() ? secs[s - 1] : nullptr;
-		for (int i = 0; i < ssize; i++) w.put(p ? p[i] : 0xe5);
-		w.put_crc();
+		// data field: FB, or F8 for a deleted-data (control) record; none if never recorded
+		const size_t n = size_t(128) << (s.size & 7);
+		if (s.no_data) w.fill(mfm ? 0x4e : 0xff, int(n) + (mfm ? 18 : 9));
+		else {
+			u8 m = s.deleted ? 0xf8 : 0xfb;
+			if (mfm) { w.fill(0x00, 12); w.preset(); for (int i = 0; i < 3; i++) w.put(0xa1, M_MFM_A1); w.put(m); }
+			else { w.fill(0x00, 6); w.preset(); w.put(m, M_FM_C7); }
+			for (size_t i = 0; i < n; i++) w.put(i < s.data.size() ? s.data[i] : 0xe5);
+			if (s.bad_crc) { u16 c = u16(w.crc ^ 0xffff); w.put(u8(c >> 8)); w.put(u8(c)); }
+			else w.put_crc();
+		}
 		w.fill(mfm ? 0x4e : 0xff, mfm ? 54 : 27);
+	}
+}
+
+void build_track(track &t, bool mfm, int cyl, int side, const std::vector<const u8 *> &secs)
+{
+	std::vector<imd_sector> v(26);
+	const int ssize = mfm ? 256 : 128;
+	for (int s = 1; s <= 26; s++) {
+		imd_sector &x = v[size_t(s - 1)];
+		x.cyl = u8(cyl); x.head = u8(side); x.id = u8(s); x.size = mfm ? 1 : 0;
+		const u8 *p = size_t(s - 1) < secs.size() ? secs[size_t(s - 1)] : nullptr;
+		x.data.assign(size_t(ssize), 0xe5);
+		if (p) std::copy(p, p + ssize, x.data.begin());
+	}
+	build_track(t, mfm, v);
+}
+
+void read_track(const track &t, std::vector<imd_sector> &out)
+{
+	out.clear();
+	if (!t.formatted()) return;
+	const size_t n = t.data.size();
+	auto at = [&](size_t i) { return t.data[i % n]; };
+	auto mk = [&](size_t i) { return t.mark[i % n]; };
+	const u8 sync = t.mfm ? M_MFM_A1 : M_FM_C7;
+	auto field = [&](size_t i, size_t &body, u16 &crc) -> int {
+		crc = 0xffff;
+		if (t.mfm) {
+			if (mk(i) != sync || mk(i + 1) != sync || mk(i + 2) != sync) return -1;
+			for (int k = 0; k < 3; k++) crc = crc16(crc, at(i + k));
+			i += 3;
+		} else if (mk(i) != sync) return -1;
+		crc = crc16(crc, at(i));
+		body = i + 1;
+		return at(i);
+	};
+	for (size_t i = 0; i < n; i++) {
+		size_t body; u16 crc;
+		if (field(i, body, crc) != 0xfe) continue;
+		u8 id[6]; for (int k = 0; k < 6; k++) { id[k] = at(body + k); crc = crc16(crc, id[k]); }
+		if (crc != 0) continue;                       // a damaged ID is not a sector
+		imd_sector s; s.cyl = id[0]; s.head = id[1]; s.id = id[2]; s.size = id[3] & 7; s.no_data = true;
+		const size_t ssize = size_t(128) << s.size;
+		for (size_t j = body + 6; j < body + 6 + 80; j++) {
+			size_t db; u16 dcrc;
+			int m = field(j, db, dcrc);
+			if (m < 0) continue;
+			if (m != 0xfb && m != 0xf8) break;
+			s.data.resize(ssize);
+			for (size_t k = 0; k < ssize; k++) { s.data[k] = at(db + k); dcrc = crc16(dcrc, s.data[k]); }
+			dcrc = crc16(crc16(dcrc, at(db + ssize)), at(db + ssize + 1));
+			s.no_data = false; s.deleted = m == 0xf8; s.bad_crc = dcrc != 0;
+			break;
+		}
+		out.push_back(s);
+		i = body;
 	}
 }
 
@@ -108,6 +168,33 @@ void drive::load_linear(const std::vector<u8> &lin, const fd_geometry &g)
 		for (int s = 0; s < 26; s++, off += bs) secs.push_back(off + bs <= lin.size() ? &lin[off] : e5.data());
 		build_track(tracks[size_t(g.cylinder(t) * 2 + g.side(t))], !fm, g.cylinder(t), g.side(t), secs);
 	}
+}
+
+void drive::load_imd(const std::vector<imd_track> &trks)
+{
+	bool ds = false;
+	for (const imd_track &t : trks) ds |= t.head == 1;
+	load_unformatted(ds);
+	for (const imd_track &t : trks)
+		if (t.cyl <= MAX_CYL) build_track(tracks[size_t(t.cyl * 2 + (t.head & 1))], t.mfm(), t.secs);
+}
+
+void drive::to_imd(std::vector<imd_track> &out) const
+{
+	out.clear();
+	for (int c = 0; c <= MAX_CYL; c++)
+		for (int h = 0; h < (two_sided ? 2 : 1); h++) {
+			const track &tr = tracks[size_t(c * 2 + h)];
+			if (!tr.formatted()) continue;
+			imd_track t; t.cyl = u8(c); t.head = u8(h); t.mode = tr.mfm ? 3 : 0;
+			read_track(tr, t.secs);
+			// IMD has one sector size per track: keep the sectors of the first one's size
+			if (!t.secs.empty()) {
+				u8 sz = t.secs[0].size;
+				t.secs.erase(std::remove_if(t.secs.begin(), t.secs.end(), [&](const imd_sector &x) { return x.size != sz; }), t.secs.end());
+			}
+			if (!t.secs.empty()) out.push_back(t);
+		}
 }
 
 int drive::to_linear(std::vector<u8> &lin, fd_geometry &g) const

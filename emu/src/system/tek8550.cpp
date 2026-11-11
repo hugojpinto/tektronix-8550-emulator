@@ -112,7 +112,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	// modem lines of what is plugged into the 8501 ports: a printer, a terminal or a
 	// host asserts DTR and RTS once connected; a wrap-back connector returns the port's own
 	// CLEAR TO SEND
-	auto lines = [this](serial_link &l, serial_port &p) {
+	auto lines = [](serial_link &l, serial_port &p) {
 		p.peer_lines = [&l, &p]() {
 			if (!l.connected()) return 0;
 			if (l.loopback()) return p.cts_out() ? 3 : 0;   // RCSR bit 0 set = CTS asserted (the diagnostic's wrap-back test)

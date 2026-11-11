@@ -71,7 +71,14 @@ bool tek8501::mount(int drive, const std::string &path, std::string &err, bool w
 		if (!load_imd_linear(path, lin, err, &fd.is_imd, &fd.comment)) return false;
 		fd.path = path; fd.writeback = writeback;
 		fd_geometry g;
-		if (lin.empty()) fd.load_unformatted(true);            // blank media: FORMAT it
+		if (fd.is_imd) {
+			// IMD: track by track, as recorded (deleted marks, CRC errors, missing data fields)
+			std::vector<u8> raw; std::vector<imd_track> trks;
+			if (FILE *f = fopen(path.c_str(), "rb")) { int c; while ((c = fgetc(f)) != EOF) raw.push_back(u8(c)); fclose(f); }
+			if (!parse_imd_tracks(raw, trks, err)) { err = path + ": " + err; return false; }
+			fd.load_imd(trks);
+		}
+		else if (lin.empty()) fd.load_unformatted(true);       // blank media: FORMAT it
 		else {
 			// the image size gives the geometry; anything else is taken as DSDD, padded with E5
 			if (lin.size() % 256 || !fd_geometry::from_records(lin.size() / 256, g)) {
@@ -617,11 +624,17 @@ bool tek8501::flush(std::string &err, bool force)
 			flex::drive &d = fdc.drv[i];
 			if (!d.present || !d.writeback || !d.dirty) continue;
 			if (!force && fdc.cycles() - d.last_write < 2 * flex::CLOCK) continue;
-			std::vector<u8> lin; fd_geometry g;
-			int bad = d.to_linear(lin, g);
-			if (bad) fprintf(stderr, "[drive %d: %d sectors could not be decoded; saved as E5]\r\n", i, bad);
 			std::string e;
-			bool r = d.is_imd ? save_imd_8501(d.path, lin, g, d.comment, e) : save_raw(d.path, lin, e);
+			bool r;
+			if (d.is_imd) {                                   // as recorded, marks and all
+				std::vector<imd_track> trks; d.to_imd(trks);
+				r = save_imd_tracks(d.path, trks, d.comment, e);
+			} else {
+				std::vector<u8> lin; fd_geometry g;
+				int bad = d.to_linear(lin, g);
+				if (bad) fprintf(stderr, "[drive %d: %d sectors could not be decoded; saved as E5]\r\n", i, bad);
+				r = save_raw(d.path, lin, e);
+			}
 			if (r) d.dirty = false; else { ok = false; err = e; }
 		}
 		return ok;
