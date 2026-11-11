@@ -12,7 +12,8 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `emu/src/cpu/` | `t11/` LSI-11 (MAME), `s2650/` Signetics 2650 (MAME), `z80/superzazu/` Z80 (MIT), `i8085/` 8085 (MAME), disassemblers |
 | `emu/src/machine/` | `tek8501.*` (DMU: utility PROMs, LTC, serial ports, high-level floppy controller, HSI I/O board, ODT); `tek8301.*` (MDU: system controller, ACIAs, DMA, program memory, Language Processor, Emulator Controller, Z80 emulator board, memory map); `rtpa.*` (Real-Time Prototype Analyzer); `tta.*` (Trigger Trace Analyzer, in progress); `am9513.*` (AMD Am9513, generated from MAME by `emu/tools/port_am9513.py`); `prom_programmer.*`; `mc6850.h`; `prototype.h` (target-system interface); `imd.h` (disk images and `fd_geometry`) |
 | `emu/src/host/` | `ct8500.*` (terminal model and ANSI renderer), `ipc_target.*` (target system over a socket), `serial_link.*` (REMOTE port over a socket), `tty.h` |
-| `emu/src/main8550.cpp` | command-line driver for the full system (options are listed in `emu/README.md`) |
+| `emu/src/system/` | `tek8550.*`: the whole lab as one class with no wall-clock notion (both units, HSI cable, links, scripted `-type`/`-snap`/`-poke`, named lamp outputs and inputs); `options.*`: the command line shared by every front end; `outputs.h` |
+| `emu/src/main8550.cpp` | tty front end for the full system: ANSI CT8500, raw tty, monitor, real-time pacing (options are listed in `emu/README.md`) |
 | `notes/` | hardware findings: `8301.md`, `8501.md`, `prototype-link.md`, `host-link.md`, `rtpa.md`, `tta.md`, and `dasm/` (ROM listings). **Facts established by reverse engineering live here** |
 | `roms/` | curated ROM set (`MANIFEST.md`). The 8550 set is `roms/8550/8301`, `roms/8550/8501` |
 | `disks/` | working disk images. `System_helpfix.img` = DOS/50 V1.0 with the HELP file repaired |

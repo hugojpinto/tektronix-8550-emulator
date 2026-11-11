@@ -1,0 +1,234 @@
+#include "system/tek8550.h"
+#include "cpu/s2650/2650dasm.h"
+#include "cpu/t11/t11dasm.h"
+#include <sstream>
+#include <cstdlib>
+
+namespace {
+struct cfg_t : s2650_disassembler::config { bool get_z80_mnemonics_mode() const override { return false; } } g_cfg;
+
+std::string dasm2650(tek8301 &m, u16 pc)
+{
+	s2650_disassembler d(&g_cfg); data_buffer b; b.rd = [&](offs_t a) -> u8 { return m.read(a & 0x7fff); };
+	std::ostringstream s; d.disassemble(s, pc, b, b); return s.str();
+}
+std::string dasm11(tek8501 &m, u16 pc)
+{
+	t11_disassembler d; data_buffer b;
+	b.rd = [&](offs_t a) -> u8 { u16 w = m.peek16(a & 0xfffe); return (a & 1) ? u8(w >> 8) : u8(w); };
+	std::ostringstream s; d.disassemble(s, pc, b, b); return s.str();
+}
+}
+
+tek8550_system::~tek8550_system()
+{
+	for (FILE *f : { logf, hsif, auxf, trf, trf11, outf }) if (f) fclose(f);
+}
+
+void tek8550_system::show(FILE *f)
+{
+	tek8301 &a = *mdu; tek8501 &b = *dmu;
+	fprintf(f, "8301: PC=%04x R0-3=%02x %02x %02x %02x PSU=%02x PSL=%02x LED=%02x  %s\r\n", a.cpu.pc(), a.cpu.reg(0), a.cpu.reg(1), a.cpu.reg(2), a.cpu.reg(3),
+		a.cpu.psu(), a.cpu.psl(), a.leds(), dasm2650(a, a.cpu.pc()).c_str());
+	fprintf(f, "8501: PC=%06o R0-5=%06o %06o %06o %06o %06o %06o SP=%06o PSW=%03o LEDs=%02o %s  %s\r\n", b.cpu.reg(7),
+		b.cpu.reg(0), b.cpu.reg(1), b.cpu.reg(2), b.cpu.reg(3), b.cpu.reg(4), b.cpu.reg(5), b.cpu.reg(6), b.cpu.psw(), b.leds(),
+		b.cpu.halted() ? "HALTED" : "", dasm11(b, b.cpu.reg(7)).c_str());
+	fprintf(f, "%s\r\n", a.lp_state().c_str());
+}
+
+void tek8550_system::hlog(int dir, u8 c)
+{
+	if (!hsif) return;
+	if (dir != last_dir) { fprintf(hsif, "\n%s", dir == 1 ? "8301>" : "8501>"); last_dir = dir; }
+	fprintf(hsif, " %02x", c); fflush(hsif);
+}
+
+bool tek8550_system::start(bool feed_terminal, std::string &err)
+{
+	m_feed_ct = feed_terminal;
+	mdu = std::make_unique<tek8301>();
+	dmu = std::make_unique<tek8501>();
+	if (!mdu->load_roms(opt.roms + "/8301", err) || !dmu->load_roms(opt.roms + "/8501", err)) return false;
+	for (int d = 0; d < 4; d++) {
+		if (opt.disks[d].empty()) continue;
+		// -rw writes back every mounted image; originals under sources/ stay read-only
+		bool wb = opt.writeback && opt.disks[d].find("sources/") == std::string::npos;
+		if (opt.writeback && !wb) fprintf(stderr, "[drive %d: %s is an original; mounted without write-back]\n", d, opt.disks[d].c_str());
+		if (!dmu->mount(d, opt.disks[d], err, wb)) return false;
+	}
+
+	logf = opt.logfile.empty() ? nullptr : fopen(opt.logfile.c_str(), "wb");
+	hsif = opt.hsilog.empty() ? nullptr : fopen(opt.hsilog.c_str(), "w");
+	auxf = opt.auxlog.empty() ? nullptr : fopen(opt.auxlog.c_str(), "wb");
+	outf = opt.outputs_log.empty() ? nullptr : fopen(opt.outputs_log.c_str(), "w");
+	if (outf) out.subscribe([this](const std::string &n, int v) { fprintf(outf, "%.6f %s %d\n", now(), n.c_str(), v); fflush(outf); });
+
+	ct.send = [this](u8 b) { mdu->term.host_rx(b); };
+	mdu->term.on_tx = [this](u8 c) {
+		c &= 0x7f;
+		if (m_feed_ct || !opt.screenfile.empty() || !opt.snaps.empty()) { ct.feed(c); terminal_dirty = true; }
+		if (on_term_tx) on_term_tx(c);
+		if (logf) { fputc(c, logf); fflush(logf); }
+	};
+	dmu->aux.on_tx = [this](u8 c) { if (auxf) { fputc(c & 0x7f, auxf); fflush(auxf); } };
+
+	// the HSI cable
+	mdu->hsi_connected = true;
+	mdu->hsi_tx = [this](u8 c) { hlog(1, c); dmu->hsi_rx(c); };
+	dmu->hsi_tx = [this](u8 c) { hlog(2, c); mdu->hsi_rx(c); };
+	mdu->hsi_cts = [this]() { return !dmu->hsi_ncts(); };
+	dmu->hsi_peer_ready = [this]() { return !mdu->hsi_rx_busy(); };
+
+	if (!opt.targetspec.empty()) {
+		if (!proto.open(opt.targetspec, err)) return false;
+		mdu->target = &proto;
+	}
+	if (!opt.remotespec.empty()) {                // 8301 REMOTE port (J102): COMM / HOST
+		if (!remote.open(opt.remotespec, err)) return false;
+		mdu->remote.on_tx = [this](u8 c) { remote.send(c); };
+		// REMOTE BAUD is a rear-panel switch on the 8301 (the 8540 manual's setup for
+		// 8550 transfers: 2400). 10 bits per character.
+		if (opt.remote_baud < 110 || opt.remote_baud > 19200) { err = "-remote-baud must be 110..19200"; return false; }
+		mdu->remote.char_cycles = int(tek8301::CPU_HZ * 10 / opt.remote_baud);
+	}
+	mdu->mode_switch = u8(opt.sw);
+	mdu->pm_ext_comparator = opt.pm_ext;
+	if (opt.no_ep) mdu->ep_present = false;
+	mdu->ep85_present = opt.ep85;
+	mdu->prom.present = opt.prom_on;
+	mdu->rtpa_board.present = opt.rtpa_on;
+	mdu->rtpa_board.probe_loopback = opt.rtpa_probe;
+	mdu->tta_board.present = opt.tta_on;
+	mdu->prom_dos50_fix = opt.prom_fix;
+	if (!opt.prom_dev.empty()) { std::string e; mdu->prom.load_socket(opt.prom_dev, e); }
+	else mdu->prom.socket.assign(0x10000, 0xff);
+	if (!opt.ep_prom_file.empty()) {
+		FILE *f = fopen(opt.ep_prom_file.c_str(), "rb");
+		if (!f) { err = "cannot read " + opt.ep_prom_file; return false; }
+		mdu->ep_prom.resize(512); size_t n = fread(mdu->ep_prom.data(), 1, 512, f); fclose(f);
+		if (n != 512) { err = opt.ep_prom_file + ": expected 512 bytes, got " + std::to_string(n); return false; }
+	}
+	mdu->trace_io = getenv("TEK_IOTRACE8301") != nullptr;
+	mdu->ep_trace = getenv("TEK_EPTRACE") != nullptr;
+	trf = opt.tracefile.empty() ? nullptr : fopen(opt.tracefile.c_str(), "w");
+	if (trf) {
+		mdu->cpu.trace_hook = [this](u16 pc) {
+			if (mdu->cycles() < opt.trace_at * tek8301::CPU_HZ) return;
+			auto &c = mdu->cpu;
+			fprintf(trf, "%04x: %-20s r0-3=%02x %02x %02x %02x psu=%02x t=%.4f\n", pc, dasm2650(*mdu, pc).c_str(), c.reg(0), c.reg(1), c.reg(2), c.reg(3), c.psu(), mdu->cycles() / tek8301::CPU_HZ);
+		};
+		mdu->lp_trace_hook = [this](u16 pc) {
+			if (mdu->cycles() < opt.trace_at * tek8301::CPU_HZ) return;
+			fprintf(trf, "  Z80 %04x\n", pc);
+		};
+	}
+	trf11 = opt.trace11file.empty() ? nullptr : fopen(opt.trace11file.c_str(), "w");
+	if (trf11) dmu->cpu.trace_hook = [this](u16 pc) {
+		double t = dmu->cycles() / tek8501::CPU_HZ;
+		if (t >= opt.trace11_at && t < opt.trace11_at + opt.trace11_len) fprintf(trf11, "%06o: %s\n", pc, dasm11(*dmu, pc).c_str());
+	};
+	mdu->power_on();
+	dmu->power_on();
+	update_outputs();
+	return true;
+}
+
+void tek8550_system::scripted_events()
+{
+	for (auto &t : opt.typed)
+		if (!t.text.empty() && mdu->cycles() >= t.at * tek8301::CPU_HZ) {
+			for (size_t i = 0; i < t.text.size(); i++) {
+				char ch = t.text[i];
+				if (ch == '\\' && i + 1 < t.text.size()) {
+					char e = t.text[++i];
+					if (e == 'r') ch = '\r'; else if (e == 'n') ch = '\n'; else if (e == 'e') ch = 27;
+					else if (e == 'x' && i + 2 < t.text.size()) { ch = char(strtol(t.text.substr(i + 1, 2).c_str(), nullptr, 16)); i += 2; }
+					else ch = e;
+				}
+				mdu->term.host_rx(u8(ch));
+			}
+			t.text.clear();
+		}
+	for (auto &pk : opt.pokes)
+		if (!pk.text.empty() && mdu->cycles() >= pk.at * tek8301::CPU_HZ) {
+			size_t eq = pk.text.find('=');
+			unsigned addr = unsigned(strtoul(pk.text.substr(0, eq).c_str(), nullptr, 16));
+			for (size_t i = eq + 1; i + 1 < pk.text.size() + 1 && i + 2 <= pk.text.size(); i += 2)
+				mdu->poke(addr++, u8(strtoul(pk.text.substr(i, 2).c_str(), nullptr, 16)));
+			pk.text.clear();
+		}
+	for (auto &sn : opt.snaps)
+		if (!sn.text.empty() && mdu->cycles() >= sn.at * tek8301::CPU_HZ) {
+			FILE *f = fopen(sn.text.c_str(), "w"); if (f) { fputs(ct.state().c_str(), f); fclose(f); }
+			sn.text.clear();
+		}
+}
+
+void tek8550_system::update_outputs()
+{
+	// 8301 port ED: D0-4 LEDs (1 = on), D5 front panel SELF TEST (notes/8301.md)
+	int a = mdu->leds();
+	if (a != m_out_8301) {
+		m_out_8301 = a;
+		for (int i = 0; i < 5; i++) out.set("8301:led" + std::to_string(i), (a >> i) & 1);
+		out.set("8301:selftest", (a >> 5) & 1);
+	}
+	// 8301 system RAM board, port D2 D3-7 (1 = off)
+	int r = mdu->ram_leds();
+	if (r != m_out_8301_ram) {
+		m_out_8301_ram = r;
+		for (int i = 0; i < 5; i++) out.set("8301:ramled" + std::to_string(i), !((r >> (i + 3)) & 1));
+	}
+	// 8501 utility board, LTC<15:11> (1 = off)
+	int b = dmu->leds();
+	if (b != m_out_8501) {
+		m_out_8501 = b;
+		for (int i = 0; i < 5; i++) out.set("8501:led" + std::to_string(i), !((b >> i) & 1));
+	}
+}
+
+void tek8550_system::tick()
+{
+	scripted_events();
+	mdu->run_slice(int(tek8301::CPU_HZ * SLICE_S));
+	dmu->run_slice(int(tek8501::CPU_HZ * SLICE_S));
+	if (remote.active()) remote.poll([this](u8 c) { mdu->remote.host_rx(c); });
+	if (dmu->cpu.halted()) dmu->cpu.set_halted(false);   // no ODT console here: resume (logged)
+	m_ticks++;
+	update_outputs();
+	if (m_ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
+}
+
+bool tek8550_system::input(const std::string &name, int value)
+{
+	if (name == "8301:restart") { if (value) mdu->restart(); }
+	else if (name == "8501:restart") { if (value) dmu->restart(); }
+	else if (name == "restart") { if (value) { mdu->restart(); dmu->restart(); } }
+	else if (name == "8301:modesw") mdu->mode_switch = u8(value);
+	else return false;
+	return true;
+}
+
+void tek8550_system::shutdown(bool show_state)
+{
+	if (!opt.screenfile.empty()) { FILE *f = fopen(opt.screenfile.c_str(), "w"); if (f) { fputs(ct.text().c_str(), f); fclose(f); } }
+	if (!opt.targetspec.empty()) fprintf(stderr, "[prototype link: %lu requests, %lu WAIT states]\n", proto.requests(), proto.wait_total());
+	{ std::string e; if (!dmu->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
+	{ std::string e; if (!mdu->prom.save_socket(e)) fprintf(stderr, "PROM image save failed: %s\n", e.c_str()); }
+	if (show_state) { fprintf(stderr, "\n"); show(stdout); }
+	for (FILE **f : { &logf, &hsif, &auxf, &trf, &trf11, &outf }) if (*f) { fclose(*f); *f = nullptr; }
+	if (!opt.dumpfile.empty()) {   // raw memory images: <file>.8501 (64 KB, LE words) and <file>.8301 (CPU view, 32 KB)
+		FILE *f = fopen((opt.dumpfile + ".8501").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a += 2) { u16 w = dmu->peek16(a); fputc(w & 0xff, f); fputc(w >> 8, f); }
+		fclose(f);
+		f = fopen((opt.dumpfile + ".8301").c_str(), "wb");
+		for (u32 a = 0; a < 0x8000; a++) fputc(mdu->read(a), f);
+		fclose(f);
+		f = fopen((opt.dumpfile + ".sys").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->sysmem(u16(a)), f);
+		fclose(f);
+		f = fopen((opt.dumpfile + ".prog").c_str(), "wb");
+		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->progmem(u16(a)), f);
+		fclose(f);
+	}
+}

@@ -19,7 +19,9 @@ $(BUILD)/tek8501: $(BUILD)/main8501.o $(M8501) $(T11_OBJ) $(BUILD)/cpu/t11/t11da
 $(BUILD)/tek8301: $(BUILD)/main8301.o $(M8301) $(BUILD)/cpu/s2650/2650dasm.o
 	$(CXX) -o $@ $^
 
-$(BUILD)/tek8550: $(BUILD)/main8550.o $(BUILD)/host/ct8500.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(M8301) $(M8501) $(T11_OBJ) $(DASM_OBJ)
+SYS8550  := $(BUILD)/system/tek8550.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o
+
+$(BUILD)/tek8550: $(BUILD)/main8550.o $(SYS8550) $(M8301) $(M8501) $(T11_OBJ) $(DASM_OBJ)
 	$(CXX) -o $@ $^
 
 # the 8K-entry opcode table makes -O2 very slow on this file; -O1 is plenty
