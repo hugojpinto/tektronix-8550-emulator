@@ -25,6 +25,7 @@ struct tek8550_options
 	std::string termmode;              // -term ct8500|tty (front-end specific)
 	std::string screenfile;            // -screen
 	std::string targetspec, remotespec; int remote_baud = 2400;
+	std::string aux8301spec, aux8501spec, printerspec;   // -aux8301, -aux8501, -printer (serial_link specs)
 	std::vector<timed_t> typed;        // -type SECONDS TEXT (\r = Return)
 	std::vector<timed_t> snaps;        // -snap SECONDS FILE
 	std::vector<timed_t> pokes;        // -poke SECONDS ADDR=HEXBYTES

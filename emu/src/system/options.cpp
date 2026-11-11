@@ -5,7 +5,7 @@
 
 const char *tek8550_options::usage()
 {
-	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-rtpa [probe]] [-tta] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE]";
+	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-aux8301 SPEC] [-aux8501 SPEC] [-printer SPEC] [-rtpa [probe]] [-tta] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE]";
 }
 
 bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
@@ -31,6 +31,9 @@ bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
 		else if (a == "-term") termmode = next();
 		else if (a == "-target") targetspec = next();
 		else if (a == "-remote") remotespec = next();
+		else if (a == "-aux8301") aux8301spec = next();
+		else if (a == "-aux8501") aux8501spec = next();
+		else if (a == "-printer") printerspec = next();
 		else if (a == "-tta") tta_on = true;
 		else if (a == "-fdc") fdc_hle = next() == "hle";
 		else if (a == "-rtpa") { rtpa_on = true; if (i + 1 < argc && std::string(argv[i + 1]) == "probe") { i++; rtpa_probe = true; } }

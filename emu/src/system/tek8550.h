@@ -81,6 +81,7 @@ private:
 	bool m_feed_ct = false;
 	ipc_target proto;
 	serial_link remote;
+	serial_link aux8301, aux8501, printer;   // 8301 AUX, 8501 AUXILIARY (console), 8501 PRINTER
 	FILE *logf = nullptr, *hsif = nullptr, *auxf = nullptr, *trf = nullptr, *trf11 = nullptr, *outf = nullptr;
 	int last_dir = 0;
 	u64 m_ticks = 0;
@@ -89,6 +90,7 @@ private:
 	std::string m_disc[4];
 	bool m_power8301 = true, m_power8501 = true, m_halt8501 = false, m_held8301 = false, m_held8501 = false;
 	u64 m_held_cycles = 0;
+	bool m_odt_seen = false;   // the 8501 was halted (in ODT) at the end of the last slice
 	struct release_t { double at; std::string name; };
 	std::vector<release_t> m_releases;
 	void power(int unit, bool on);

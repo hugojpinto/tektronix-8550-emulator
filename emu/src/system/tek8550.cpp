@@ -75,7 +75,10 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 		if (on_term_tx) on_term_tx(c);
 		if (logf) { fputc(c, logf); fflush(logf); }
 	};
-	dmu->aux.on_tx = [this](u8 c) { if (auxf) { fputc(c & 0x7f, auxf); fflush(auxf); } };
+	dmu->aux.on_tx = [this](u8 c) {           // 8501 AUXILIARY (177560): the LSI-11's console
+		if (auxf) { fputc(c & 0x7f, auxf); fflush(auxf); }
+		aux8501.send(c);
+	};
 
 	// the HSI cable
 	mdu->hsi_connected = true;
@@ -96,6 +99,28 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 		if (opt.remote_baud < 110 || opt.remote_baud > 19200) { err = "-remote-baud must be 110..19200"; return false; }
 		mdu->remote.char_cycles = int(tek8301::CPU_HZ * 10 / opt.remote_baud);
 	}
+	// the other RS-232 ports: open unless something is plugged in
+	if (!opt.aux8301spec.empty()) {              // 8301 AUX (ACIA CC/CD)
+		if (!aux8301.open(opt.aux8301spec, err, "8301 aux port")) return false;
+		mdu->aux.on_tx = [this](u8 c) { aux8301.send(c); };
+	}
+	if (!opt.aux8501spec.empty() && !aux8501.open(opt.aux8501spec, err, "8501 aux port")) return false;
+	if (!opt.printerspec.empty()) {              // 8501 PRINTER (177510)
+		if (!printer.open(opt.printerspec, err, "8501 printer port")) return false;
+		dmu->printer.on_tx = [this](u8 c) { printer.send(c); };
+	}
+	// modem lines of what is plugged into the 8501 ports: a printer, a terminal or a
+	// host asserts DTR and RTS once connected; a wrap-back connector returns the port's own
+	// CLEAR TO SEND
+	auto lines = [this](serial_link &l, serial_port &p) {
+		p.peer_lines = [&l, &p]() {
+			if (!l.connected()) return 0;
+			if (l.loopback()) return p.cts_out() ? 3 : 0;   // RCSR bit 0 set = CTS asserted (the diagnostic's wrap-back test)
+			return 3;
+		};
+	};
+	lines(aux8501, dmu->aux);
+	lines(printer, dmu->printer);
 	mdu->mode_switch = u8(opt.sw);
 	mdu->pm_ext_comparator = opt.pm_ext;
 	if (opt.no_ep) mdu->ep_present = false;
@@ -244,9 +269,18 @@ void tek8550_system::tick()
 	else m_held_cycles += u64(tek8301::CPU_HZ * SLICE_S);   // switched off or held in reset
 	if (m_power8501 && !m_held8501) dmu->run_slice(int(tek8501::CPU_HZ * SLICE_S));
 	if (remote.active()) remote.poll([this](u8 c) { if (m_power8301) mdu->remote.host_rx(c); });
-	// a HALT instruction: with no ODT console attached, resume (logged). The HALT/RUN
-	// switch at HALT keeps the processor halted instead.
-	if (dmu->cpu.halted() && !m_halt8501) dmu->cpu.set_halted(false);
+	if (aux8301.active()) aux8301.poll([this](u8 c) { if (m_power8301) mdu->aux.host_rx(c); });
+	if (printer.active()) printer.poll([this](u8 c) { if (m_power8501) dmu->printer.host_rx(c); });
+	// the 8501 console: while the LSI-11 is halted its microcode ODT owns the port
+	if (aux8501.active()) aux8501.poll([this](u8 c) {
+		if (!m_power8501) return;
+		if (dmu->cpu.halted()) dmu->odt_char(c); else dmu->aux.host_rx(c);
+	});
+	bool console = aux8501.connected();
+	if (dmu->cpu.halted() && m_power8501 && !m_held8501) {
+		if (!console && !m_halt8501) dmu->cpu.set_halted(false);   // HALT with nobody at the console: carry on
+		else if (!m_odt_seen) { if (console) dmu->odt_enter(); m_odt_seen = true; }
+	} else m_odt_seen = false;
 	m_ticks++;
 	update_outputs();
 	if (m_ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
@@ -292,8 +326,11 @@ bool tek8550_system::input(const std::string &name, int value)
 	if (name == "8301:power") power(8301, value != 0);
 	else if (name == "8501:dc") power(8501, value != 0);
 	else if (name == "8501:halt") {
+		// HALT: the LSI-11 stops into ODT. RUN: with a console attached, ODT's P resumes it
+		// (as on the real KD11); with nobody at the console, it resumes by itself.
 		m_halt8501 = value != 0;
-		if (m_power8501) dmu->cpu.set_halted(m_halt8501);            // HALT: into ODT; RUN: proceed
+		dmu->halt_switch = m_halt8501;
+		if (m_power8501 && (m_halt8501 || !aux8501.connected())) dmu->cpu.set_halted(m_halt8501);
 		out.set("8501:halt", m_halt8501);
 	}
 	else if (name == "8301:restart") {

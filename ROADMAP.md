@@ -6,7 +6,6 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 - **Trigger Trace Analyzer (TTA):** stage 1 is in (ports, RAM window, Am9513; TTA.TST modules 00–23 and 40–43 pass). Next are the event comparators (modules 30/31), counting from live sources (44–46), interrupt (50), acquisition (60) and the probe. Start from `notes/tta.md`. No software on hand uses it on the 8550, so the diagnostic is the only consumer.
 - **The 6800, 8080 and 8086 emulator processor boards.** An EMU.8086 disc survives; the boards' firmware does not.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
-- **The 8301 AUX port and the 8501 printer/AUX port** beyond logging.
 
 ## Fidelity
 - **Floppies:** the controller runs its real firmware, but the drive is a byte-cell model. Open: flux-level media (weak bits, speed variation), mixed density within a track, and keeping deleted-data (control field) marks in saved images.

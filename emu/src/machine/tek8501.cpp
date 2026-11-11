@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 static const bool g_iotrace = getenv("TEK_IOTRACE") != nullptr;
+static const bool g_sertrace = getenv("TEK_SERTRACE") != nullptr;
 
 namespace {
 constexpr offs_t RAM_TOP      = 0170000;   // first non-RAM byte address (top of RAM = 167776)
@@ -36,6 +37,10 @@ tek8501::tek8501()
 {
 	memset(m_prom, 0xff, sizeof m_prom);
 	aux.char_cycles = printer.char_cycles = int(CPU_HZ * 10 / 9600);   // 9600 baud, 10 bits/char
+	// DOS/50 V1.0 drives the PRINTER port like a LAV-11: it sets XCSR IE and takes the
+	// transmitter-ready interrupt at vector 200 (its handler drains the print queue; 204 is
+	// left empty). The utility board's printer-mode straps give that vector.
+	printer.printer_vector = true;
 	// the controller is a Q-bus DMA master
 	fdc.dma_read = [this](u32 a, u16 &v) { if (a >= 0x10000) return false; bool nxm = false; v = read16(offs_t(a), nxm); return !nxm; };
 	fdc.dma_write = [this](u32 a, u16 v) { if (a >= 0x10000) return false; bool nxm = false; write16(offs_t(a), v, nxm); return !nxm; };
@@ -131,8 +136,11 @@ u16 tek8501::read16(offs_t a, bool &nxm)
 	a &= 0xfffe;
 	if (a < RAM_TOP) return m_ram[a >> 1];
 	if (a >= PROM_BASE && a < PROM_END) return m_prom[(m_ltc >> 5) & 1][(a - PROM_BASE) >> 1];
-	if (aux.decodes(a)) { u16 v = aux.read(a); update_irq(); return v; }
-	if (printer.decodes(a)) { u16 v = printer.read(a); update_irq(); return v; }
+	if (aux.decodes(a) || printer.decodes(a)) {
+		u16 v = (aux.decodes(a) ? aux : printer).read(a); update_irq();
+		if (g_sertrace) fprintf(stderr, "[8501 %.3fs serial rd %06o = %06o pc=%06o]\n", m_cycles / CPU_HZ, a, v, cpu.ppc());
+		return v;
+	}
 	if (a == LTC_ADDR) return m_ltc & 0000341;     // LEDs are write-only
 	if (a == CBPR_ADDR) return fdc_lle ? fdc.cbpr_read() : m_cbpr;
 	if (a >= HSI_BASE && a < HSI_BASE + 16) { u16 v = io_read((a - HSI_BASE) >> 1); update_irq(); return v; }
@@ -145,6 +153,7 @@ void tek8501::write16(offs_t a, u16 d, bool &nxm)
 	a &= 0xfffe;
 	if (a < RAM_TOP) { m_ram[a >> 1] = d; return; }
 	if (a >= PROM_BASE && a < PROM_END) return;        // ROM: ignore
+	if (g_sertrace && (aux.decodes(a) || printer.decodes(a))) fprintf(stderr, "[8501 %.3fs serial wr %06o <- %06o pc=%06o]\n", m_cycles / CPU_HZ, a, d, cpu.ppc());
 	if (aux.decodes(a)) { aux.write(a, d); if ((a & 6) == 4) aux.write(a, d, true); update_irq(); return; }
 	if (printer.decodes(a)) { printer.write(a, d); if ((a & 6) == 4) printer.write(a, d, true); update_irq(); return; }
 	if (a == LTC_ADDR) {
@@ -448,10 +457,12 @@ void tek8501::odt_char(u8 c)
 		cpu.set_psw(0);
 		odt_out("\r\n");
 		cpu.set_halted(false);
+		if (halt_switch) { cpu.run(1); cpu.set_halted(true); odt_enter(); }
 		break;
 	}
 	case 'P':
 		m_odt_buf.clear(); odt_out("\r\n"); cpu.set_halted(false);
+		if (halt_switch) { cpu.run(1); cpu.set_halted(true); odt_enter(); }   // BHALT asserted: one instruction
 		break;
 	default:
 		m_odt_buf.clear(); odt_out("?\r\n@");

@@ -19,7 +19,16 @@ public:
 	u16 read(offs_t a)
 	{
 		switch (a & 6) {
-		case 0: return m_rcsr;
+		case 0: {
+			// modem lines from the peer (061-2355 Fig. 1-5): bit 14 TERM RDY (its DTR),
+			// bit 13 REQ SEND (its RTS), bit 15 TERM STAT (taken here as either of them)
+			int l = peer_lines ? peer_lines() : 0;
+			u16 v = m_rcsr;
+			if (l & LINE_DTR) v |= 040000;
+			if (l & LINE_RTS) v |= 020000;
+			if (l) v |= 0100000;
+			return v;
+		}
 		case 2: { u16 v = m_rbuf; m_rcsr &= ~0200; return v; }
 		case 4: return m_xcsr;
 		default: return 0;
@@ -77,15 +86,22 @@ public:
 	bool host_rx_empty() const { return m_rxq.empty(); }
 	void host_tx_direct(u8 c) { if (on_tx) on_tx(c); }
 	std::function<void(u8)> on_tx;
+	// what the peer drives: LINE_DTR | LINE_RTS (none when nothing is plugged in)
+	enum { LINE_DTR = 1, LINE_RTS = 2 };
+	std::function<int()> peer_lines;
+	bool cts_out() const { return m_rcsr & 1; }   // RCSR bit 0 (NCTS), the port's own CLEAR TO SEND
 
 	// interrupts: returns vector and clears the request, or -1
 	bool irq() const { return m_rx_irq || m_tx_irq; }
 	int ack() {
 		if (m_rx_irq) { m_rx_irq = false; return m_vector; }
-		if (m_tx_irq) { m_tx_irq = false; return m_vector + 4; }
+		if (m_tx_irq) { m_tx_irq = false; return m_vector + (printer_vector ? 0 : 4); }
 		return -1;
 	}
 
+	// LAV-11 printer strapping (061-2355 §1 "Interrupt Control", §2 "Port Mode Selection"):
+	// the transmitter interrupts at the port's base vector, as DEC's LAV-11 does at 200
+	bool printer_vector = false;
 	int char_cycles = 4700;   // ~1.04 ms (9600 baud) at tek8501::CPU_HZ
 
 private:

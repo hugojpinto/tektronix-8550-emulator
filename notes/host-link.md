@@ -54,4 +54,4 @@ Each block prints `*BLOCK RECEIVED AT: addr count` or `*BLOCK SENT AT: addr`.
 - The modem-control lines (DCD/CTS always asserted) and the MODE SELECT switch.
 - Parity and framing errors: the line is 8-bit clean.
 - ACIA overruns: received bytes wait until the program reads them. Losses like the HOST one above happen in DOS/50's own buffering.
-- The 8301's AUX port and the 8501's printer/aux ports still have no peer.
+- The other ports take the same kinds of peer: `-aux8301`, `-aux8501` and `-printer` (see `notes/8501.md` for the 8501 ports' modem lines and the printer vector). The 8301 diagnostic's display option 2 ("DISPLAY ON TERMINAL & J103 AUX PORT PRINTER") sends its log to the 8301 AUX port.

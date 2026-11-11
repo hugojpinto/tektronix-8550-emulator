@@ -77,6 +77,7 @@ public:
 	// ODT (KD11 console microcode) -- active while cpu.halted()
 	void odt_char(u8 c);
 	void odt_enter();
+	bool halt_switch = false;  // front-panel HALT/RUN at HALT: ODT's P and G step one instruction
 
 private:
 	std::vector<u16> m_ram;            // words

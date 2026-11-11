@@ -1,32 +1,40 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
-// Non-blocking socket line for the 8301 REMOTE port.
+// Non-blocking lines for the lab's RS-232 ports.
 #include "host/serial_link.h"
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
 
-bool serial_link::open(const std::string &spec, std::string &err)
+bool serial_link::open(const std::string &spec, std::string &err, const std::string &name)
 {
-	m_spec = spec;
+	m_spec = spec; m_name = name;
+	const char *nm = m_name.c_str();
+	if (spec == "loop") { m_loop = true; return true; }
+	if (spec.rfind("file:", 0) == 0) {
+		m_file = fopen(spec.c_str() + 5, "ab");
+		if (!m_file) { err = "cannot open " + spec.substr(5); return false; }
+		return true;
+	}
 	if (spec.rfind("listen:", 0) == 0) {
 		int port = atoi(spec.c_str() + 7);
 		m_listen = net::listen_local(port, err);
 		if (m_listen == net::BAD) return false;
-		fprintf(stderr, "[remote port: listening on 127.0.0.1:%d]\r\n", port);
+		fprintf(stderr, "[%s: listening on 127.0.0.1:%d]\r\n", nm, port);
 		return true;
 	}
-	if (spec.rfind("unix:", 0) != 0 && spec.rfind("tcp:", 0) != 0) { err = "remote spec must be tcp:HOST:PORT, listen:PORT or unix:PATH"; return false; }
+	if (spec.rfind("unix:", 0) != 0 && spec.rfind("tcp:", 0) != 0) { err = name + ": the spec must be tcp:HOST:PORT, listen:PORT, unix:PATH, file:PATH or loop"; return false; }
 	m_fd = net::connect_spec(spec, err);
 	if (m_fd == net::BAD) return false;
 	net::set_nonblock(m_fd);
-	fprintf(stderr, "[remote port: connected to %s]\r\n", spec.c_str());
+	fprintf(stderr, "[%s: connected to %s]\r\n", nm, spec.c_str());
 	return true;
 }
 
 serial_link::~serial_link()
 {
 	if (m_fd != net::BAD) { flush(); net::close(m_fd); }
+	if (m_file) fclose(m_file);
 	net::close(m_listen);
 }
 
@@ -37,11 +45,13 @@ void serial_link::accept_pending()
 	if (fd == net::BAD) return;
 	m_fd = fd;
 	m_out.clear();                // what was sent while nobody listened is lost, like a cable not plugged in
-	fprintf(stderr, "[remote port: peer connected]\r\n");
+	fprintf(stderr, "[%s: peer connected]\r\n", m_name.c_str());
 }
 
 void serial_link::send(u8 c)
 {
+	if (m_loop) { m_back.push_back(c); m_tx++; return; }
+	if (m_file) { fputc(c, m_file); fflush(m_file); m_tx++; return; }
 	if (m_fd == net::BAD) return; // no cable: the byte goes nowhere
 	m_out.push_back(c);
 	m_tx++;
@@ -71,6 +81,6 @@ long serial_link::read_some(u8 *buf, size_t n)
 
 void serial_link::drop(const char *why)
 {
-	fprintf(stderr, "[remote port: %s]\r\n", why);
+	fprintf(stderr, "[%s: %s]\r\n", m_name.c_str(), why);
 	net::close(m_fd); m_fd = net::BAD; m_out.clear();
 }
