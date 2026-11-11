@@ -2,7 +2,7 @@
 emu/build/
 emu/build-win/
 *.dSYM/
-# large scans / photos: re-downloadable from bitsavers (see FEASIBILITY.md)
+# large scans / photos: re-downloadable from bitsavers (see docs/history/FEASIBILITY.md)
 *.pdf
 *.PDF
 *.jpg

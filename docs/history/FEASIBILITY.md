@@ -1,5 +1,7 @@
 # Tektronix 8550 MDL — Emulation Feasibility Study
 
+> **Historical document.** This is the study that started the project, on 2026-11-10. Its verdict held and its roadmap has been carried out, including the "optional" floppy controller at chip level. What happened since is in [CHANGELOG.md](../../CHANGELOG.md), what remains in [ROADMAP.md](../../ROADMAP.md), and the current wish list in the [README](../../README.md#wanted). Paths below are as they were then.
+
 *2026-11-10. Sources: files in `inputs/`, bitsavers.org (`pdf/tektronix/85xx/`, `bits/Tektronix/`), TekWiki, vcfed thread 1259403. Everything downloaded is in `sources/`.*
 
 ## Verdict

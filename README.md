@@ -42,7 +42,8 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 | [emu/README.md](emu/README.md) | every option, the CT8500 key map, GUI hotkeys |
 | [notes/](notes/) | register-level hardware notes from reverse engineering: 8301, 8501, the floppy controller, RTPA, TTA, prototype and host links |
 | [docs/screenshots/](docs/screenshots/) | an edit → assemble → link → run session, and the diagnostics |
-| [PLAN.md](PLAN.md), [FEASIBILITY.md](FEASIBILITY.md) | project history and the original feasibility study |
+| [ROADMAP.md](ROADMAP.md), [CHANGELOG.md](CHANGELOG.md) | what's left to do, and what was done when |
+| [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md) | the study that started the project (fulfilled) |
 | [CLAUDE.md](CLAUDE.md) | orientation for contributors and coding agents: layout, conventions, regression checks |
 
 ## Gallery
@@ -69,6 +70,20 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 - the CT8500 character ROM: the screen uses a Tektronix 308 ROM upper case plus a matching hand-drawn lower case;
 - the firmware of the Z80 and 8085 emulator boards: emulated at high level from reverse engineering.
 
+## Wanted
+Help preserve the 8550: if you have any of these, please [open an issue](https://github.com/hugojpinto/tektronix-8550-emulator/issues).
+
+| Item | Why |
+|---|---|
+| **Firmware PROM of the Z80 emulator processor board** (512 bytes, at F800–F9FF of program memory) | it is emulated from reverse engineering; the board's own test fails only its PROM checksum, 07/00D0 |
+| **Firmware PROM of the 8085 emulator processor board** (8300E06) | the same: test 06/00D0, expected checksum 5716 |
+| **Firmware of the 8550F30 PROM programmer's 8085A controller** | its controller is simulated |
+| **The CT8500 character ROM**, and its service manual 061-2431-00 | the screen font is reconstructed from a Tektronix 308 ROM plus a hand-drawn lower case |
+| **A DOS/50 V2.x system disc** (part 062-5xxx) and the **DOS/50 System Users Manual** 070-3457 / 070-3936 | only DOS/50 V1.0 survives |
+| **Dumps of the 8301 bipolar PROMs** 160-0884-00, 160-0822-00, 160-0727-00 | their decoding is emulated from the schematics |
+| **The 6800, 8080 or 8086 emulator boards**, their firmware and support discs, and service manuals for any emulator board | needed to emulate them |
+| **Clear, straight-on photos of an 8301's and an 8501's front panels** | the panel artwork is drawn from a catalogue photo and photos of related units |
+
 ## Repository layout
 ```
 emu/         the emulator (C++17): cpu/ cores, machine/ boards, system/ the lab, host/ terminal and links,
@@ -78,7 +93,8 @@ notes/       hardware notes and ROM disassembly listings
 docs/        tutorials, architecture, screenshots
 roms/        ROM images (see roms/MANIFEST.md)
 disks/       working disk images (DOS/50 with a repaired HELP file; rebuild with tools/make_system_helpfix.py)
-sources/     original material: disk images, manual OCR text, photos (PDF scans and photos are not committed)
+sources/     original material: disk images, manual OCR text (PDF scans and photos are not committed)
+docs/history/  the feasibility study that started the project
 reference/   the MAME source files the CPU cores and devices were ported from
 ```
 

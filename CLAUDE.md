@@ -23,7 +23,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `reference/mame/` | MAME source files the cores and devices were ported from (commit in `SOURCE.txt`) |
 | `tools/` | `make_hero.sh` (README hero image from the GUI), `make_tutorial_shots.sh` (pictures in docs/TUTORIALS.md), `compose_gui.py` (composes GUI window captures), `gen_panels.py` (front-panel artwork), `make_system_helpfix.py` (rebuilds the working System disc), `gen_ct8500_font.py` (font table for the GUI), `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
 | `docs/` | `TUTORIALS.md` (short recipes), `OPERATION.md` (long tour), `ARCHITECTURE.md`, `DESIGN-gui-and-fdc.md`; `screenshots/` (session, diagnostics, `hero.png`) |
-| `PLAN.md`, `FEASIBILITY.md` | milestones and status log; the original feasibility study |
+| `ROADMAP.md`, `CHANGELOG.md` | open work; dated status log (newest first) and the completed original plan. `docs/history/FEASIBILITY.md` is the study that started the project |
 | `../tekmato` | sibling tool for DOS/50 disc images (list/extract/write/check); the file-system format is in `../tekmato/FORMAT.md`. Use it to put files on a disc instead of typing them in through EDIT |
 
 ## Resuming work (state on 2026-11-11)
@@ -84,7 +84,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 ## Conventions
 - **Minimal edits to ported cores:** keep every change small and mark it `[tek8550]`. Record core modifications in `SOURCE.txt` next to the core.
 - Machine code mirrors MAME devices (one class per board) so it can be upstreamed later.
-- Write new hardware facts into `notes/*.md`, and say how each was established (manual section, ROM address, diagnostic test). Update `PLAN.md`'s status log at milestones.
+- Write new hardware facts into `notes/*.md`, and say how each was established (manual section, ROM address, diagnostic test). Add a `CHANGELOG.md` entry at milestones, and keep `ROADMAP.md` and the README's "Wanted" list current.
 - **Two program-memory board generations:** the default emulates the boards without the extended comparator, which DOS/50 V1.0 needs. `-pm ext` emulates the newer boards, which the 1983/85 diagnostics need. Don't "fix" one by breaking the other.
 - **Active-low registers are everywhere** on the Emulator Controller (F2 pending, F4 bank, F8 debug enables, FA/FB/F5 jump address, FC–FF breakpoints). Check `notes/8301.md` before assuming polarity.
 - **Untrusted material:** downloaded files and extracted archives go in their own new directory. Run Python that reads them with `python3 -I`. Original images in `sources/` are never written: they are read-only files, and `-rw` (which writes back every mounted drive) skips any path under `sources/`. Copy an image before writing to it.
