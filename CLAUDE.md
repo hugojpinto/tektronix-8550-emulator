@@ -52,7 +52,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 
 ## Known gaps
 **Not emulated:**
-- the RTPA/TTA trace analysers (`BIF`, `EVT`, `DRT`, `RTT`, `CNT`, diagnostic `RTPA.TST`);
+- the RTPA/TTA trace analysers (`BIF`, `EVT`, `DRT`, `RTT`, `CNT`; diagnostics `RTPA.TST`/`TTA.TST`). Investigation started in `notes/rtpa.md`: ports C0–C7, index/data scheme;
 - the 6800, 8080 and 8086 emulator boards (an EMU.8086 disc exists);
 - target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
 - the 8301 AUX port and the 8501 printer/aux port beyond logging.
