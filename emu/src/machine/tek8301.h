@@ -33,7 +33,7 @@ extern "C" {
 #include <string>
 #include <functional>
 
-class z80_slave;
+class z80_slave; class z80_board; class language_processor;
 
 class tek8301 : public s2650_device::bus_interface
 {
@@ -85,9 +85,10 @@ public:
 	z80 ep;   // Z80 emulator processor board (E3) -- firmware high-level emulated
 	// the Emulator Controller's slaves: emulator processor boards and the Language Processor
 	// (machine/emulator_board.h); the Emulator Controller's behaviour around them is slave_run
-	friend class emulator_board; friend class ep8085_board; friend class z80_slave;
+	friend class emulator_board; friend class ep8085_board; friend class z80_slave; friend class z80_board; friend class language_processor;
 	ep8085_board m_ep85{*this};               // 8085 board (8300E06, control port E5)
-	std::unique_ptr<z80_slave> m_slave_ep, m_slave_lp;   // Z80 board (E3), Language Processor (E7)
+	std::unique_ptr<z80_board> m_slave_ep;              // Z80 board (E3)
+	std::unique_ptr<language_processor> m_slave_lp;     // Language Processor (E7)
 	ep8085_board &board8085() { return m_ep85; }
 	emulator_board *active_slave() const;      // the one the Emulator Controller drives, if any
 	void slave_run(emulator_board &b, int cycles2650);

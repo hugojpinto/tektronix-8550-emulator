@@ -19,38 +19,66 @@ enum {
 constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_WP) | 0xffff0000u;
 }
 
-// The Z80s the Emulator Controller drives: the Z80 emulator processor board (8300E01,
-// control port E3, firmware high level in ep_firmware, prototype pins in modes 1/2) and the
-// Language Processor (E7), which runs DOS/50's tools. Both use the 8301's Z80 bus callbacks.
+// The Z80s the Emulator Controller drives share their processor's handling (z80_slave):
+// the Language Processor (E7), which runs DOS/50's tools, and the Z80 emulator processor
+// board (8300E01, control port E3), which has firmware, an NMI and prototype pins. Both
+// use the 8301's Z80 bus callbacks, which is why the z80 state itself lives in tek8301.
 class z80_slave : public emulator_board
 {
 public:
-	z80_slave(tek8301 &m, z80 &c, bool board) : emulator_board(m), z(c), is_board(board) {}
-	const char *name() const override { return is_board ? "Z80" : "LP"; }
-	bool enabled() const override { return is_board ? mdu.ep_enabled() : (mdu.m_e7 & 0x80) != 0; }
-	double clock_hz() const override { return !is_board && (mdu.m_e7 & 0x04) ? 2.5e6 : 4e6; }   // the LP: 2.5 or 4 MHz
-	const emulator_specifics *specifics() const override { return is_board ? mdu.m_spec_z80.get() : nullptr; }
+	z80_slave(tek8301 &m, z80 &c) : emulator_board(m), z(c) {}
 	bool rtpa_visible() const override { return true; }   // the RTPA watches either
-	bool tta_visible() const override { return is_board; }
 	void forced_reset() override { z80 keep = z; mdu.z80_setup(z); z.read_byte = keep.read_byte; }
+	void step() override { z80_step(&z); }
+	u16 pc() const override { return z.pc; }
+	bool halted() const override { return z.halted; }
+	u64 cycles() const override { return z.cyc; }
+protected:
+	z80 &z;
+	// forced jump: FA/FB/F5 are loaded active-low (DOS/50 writes FB:FA = FEFF to start a
+	// program at 0100, and FF:07F9 for the board firmware at 00:F806)
+	void jump(u16 target) {
+		if (mdu.ep_trace) fprintf(stderr, "[%.3f forced jump %02x:%04x -> %s]\n", mdu.m_cycles / tek8301::CPU_HZ, u8(~mdu.m_f5), target, name());
+		z.halted = false;
+		z.pc = target;
+	}
+};
+
+class language_processor : public z80_slave
+{
+public:
+	using z80_slave::z80_slave;
+	const char *name() const override { return "LP"; }
+	bool enabled() const override { return (mdu.m_e7 & 0x80) != 0; }
+	double clock_hz() const override { return (mdu.m_e7 & 0x04) ? 2.5e6 : 4e6; }
+	bool tta_visible() const override { return false; }
+	bool forced_jump(u16 target) override { jump(target); return false; }
+	bool forced_interrupt() override { return false; }
+};
+
+class z80_board : public z80_slave
+{
+public:
+	using z80_slave::z80_slave;
+	const char *name() const override { return "EP"; }
+	bool enabled() const override { return mdu.ep_enabled(); }
+	double clock_hz() const override { return 4e6; }
+	const emulator_specifics *specifics() const override { return mdu.m_spec_z80.get(); }
+	bool tta_visible() const override { return true; }
 	bool forced_jump(u16 target) override
 	{
-		// jump address registers FA/FB/F5 are loaded active-low (DOS/50 writes FB:FA = FEFF
-		// to start a program at 0100, and FF:07F9 for the board firmware at 00:F806)
 		tek8301 &m = mdu;
-		if (m.ep_trace) fprintf(stderr, "[%.3f forced jump %02x:%04x -> %s]\n", m.m_cycles / tek8301::CPU_HZ, u8(~m.m_f5), target, is_board ? "EP" : "LP");
-		z.halted = false;
 		// the TTA starts a run; GO with a new address (not the stop address) resets its counters
-		if (is_board && target < 0xf800 && m.tta_board.target_watch()) m.tta_board.run_start(target != m.m_lp_pc_next, z.cyc);
-		z.pc = target;
-		if (is_board && target >= 0xf800) { m.ep_firmware(target); return true; }   // board firmware space
+		if (target < 0xf800 && m.tta_board.target_watch()) { z.halted = false; m.tta_board.run_start(target != m.m_lp_pc_next, z.cyc); }
+		jump(target);
+		if (target >= 0xf800) { m.ep_firmware(target); return true; }   // board firmware space
 		return false;
 	}
 	bool forced_interrupt() override
 	{
 		// the emulator processor's NMI, which also wakes it from HALT
 		tek8301 &m = mdu;
-		if (is_board && m.m_fi_pending && m.cpu.halted() && m.m_lp_live && !m.m_ec_pend) {
+		if (m.m_fi_pending && m.cpu.halted() && m.m_lp_live && !m.m_ec_pend) {
 			m.m_fi_pending = false;
 			z80_gen_nmi(&z);
 			if (z.halted) z80_step(&z);          // halted: the NMI is taken at the next M1 time
@@ -60,7 +88,7 @@ public:
 	void pre_step() override
 	{
 		tek8301 &m = mdu;
-		if (!is_board || !m.proto_mode()) return;
+		if (!m.proto_mode()) return;
 		m.target->poll(z.cyc);
 		// v3: RESET from the target (reset button, power-on) resets the emulator
 		// processor on its rising edge; this does not send 'Z' back to the target
@@ -72,21 +100,14 @@ public:
 		m.m_nmi_prev = n;
 		if (m.target->irq() && z.iff1) z80_gen_int(&z, m.target->irq_vector());
 	}
-	void step() override { z80_step(&z); }
-	void post_step() override { if (is_board && mdu.proto_mode()) z.cyc += mdu.target->take_wait(); }   // v3: target WAIT states
-	u16 pc() const override { return z.pc; }
-	bool halted() const override { return z.halted; }
-	u64 cycles() const override { return z.cyc; }
-private:
-	z80 &z;
-	bool is_board;
+	void post_step() override { if (mdu.proto_mode()) z.cyc += mdu.target->take_wait(); }   // v3: target WAIT states
 };
 
 tek8301::tek8301()
 	: cpu(*this), m_sysram(0x10000, 0), m_progmem(0x10000, 0), m_par(0x10000, 0)
 {
-	m_slave_ep = std::make_unique<z80_slave>(*this, ep, true);
-	m_slave_lp = std::make_unique<z80_slave>(*this, lp, false);
+	m_slave_ep = std::make_unique<z80_board>(*this, ep);
+	m_slave_lp = std::make_unique<language_processor>(*this, lp);
 	lp_reset();
 	prom.present = false;      // option; -prom on fits it
 	rtpa_board.clock = &m_seconds;
