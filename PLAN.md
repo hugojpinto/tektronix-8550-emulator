@@ -42,6 +42,12 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - CT8500 terminal behaviour (for ACE), emulator-processor boards (8085/Z80), PROM programmer, upstreaming to MAME.
 
 ## Status log
+- 2026-11-11: **RTPA.** The Real-Time Prototype Analyzer is emulated (`-rtpa`), reverse-engineered from RTPA.TST's table-driven tests and DOS/50's command overlays:
+  - two comparators, two 8253s, pass/delay/arm/limit sequencing;
+  - a 128-entry trace with a run tag;
+  - PC latches and INT 29.
+
+  RTPA.TST options 0–6 pass, and DOS/50 EVT/BIF/CNT/RTT/DRT work. The trace exposed the Z80 core reading 16-bit operands high byte first (fixed).
 - 2026-11-11: **Host link.** The 8301 REMOTE port is connected (`-remote`, `serial_link`), with a reference host `tools/host_link.py`. DOS/50 COMM V4.0 does all four general-host transfers: Tekhex download and upload, and ASCII download and upload of files. Two emulated labs exchange a Tekhex file with HOST/COMM. Findings (`notes/host-link.md`): COMM discards the host's echo of each line it sends, including its ACKs; and HOST needs human typing speed.
 - 2026-11-11: **DOS/50 file system + tekmato.** Decoded the 8501 file system from the disc collection and from image diffs around DOS/50 commands in the emulator. The new sibling tool `../tekmato` (tomato-style CLI) reads and writes it, and DOS/50 reads, writes, creates and deletes on volumes it makes. Findings:
   - DOS/50's calendar has twelve 31-day months;

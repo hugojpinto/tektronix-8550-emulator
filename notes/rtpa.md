@@ -1,55 +1,111 @@
-# RTPA (Real-Time Prototype Analyzer) and TTA: reverse-engineering notes
+# RTPA (Real-Time Prototype Analyzer)
 
-Status: **investigation started, nothing emulated yet.** The diagnostic reports "NO RTPA BOARD DETECTED".
+**Status:** emulated (`-rtpa`, `emu/src/machine/rtpa.{h,cpp}`).
+- **Diagnostic:** RTPA.TST V1.2 options 0–6 pass. That's all 16 event tests, the counter test, both counter options and the trace-buffer option, over hundreds of iterations. Automatic System Verification with `-rtpa` completes with no failures.
+- **DOS/50:** `EVT`, `BIF`, `CNT`, `RTT` and `DRT` work.
+- **Not emulated:** the TTA (Trigger Trace Analyzer, Select mode 6).
 
-## Sources
-- **8301 service manual** (070-2976-01):
-  - the RTPA is an option, tested in Automatic System Verification ("RTPA TEST", error code 04/yyyy);
-  - interrupts: **INT 29** "TTA/RTPA" (vector 003A), **INT 30** (003C), **INT 31** (003E). Signal list: DBG INT 29(L) and DBG INT 30(L) are debug interrupts provided by the RTPA; SLV INOP(L) is issued by the RTPA to reset active lines.
-- **8540 service manual** and **OS/40 manual** (`sources/bitsavers/manuals/8540/`): the 8540's **Trigger Trace Analyzer** (TTA), a later, larger relative:
-  - a Data Acquisition Probe (8 test clips), an interface panel (event qualifier BNC in, trigger BNC out) and two boards;
-  - input data: address, data, 8 probe bits, up to 11 emulator bus-status bits, the qualifier and 4 counter outputs (64 bits);
-  - four events, four triggers (event AND counter: break, count, or signal), four counters, and an acquisition memory of 255 bus transactions;
-  - OS/40 commands AD, DATA, BUS, PRO, QUA, CTR, EVE, COU, BRE, TS, TCLR, TRA.
-- **DOS/50 V1.0 commands for the RTPA** (HELP text): `BIF` (RTPA breakpoint condition), `EVT` (events 1 and 2: `EVT {1|2} {option operator value}…`), `CNT` (units of the general-purpose and delay counters), `RTT` (which transactions are stored), `DRT` (display the real-time trace buffer). Their overlays are in `8301/COMMANDS`.
-- **Diagnostics 1984** (`8550_DIAG.IMD`): Select mode **4 = RTPA** (`RTPA.TST`, "8301 RTPA DIAGNOSTIC VERSION 1.2") and **6 = TRIGGER TRACE ANALYZER** (`TTA.TST`), so the TTA was also an 8550 option. RTPA.TST's options:
-  1. events
-  2. event 1
-  3. event 2
-  4. counter 1
-  5. counter 2
-  6. trace buffer
-  7. probe
+No register documentation exists. Everything below was established from:
+- **the diagnostic** `RTPA.TST` on `8550_DIAG.IMD` (Select mode 4). It is table-driven: each of its 16 test records holds the register setup, the expected results and a description (record table at 2ABD);
+- **DOS/50 V1.0's command overlays** in `8301/Z80/`: `RTT`'s keyword/value table, the `GO` overlay's INT 29 handler at 681E, and `DRT`'s display loop;
+- **the 8301 service manual:** interrupt numbers, and the DBG INT 29/30 and SLV INOP/OPREQ signals.
 
-## RTPA.TST
-RTPA.TST loads at 2000. To get a listing, dump it from memory while it waits at the display menu: `-type 31 '2\r' -type 41 '4\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -dump F`, then `build/dasm s2650 F.8301 0 2000 6000`.
+How to reproduce:
+- **Runs:** `TEK_RTPATRACE=1` logs every port access, comparator match and break.
+- **Diagnostic listing:** dump it while it waits at the display menu (`-type 31 '2\r' -type 41 '4\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -dump F`), then `build/dasm s2650 F.8301 0 2000 6000`.
+- **Its Z80 test program:** `build/dasm z80 F.prog 0 0 40`, from a dump taken during a test.
 
-Test descriptions it prints, which give the event model:
-```
-EVT1 8-BIT ADDRESS EQUAL TEST        EVENT ADDR.=001A DATA=00 T=00 TM=00 BUS=MNIO+F    COUNT SELECTED = FETCH
-EVENT1 16-BIT ADDRESS AND 8-BIT DATA TEST   ADDR.=0009 DATA=00 T=00 TM=77 BUS=MNIO+F
-EVT2 16-BIT ADDRESS AND 8-BIT DATA   ADDR.=5555 DATA=CC T=00 TM=00 BUS=MNIO+WNR
-EVENT1/2 16-BIT ADDRESS LESS THAN / GREATER THAN TESTS
-EVENT1 16-BIT ADDRESS CONTROL LINES TEST    BUS=MNIO+F+F0(H)
-EVENT1 PASS1 TEST …   COUNTER 0 WAS … SHOULD BE 7FFF   COUNTER 2 WAS … SHOULD BE AAA9
-```
+## What the board does
+The board watches the **slave bus**: the emulator processor, or the Language Processor, since RTPA.TST runs its test program on the LP with E3 = 00.
+- **Events:** two event comparators.
+- **Counters:** two Intel **8253** counter/timers, one per channel, providing the pass count, the general-purpose counter and the delay.
+- **Trace:** a 128-transaction trace RAM.
+- **Results:** PC latches and a status byte.
+- **Break:** on a trigger it stops the processor (SLV OPREQ) after the current instruction and raises **DBG INT 29**, which is vector 003A ("TTA/RTPA (INT 29)", diagnostic number 35).
 
-## Ports C0–C7: what is established so far
-| Port | Use seen in RTPA.TST |
+## Ports C0–C7
+| Port | Write | Read |
+|---|---|---|
+| C0 | strobe: clocks channel 1's 8253 counters 0 and 1. The arm sequence uses it to load the pass and G.P. counts | — |
+| C1 | trace qualifier (RTT): 01 F fetch, 02 I I/O, 04 R read, 08 W write, 10 M memory, 00 ALL (IR 06, IW 0A, MR 14, MW 18) | trace buffer, 6 bytes per entry (below) |
+| C2 | trigger control (BIF); writing it re-arms | status: 10 board present (the diagnostic's presence test), 08 stopped, 01 / 02 event 1 / 2 fired |
+| C3 | bit 3 **run enable** (DOS/50 clears it after a break, freezing the trace); bit 4 channel 2 pass enable, whose rising edge also strobes channel 2's counters 0 and 1; bit 5 channel 2 delay enable; bits 2–0 **G.P. counter source** (CNT): 0 evt1, 1 evt2, 2 trce (stored entries), 3 ftch, 4 cycl (bus cycles), 5 emul (processor clocks), 6 msec, 7 usec | 8253 counter selected by C6, low byte then high byte |
+| C4 | comparator RAM byte at index C6 (bit 7 of C6 ignored) | PC-LAST low, inverted |
+| C5 | 8253 register at index C6 = 2·A + channel: A = 0 pass count, 1 G.P. counter, 2 delay, 3 control word. DOS/50 and the diagnostic write `34 72 B0` / `34 72 B4`: counter 0 mode 2, counter 1 mode 1, counter 2 mode 0 / 2 | PC-LAST high, inverted |
+| C6 | index | PC-NEXT low, inverted |
+| C7 | compare mode at index C6, auto-incrementing: [0/1] address mode of event 1/2: 02 low byte equal (`:`), 04 equal (`=`), 08 ≤ (`<`), 01 ≥ (`>`), 00 any; [2/3] data mode: 02 equal | PC-NEXT high, inverted |
+
+**Comparator RAM** (C4): 8 fields per event, at index 2·field + event:
+
+| Field | Contents | Stored |
+|---|---|---|
+| 0 | address low | inverted |
+| 1 | data | inverted |
+| 2 | address high | inverted |
+| 3 | probe (T) | inverted |
+| 4 | bus value | as is |
+| 5 | probe mask | inverted |
+| 6 | bus mask | as is |
+| 7 | TM | as is |
+
+Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inactive high). A cycle matches when (cycle & mask) = (value & mask). The comparisons are inclusive: EVT2 "less than 5555" fires on the write to 5555.
+
+**C2 (BIF):**
+
+| Value | Meaning |
 |---|---|
-| C2 | **Presence:** write 00, read: **bit 4 = 1 means the board is present** (21BE–21C6, retried up to a count, then "NO RTPA BOARD DETECTED"). Also read as a status with `& 1F` (287A). Written 10 / 00 / control values |
-| C6 | **index** of an internal register. Read back too |
-| C5 | **data**, auto-incrementing after C6. The event-setup routine (2759–27A8) writes C2 = C3 = 10, then streams a 16-byte table as C6 index, C5 data, C5 data… |
-| C4, C7 | data ports addressed through C6 (27B1–27D0: 8 bytes to C4 XORed with a mask table, then 2 bytes to C7) |
-| C3 | control register (written 10 / 00 / pulsed). Read after C6 = 01/02 for counter values (expected 7F/FF, A9/AA) |
-| C0 | written 01 (twice in a row in the counter test, so probably a strobe or arm) |
-| C1 | read in the probe test and XORed with expected patterns: the probe inputs |
+| 01 | event 1 breaks |
+| 08 | event 2 breaks |
+| 09 | either breaks (IND) |
+| 03 (02 + 01) | LIM: both in the same cycle |
+| 0C (04 + 08) | ARM: event 1 arms event 2, and the G.P. counter counts once armed |
+| 10 | channel 1 pass count |
+| 20 | channel 1 delay |
 
-Read-backs of C4–C7 are compared after `EORI FF`: those registers read inverted (289B–28D3).
+**8253 behaviour that the tests pin down:**
+- **Loading:** a count loads on the first clock after it is written; later clocks count down.
+- **Pass count** (mode 2, clocked by the channel's event occurrences): the trigger is its output's rising edge at reload, i.e. on the N-th occurrence, given the load strobe at arm.
+- **Delay** (clocked by fetches after the event):
+  - mode 0 triggers when the count reaches zero;
+  - mode 2 triggers at its reload edge;
+  - DELAY1 (12) fires on the 13th fetch after the event, and DELAY2 (15) on the 16th.
+- **G.P. counter:** counter 1 of channel 1. It is loaded with FFFF and counts down, so it reads back inverted as the count.
+- **msec:** channel 2's counter 1 prescales a 1 µs time base. DOS/50 loads it with 1000.
 
-## Next steps
-1. Annotate RTPA.TST fully: the event table layout (index map for ADDR, DATA, T, TM, BUS and the compare mode), counter control, trace-buffer reads, how INT 29/30 are raised, and what C0 does.
-2. Disassemble the DOS/50 overlays `EVT`, `BIF`, `CNT`, `RTT` and `DRT` for the user-level semantics and register use.
-3. Implement `rtpa` in `tek8301`: ports C0–C7, comparators on every emulator-processor bus cycle (the EP bus hooks already used for breakpoints), counters, the trace buffer, and INT 29/30 to the Emulator Controller.
-4. Pass RTPA.TST (all 7 options), then run a DOS/50 EVT/BIF/DRT session.
-5. TTA: `TTA.TST` (Select 6) and the OS/40 TTA model, later.
+**PC latches:**
+- PC-LAST is the start address of the instruction during which the trigger occurred;
+- PC-NEXT is the address after it;
+- the processor stops after that instruction.
+
+**Trace entries:** read through C1, oldest slot first, from a 128-slot circular RAM that starts at the write pointer, so the newest entry comes last. The six bytes per entry are:
+
+| Byte | Contents | Read |
+|---|---|---|
+| 1 | address low | inverted |
+| 2 | address high | inverted |
+| 3 | bus byte | as is |
+| 4 | data | inverted |
+| 5 | extension | inverted |
+| 6 | probe | inverted |
+
+The bus byte's bits 2–0 are the cycle type. Bits 7–3 are a **run tag**: the upper bits of event 1's bus-value register, which DOS/50 steps by 08 at every `GO`. `DRT` lists only the entries whose tag matches the last run (DRT 6181, against 6D99).
+
+## DOS/50 integration
+- **F2 bit 2:** an RTPA break also sets the Emulator Controller's pending register F2 **bit 2**, which is read active low. DOS/50's `GO` handler for INT 29 (681E) tests it before reading C2. It also latches PC-next as a breakpoint does, so `DS` resumes after the instruction.
+- **E3 bit 4** ("processor inactive") is set while the RTPA holds the processor.
+- **Release:** the hold releases on the next F9 command, like an SVC stop.
+
+Verified sessions (`SEL Z80`, `EM 0`, program patched with `P`):
+- `EVT 1 A=0105 B=F`, `BIF 1`, `GO 100` → `0105 <BREAK TRIG1>`, with `DS` showing PC = 0106.
+- `DRT` → the run's transactions with mnemonics and bus letters. After `RTT MW` only the memory write remains.
+- `CNT F/C/E/U/T/1` on a 10-pass loop gives 42 fetches, 54 cycles, 269 clocks, 67 µs, 54 trace entries and 1 event, exactly as computed by hand.
+- `BIF 2` with a non-matching event 2 doesn't break. `BIF ARM` breaks on event 2 only after event 1.
+
+## Found on the way
+The RTPA trace showed our Z80 core reading 16-bit operands high byte first. `rw()` used two calls in one expression, whose order C leaves unspecified. It now reads low then high, and PUSH writes high then low, as a real Z80 does (`[tek8550]` in `cpu/z80/superzazu`).
+
+## Not modelled
+- **Probe (option 7):** RTPA.TST option 7 needs the Data Acquisition Probe clipped to A0–A7 and CQ to SLVOP, a physical loopback. The probe inputs read 00, and the `T`/`P` probe fields, `TM` and `XD` are stored but not compared. `EXTERNAL` in `DRT` is always 00000000.
+- **Interrupts and lines:** INT 30/31 and SLV INOP.
+- **BIF modes:** `FRZ`, and pass/delay combined with ARM/LIM, aren't covered by the tests.
+- **The TTA** (Trigger Trace Analyzer, `TTA.TST`, Select mode 6), the later analyser, is not emulated.

@@ -120,3 +120,4 @@ The Z80 emulator processor board is emulated (its firmware at high level, see `n
   memory, I/O and interrupts go to it. A reference target with RAM and a console UART is `../tools/proto_target.py`.
   Protocol and details: `../notes/prototype-link.md`.
 - `-remote tcp:HOST:PORT | listen:PORT | unix:PATH` connects the 8301's REMOTE port (DOS/50 `COMM` and `HOST`) to a host program. `-remote-baud N` sets the REMOTE BAUD switch (default 2400). `tools/host_link.py` is a reference host with Tekhex and ASCII transfers. Two `tek8550`s can also be linked, one running HOST and the other COMM. See `notes/host-link.md`.
+- `-rtpa` fits the Real-Time Prototype Analyzer (8301 ports C0–C7): events, break conditions, counters and the 128-entry real-time trace. DOS/50 `EVT`, `BIF`, `CNT`, `RTT` and `DRT` work, and RTPA.TST options 0–6 pass. `TEK_RTPATRACE=1` traces it. See `notes/rtpa.md`.

@@ -136,7 +136,7 @@ void rtpa::occurrence(int e, bool &hit)
 {
 	bool pass = e == 0 ? (m_c2 & 0x10) : (m_c3 & 0x10);
 	bool delay = e == 0 ? (m_c2 & 0x20) : (m_c3 & 0x20);
-	if ((m_c3 & 3) == e) clock_gp(gp_gate());              // G.P. counts this channel's events
+	if (gp_source() == e) clock_gp(gp_gate());             // G.P. counts this channel's events
 	if (pass && !m_pit[e].c[0].clock()) return;
 	if (e == 0 && (m_c2 & 0x04)) { m_armed = true; return; } // ARM: event 1 arms event 2
 	if (delay) { m_delay[e] = true; return; }
@@ -148,7 +148,9 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 {
 	if (m_stopped || !(m_c3 & 0x08)) return;   // C3 bit 3: analyser running (DOS/50 clears it after a break: the trace freezes)
 	u8 cyc = u8(0xf0 | (io ? 0 : 0x01) | (write ? 0x02 : 0) | (fetch ? 0x04 : 0));
+	if (gp_source() == 4) clock_gp(gp_gate());                 // every bus cycle
 	if (traced(cyc)) {
+		if (gp_source() == 2) clock_gp(gp_gate());             // every stored trace entry
 		// bus byte: cycle bits, plus the upper bits of event 1's bus-value register as a
 		// run tag (DOS/50 steps it by 08 at every GO; DRT shows the entries of the last run)
 		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8((cyc & 0x07) | (m_ram[8] & 0xf8)), 0, d, 0 };
@@ -157,7 +159,7 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 	}
 	if (fetch) {
 		// counting first: a counter gated by this cycle's own event starts with the next fetch
-		if ((m_c3 & 3) == 3) clock_gp(gp_gate());
+		if (gp_source() == 3) clock_gp(gp_gate());
 		for (int e = 0; e < 2; e++)
 			if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; trigger(e); }
 	}
@@ -173,8 +175,22 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 	if (m2 && (!(m_c2 & 0x04) || m_armed)) occurrence(1, hit);
 }
 
-void rtpa::instr_end(u16 next_pc)
+void rtpa::instr_end(u16 next_pc, int tstates, double hz)
 {
+	// time-based G.P. sources: emulator clock, and a 1 MHz time base -- usec directly,
+	// msec through channel 2's counter 1 (DOS/50 loads it with 1000)
+	if (!m_stopped && (m_c3 & 0x08)) {
+		int src = gp_source();
+		if (src == 5) for (int i = 0; i < tstates; i++) clock_gp(gp_gate());
+		if (src >= 6) {
+			m_us_frac += tstates * 1e6 / hz;
+			for (; m_us_frac >= 1.0; m_us_frac -= 1.0) {
+				if (src == 7) { clock_gp(gp_gate()); continue; }
+				u16 n = m_pit[1].c[1].cr ? m_pit[1].c[1].cr : 1000;   // prescaler: one tick per n us
+				if (++m_prescale >= n) { m_prescale = 0; clock_gp(gp_gate()); }
+			}
+		}
+	}
 	if (!m_trig || m_stopped) return;
 	m_pc_last = m_cur_pc; m_pc_next = next_pc;
 	m_status |= 0x08;

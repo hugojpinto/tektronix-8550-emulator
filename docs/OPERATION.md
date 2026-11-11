@@ -191,6 +191,22 @@ $ save list.txt^@<HELLO.LST<CR>  DOS/50 file -> host; when RIOT: appears, type C
 
 Details and protocol findings: `notes/host-link.md`. Regression: `tools/test_host_link.sh`.
 
+## 6⅓. Real-time analysis (the RTPA option)
+`-rtpa` fits the Real-Time Prototype Analyzer. It watches the emulated program's bus, can break on events, counts things, and records the last 128 bus transactions.
+
+```
+> SEL Z80                         > EM 0
+> EVT 1 A=0105 B=F                event 1: a fetch at 0105 (A< A> A: also work; D= data; B=MW, IR, ALL…)
+> BIF 1                           break on event 1 (BIF 2, BIF ARM: event 1 arms event 2, BIF LIM, BIF CLR)
+> RTT MW                          trace only memory writes (ALL, F, MR, IW…)
+> CNT F                           count fetches (evt1 evt2 trce ftch cycl emul msec usec)
+> GO 100                          -> 0105 <BREAK TRIG1>
+> DRT                             the traced transactions, with mnemonics and bus letters
+> CNT                             -> CNT=00042 ftch
+```
+
+How the board works and how it was reverse-engineered: `notes/rtpa.md`. Its diagnostic is Select mode → 4.
+
 ## 6½. Program PROMs (the 8550F30 PROM programmer)
 
 The programmer is an option, so fit it with `-prom fix`. Then put a device in its socket with `-prom-dev FILE`: a raw image, created erased if it doesn't exist and saved at exit. The emulated characteristic module takes 2708, 2716 and 2732 EPROMs.

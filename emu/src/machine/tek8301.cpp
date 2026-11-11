@@ -229,7 +229,7 @@ void tek8301::lp_run(int cycles2650)
 		z80_step(&z);
 		if (watch) {
 			m_rtpa_watch = false;
-			rtpa_board.instr_end(z.pc);
+			rtpa_board.instr_end(z.pc, int(z.cyc - c0), (&z == &lp && (m_e7 & 0x04)) ? 2.5e6 : 4e6);
 			if (rtpa_board.take_irq()) ec_interrupt(INT_RTPA);   // latches PC-next like a breakpoint (DS resumes there)
 		}
 		if (&z == &ep && proto_mode()) z.cyc += target->take_wait();   // v3: target WAIT states

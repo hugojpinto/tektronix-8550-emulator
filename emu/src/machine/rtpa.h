@@ -23,7 +23,7 @@ public:
 	// emulator-processor bus, called by the 8301 for every cycle of the emulator processor
 	void instr_begin(u16 pc);
 	void bus(u16 a, u8 d, bool fetch, bool write, bool io);
-	void instr_end(u16 next_pc);
+	void instr_end(u16 next_pc, int tstates = 0, double hz = 4e6);
 	bool stopped() const { return m_stopped; }   // holds the emulator processor (SLV OPREQ)
 	void release() { m_stopped = false; }        // the Emulator Controller takes over (F9 command)
 	bool take_irq() { bool i = m_irq; m_irq = false; return i; }   // INT 29
@@ -48,6 +48,8 @@ private:
 	u8 m_status = 0;                          // 01 event 1, 02 event 2, 08 stopped
 	u16 m_pc_last = 0, m_pc_next = 0, m_cur_pc = 0;
 	bool m_armed = false, m_delay[2] = {}, m_trig = false, m_stopped = false, m_irq = false;
+	double m_us_frac = 0;                     // time base for CNT usec/msec
+	u16 m_prescale = 0;
 
 	// ---- real-time trace buffer: the last 128 qualified transactions (C1 = RTT qualifier)
 	static constexpr int TRACE = 128;
@@ -62,6 +64,7 @@ private:
 	void trigger(int e) { m_status |= u8(1 << e); m_trig = true; }
 	void clock_gp(bool gate) { if (gate) m_pit[0].c[1].clock(); }
 	bool gp_gate() const { return (m_c2 & 0x04) ? m_armed : true; }   // ARM: G.P. counts once armed
+	int gp_source() const { return m_c3 & 7; }   // CNT: 0 evt1 1 evt2 2 trce 3 ftch 4 cycl 5 emul 6 msec 7 usec
 	void log(const char *what, int r, u8 v) { if (trace) fprintf(stderr, "[%.4f RTPA %s C%d %02x]\n", clock ? *clock : 0.0, what, r, v); }
 };
 #endif
