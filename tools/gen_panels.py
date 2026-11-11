@@ -41,6 +41,11 @@ COMMON = [
         '<rect state="1">%s<bounds x="3" y="9" width="4" height="1.2"/></rect></element>'
         % (col((0.08, 0.08, 0.09)), col((0.30, 0.30, 0.32)), col((0.30, 0.30, 0.32)),
            col((0.55, 0.55, 0.57)), col((0.55, 0.55, 0.57))),
+    '<element name="rocker_v"><rect>%s<bounds x="0" y="0" width="10" height="17"/></rect>'
+        '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="14.6"/></rect>'
+        '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="6"/></rect></element>'
+        % (col((0.05, 0.05, 0.06)), col((0.16, 0.16, 0.17)), col((0.24, 0.24, 0.25))),
+    '<element name="inset"><rect>%s</rect></element>' % col((0.72, 0.72, 0.70)),
     '<element name="rocker"><rect>%s<bounds x="0" y="0" width="10" height="10"/></rect>'
         '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="7.6"/></rect>'
         '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="3"/></rect></element>'
@@ -157,6 +162,7 @@ def make_8501():
     ly = 238            # label row
     dy = 256            # devices: 48 tall, centre 280
     # section 1: ON lamp | DC rocker
+    L.item('inset', 606, 262, 24, 36)
     L.text_c('ON', 618, ly, LBL); L.item('led_green', 618 - LAMP / 2, 280 - LAMP / 2, LAMP, LAMP, ' name="8501:on"')
     L.text_c('DC', 670, ly, LBL); L.item('rocker', 646, dy, 48, 48)
     # section 2: AC ON, PROCESSOR BUSY (stacked)
@@ -186,9 +192,9 @@ def make_8301():
     L.grille(36, 28, 532, 116)
     L.item('recess', 36, 154, 532, 112)
     L.grille(36, 276, 532, 116)
-    L.item('strip', 46, 334, 512, 20)
-    L.text_l('Tektronix', 46 + 0.03 * 512, 334 + 3.5, 13, BLUE)
-    L.text_r('8301 MICROPROCESSOR DEVELOPMENT UNIT', 46 + 0.97 * 512, 334 + 3.5, 13)
+    L.item('strip', 46, 362, 512, 20)
+    L.text_l('Tektronix', 46 + 0.03 * 512, 362 + 3.5, 13, BLUE)
+    L.text_r('8301 MICROPROCESSOR DEVELOPMENT UNIT', 46 + 0.97 * 512, 362 + 3.5, 13)
     # right column
     L.grille(592, 28, 372, 116)
     L.item('panel', 592, 154, 372, 112)
@@ -200,12 +206,14 @@ def make_8301():
     ly = rows[0] - LBL / 2
     dy = 195                      # devices 48 tall, centre 219
     # section 1: POWER rocker
-    gw = 6 * 3 * LBL / 8 + 8 + 48 + 8 + 6 * 2 * LBL / 8      # OFF, rocker, ON: centred as a group
-    cx = (592 + d1) / 2 - gw / 2 + 6 * 3 * LBL / 8 + 8 + 24
-    L.text_c('POWER', cx, ly, LBL)
-    L.item('rocker', cx - 24, dy, 48, 48)
-    L.text_r('OFF', cx - 24 - 8, 219 - LBL / 2, LBL)
-    L.text_l('ON', cx + 24 + 8, 219 - LBL / 2, LBL)
+    RW, RH = 40, 68                                           # portrait rocker, as on the photo
+    gw = RW + 8 + 6 * 3 * LBL / 8                             # rocker + ON/OFF marks: centred as a group
+    cx = (592 + d1) / 2 - gw / 2 + RW / 2
+    ry = P1 - 10 - RH
+    L.text_c('POWER', cx, ry - 8 - LBL, LBL)
+    L.item('rocker_v', cx - RW / 2, ry, RW, RH)
+    L.text_l('ON', cx + RW / 2 + 8, ry + 2, LBL)
+    L.text_l('OFF', cx + RW / 2 + 8, ry + RH - 2 - LBL, LBL)
     # section 2: four lamps in a column, labels to the right
     lx = (d1 + d2) / 2 - (LAMP + 8 + 6 * 9 * LBL / 8) / 2   # lamp + widest label (SELF TEST), centred
     for (lab, n), cy in zip((('SYSTEM', 'system'), ('PROGRAM', 'program'), ('DMA', 'dma'), ('SELF TEST', 'selftest')), rows):
@@ -219,9 +227,10 @@ def make_8301():
     L.write(OUT + '/8301.lay', HDR_8301, 'Tektronix 8301 Microprocessor Development Unit', 1000, 480)
 
 HDR_8501 = open(OUT + '/8501.lay').read().split('\n', 1)[1].split('<mamelayout')[0].strip()
-HDR_8301 = '''<!-- Tektronix 8301 Microprocessor Development Unit, front panel. Box after the 8550 brochure photo
-     (sources/tekwiki/8550/8550_1.jpg): on the left a grille, a plain name panel and a grille crossed by
-     the name strip; on the right a grille, the control panel and a grille, the same arrangement as the
+HDR_8301 = '''<!-- Tektronix 8301 Microprocessor Development Unit, front panel. After the 8550 catalogue photo
+     (sources/tekwiki/8550/8550_1.jpg; sharper: sources/photos/8550/8550_catalogue_hires.png): on the
+     left a grille, a plain name panel and a grille with the name strip along its bottom; POWER is a
+     tall portrait rocker with ON/OFF marks to its right; on the right a grille, the control panel and a grille, the same arrangement as the
      8501. The control panel is the 8540's control strip (photo from the VCFed thread "Tektronix 85xx
      MDL system", a unit standing on its side) turned to lie flat, as in the brochure photo: POWER rocker |
      SYSTEM, PROGRAM, DMA, SELF TEST lamps | RESTART toggle (070-2976 Fig. 1-3). The System Controller

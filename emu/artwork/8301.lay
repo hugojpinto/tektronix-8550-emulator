@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
-<!-- Tektronix 8301 Microprocessor Development Unit, front panel. Box after the 8550 brochure photo
-     (sources/tekwiki/8550/8550_1.jpg): on the left a grille, a plain name panel and a grille crossed by
-     the name strip; on the right a grille, the control panel and a grille, the same arrangement as the
+<!-- Tektronix 8301 Microprocessor Development Unit, front panel. After the 8550 catalogue photo
+     (sources/tekwiki/8550/8550_1.jpg; sharper: sources/photos/8550/8550_catalogue_hires.png): on the
+     left a grille, a plain name panel and a grille with the name strip along its bottom; POWER is a
+     tall portrait rocker with ON/OFF marks to its right; on the right a grille, the control panel and a grille, the same arrangement as the
      8501. The control panel is the 8540's control strip (photo from the VCFed thread "Tektronix 85xx
      MDL system", a unit standing on its side) turned to lie flat, as in the brochure photo: POWER rocker |
      SYSTEM, PROGRAM, DMA, SELF TEST lamps | RESTART toggle (070-2976 Fig. 1-3). The System Controller
@@ -16,14 +17,16 @@
 <element name="led_red"><disk state="0"><color red="0.3" green="0.07" blue="0.05"/></disk><disk state="1"><color red="1" green="0.2" blue="0.1"/></disk></element>
 <element name="led_green"><disk state="0"><color red="0.07" green="0.22" blue="0.12"/></disk><disk state="1"><color red="0.3" green="1" blue="0.45"/></disk></element>
 <element name="toggle"><rect><color red="0.08" green="0.08" blue="0.09"/><bounds x="0" y="0" width="10" height="12"/></rect><rect state="0"><color red="0.3" green="0.3" blue="0.32"/><bounds x="2" y="1.5" width="6" height="4.5"/></rect><rect state="1"><color red="0.3" green="0.3" blue="0.32"/><bounds x="2" y="6" width="6" height="4.5"/></rect><rect state="0"><color red="0.55" green="0.55" blue="0.57"/><bounds x="3" y="2" width="4" height="1.2"/></rect><rect state="1"><color red="0.55" green="0.55" blue="0.57"/><bounds x="3" y="9" width="4" height="1.2"/></rect></element>
+<element name="rocker_v"><rect><color red="0.05" green="0.05" blue="0.06"/><bounds x="0" y="0" width="10" height="17"/></rect><rect><color red="0.16" green="0.16" blue="0.17"/><bounds x="1.2" y="1.2" width="7.6" height="14.6"/></rect><rect><color red="0.24" green="0.24" blue="0.25"/><bounds x="1.2" y="1.2" width="7.6" height="6"/></rect></element>
+<element name="inset"><rect><color red="0.72" green="0.72" blue="0.7"/></rect></element>
 <element name="rocker"><rect><color red="0.05" green="0.05" blue="0.06"/><bounds x="0" y="0" width="10" height="10"/></rect><rect><color red="0.16" green="0.16" blue="0.17"/><bounds x="1.2" y="1.2" width="7.6" height="7.6"/></rect><rect><color red="0.24" green="0.24" blue="0.25"/><bounds x="1.2" y="1.2" width="7.6" height="3"/></rect></element>
 <element name="grille_532x116"><rect><color red="0.14" green="0.14" blue="0.15"/><bounds x="0" y="0" width="532" height="116"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="19.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="41.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="63.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="85.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="107.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="129.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="151.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="173.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="195.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="217.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="239.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="261.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="283.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="305.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="327.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="349.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="371.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="393.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="415.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="437.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="459.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="481.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="503.5" y="11" width="9" height="94"/></rect></element>
 <element name="t_tektronix"><text string="Tektronix"><color red="0.2" green="0.45" blue="0.75"/></text></element>
 <element name="t_8301_microprocessor_development_unit"><text string="8301 MICROPROCESSOR DEVELOPMENT UNIT"><color red="0.2" green="0.2" blue="0.22"/></text></element>
 <element name="grille_372x116"><rect><color red="0.14" green="0.14" blue="0.15"/><bounds x="0" y="0" width="372" height="116"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="16.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="38.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="60.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="82.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="104.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="126.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="148.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="170.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="192.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="214.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="236.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="258.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="280.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="302.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="324.5" y="11" width="9" height="94"/></rect><rect><color red="0.33" green="0.33" blue="0.34"/><bounds x="346.5" y="11" width="9" height="94"/></rect></element>
 <element name="t_power"><text string="POWER"><color red="0.2" green="0.2" blue="0.22"/></text></element>
-<element name="t_off"><text string="OFF"><color red="0.2" green="0.2" blue="0.22"/></text></element>
 <element name="t_on"><text string="ON"><color red="0.2" green="0.2" blue="0.22"/></text></element>
+<element name="t_off"><text string="OFF"><color red="0.2" green="0.2" blue="0.22"/></text></element>
 <element name="t_system"><text string="SYSTEM"><color red="0.2" green="0.2" blue="0.22"/></text></element>
 <element name="t_program"><text string="PROGRAM"><color red="0.2" green="0.2" blue="0.22"/></text></element>
 <element name="t_dma"><text string="DMA"><color red="0.2" green="0.2" blue="0.22"/></text></element>
@@ -36,18 +39,18 @@
 <element ref="grille_532x116"><bounds x="36" y="28" width="532" height="116"/></element>
 <element ref="recess"><bounds x="36" y="154" width="532" height="112"/></element>
 <element ref="grille_532x116"><bounds x="36" y="276" width="532" height="116"/></element>
-<element ref="strip"><bounds x="46" y="334" width="512" height="20"/></element>
-<element ref="t_tektronix"><bounds x="60.55" y="337.5" width="87.75" height="13"/></element>
-<element ref="t_8301_microprocessor_development_unit"><bounds x="192.45" y="337.5" width="351" height="13"/></element>
+<element ref="strip"><bounds x="46" y="362" width="512" height="20"/></element>
+<element ref="t_tektronix"><bounds x="60.55" y="365.5" width="87.75" height="13"/></element>
+<element ref="t_8301_microprocessor_development_unit"><bounds x="192.45" y="365.5" width="351" height="13"/></element>
 <element ref="grille_372x116"><bounds x="592" y="28" width="372" height="116"/></element>
 <element ref="panel"><bounds x="592" y="154" width="372" height="112"/></element>
 <element ref="grille_372x116"><bounds x="592" y="276" width="372" height="116"/></element>
 <element ref="divider"><bounds x="729" y="164" width="2" height="92"/></element>
 <element ref="divider"><bounds x="855" y="164" width="2" height="92"/></element>
-<element ref="t_power"><bounds x="643" y="171" width="45" height="12"/></element>
-<element ref="rocker"><bounds x="641.5" y="195" width="48" height="48"/></element>
-<element ref="t_off"><bounds x="607.25" y="213" width="27" height="12"/></element>
-<element ref="t_on"><bounds x="696.75" y="213" width="18" height="12"/></element>
+<element ref="t_power"><bounds x="621" y="168" width="45" height="12"/></element>
+<element ref="rocker_v"><bounds x="623.5" y="188" width="40" height="68"/></element>
+<element ref="t_on"><bounds x="670.75" y="190" width="18" height="12"/></element>
+<element ref="t_off"><bounds x="670.75" y="242" width="27" height="12"/></element>
 <element ref="led_red" name="8301:system"><bounds x="742.5" y="171" width="12" height="12"/></element>
 <element ref="t_system"><bounds x="761.75" y="171" width="54" height="12"/></element>
 <element ref="led_red" name="8301:program"><bounds x="742.5" y="193" width="12" height="12"/></element>
