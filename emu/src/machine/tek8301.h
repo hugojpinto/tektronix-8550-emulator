@@ -117,7 +117,7 @@ public:
 	bool slave_enabled() const { return active_slave() != nullptr; }
 	bool slave_halted() const;
 	// slave runs while the master is halted and no debug interrupt is outstanding
-	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !(m_svc_stop && (m_f8 & 0x10)) && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped() && !tta_board.stopped(); }
+	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped() && !tta_board.stopped(); }
 	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
@@ -136,7 +136,7 @@ private:
 	std::vector<u8> m_boot, m_diag, m_sysram, m_progmem;
 	std::vector<u8> m_par;        // per-byte: parity-complement state when written
 	u16 m_par_addr = 0;
-	bool m_svc_stop = false;   // an SVC stops the slave until the next F9 write (Z80 diag 07/0070), unless single cycle (F8 D4 = 0) lets it step: DOS/50 V1.0's exit SVC (function 1A) single-steps past it
+	bool m_svc_stop = false;   // an SVC holds an emulator board until the 2650 takes the SVC interrupt or writes F9 (Z80 diag 07/0070; tek8301::intack)
 	bool m_fr_pending = false, m_fj_pending = false, m_fi_pending = false;   // forced reset / jump / interrupt
 	u8 m_f5 = 0xff;
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;

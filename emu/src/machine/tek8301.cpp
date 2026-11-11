@@ -433,6 +433,10 @@ int tek8301::intack()
 	for (int n = 0; n < 32; n++)
 		if (all & (1u << n)) {
 			if (EDGE_IRQS & (1u << n)) m_pending &= ~(1u << n);
+			// an SVC holds the emulator board until the 2650 takes it (or the next F9 command):
+			// the diagnostic sees only the first of eight SVCs while it leaves them pending
+			// (07/0070), and DOS/50 V1.0 services I/O SVCs while the program runs on
+			if (n >= INT_SVC1 && n < INT_SVC1 + 8) m_svc_stop = false;
 			update_irq();
 			static const bool int_trace = getenv("TEK_INTTRACE") != nullptr;
 			if (int_trace && n >= 16) fprintf(stderr, "[%.4f 2650 takes INT %d (vector %04x)]\n", m_cycles / CPU_HZ, n, 2 * n);
