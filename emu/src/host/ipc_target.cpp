@@ -1,40 +1,19 @@
 // Prototype over IPC: synchronous 4-byte request / 2-byte response protocol.
 #include "host/ipc_target.h"
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#include <unistd.h>
 #include <cstring>
 #include <cstdio>
 
 bool ipc_target::open(const std::string &spec, std::string &err)
 {
-	if (spec.rfind("unix:", 0) == 0) {
-		sockaddr_un sa{}; sa.sun_family = AF_UNIX;
-		std::string path = spec.substr(5);
-		if (path.size() >= sizeof sa.sun_path) { err = "socket path too long"; return false; }
-		strcpy(sa.sun_path, path.c_str());
-		m_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (m_fd < 0 || connect(m_fd, (sockaddr *)&sa, sizeof sa) != 0) { err = "cannot connect to " + spec; if (m_fd >= 0) close(m_fd); m_fd = -1; return false; }
-	} else if (spec.rfind("tcp:", 0) == 0) {
-		std::string hp = spec.substr(4); size_t c = hp.rfind(':');
-		if (c == std::string::npos) { err = "tcp spec must be tcp:host:port"; return false; }
-		addrinfo hints{}, *res = nullptr; hints.ai_socktype = SOCK_STREAM;
-		if (getaddrinfo(hp.substr(0, c).c_str(), hp.substr(c + 1).c_str(), &hints, &res) != 0 || !res) { err = "cannot resolve " + spec; return false; }
-		m_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		bool ok = m_fd >= 0 && connect(m_fd, res->ai_addr, res->ai_addrlen) == 0;
-		freeaddrinfo(res);
-		if (!ok) { err = "cannot connect to " + spec; if (m_fd >= 0) close(m_fd); m_fd = -1; return false; }
-		int one = 1; setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
-	} else { err = "target spec must be unix:PATH or tcp:HOST:PORT"; return false; }
+	if (spec.rfind("unix:", 0) != 0 && spec.rfind("tcp:", 0) != 0) { err = "target spec must be unix:PATH or tcp:HOST:PORT"; return false; }
+	m_fd = net::connect_spec(spec, err);
+	if (m_fd == net::BAD) return false;
 	// hello: offer our highest protocol version; the target answers the version it
 	// will speak (<= ours). v1 targets always answer 1. v2 adds 'F' (opcode fetch);
 	// v3 adds WAIT / RESET in the reply lines and target power in the H reply.
 	u8 ver = req('H', 0x0003, 0);
-	if (m_fd < 0) { err = "target closed the connection"; return false; }
-	if (ver < 1 || ver > 3) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 to 3"; close(m_fd); m_fd = -1; return false; }
+	if (m_fd == net::BAD) { err = "target closed the connection"; return false; }
+	if (ver < 1 || ver > 3) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 to 3"; net::close(m_fd); m_fd = net::BAD; return false; }
 	m_version = ver;
 	m_power = ver < 3 || (m_lines & 8);
 	m_lines &= 3;
@@ -43,15 +22,15 @@ bool ipc_target::open(const std::string &spec, std::string &err)
 	return true;
 }
 
-ipc_target::~ipc_target() { if (m_fd >= 0) close(m_fd); }
+ipc_target::~ipc_target() { net::close(m_fd); }
 
 u8 ipc_target::req(char op, u16 a, u8 d)
 {
-	if (m_fd < 0) return 0xff;
+	if (m_fd == net::BAD) return 0xff;
 	u8 q[4] = { u8(op), u8(a), u8(a >> 8), d }, r[2];
 	size_t got = 0;
-	if (write(m_fd, q, 4) != 4) goto fail;
-	while (got < 2) { ssize_t n = read(m_fd, r + got, 2 - got); if (n <= 0) goto fail; got += size_t(n); }
+	if (net::send_some(m_fd, q, 4) != 4) goto fail;
+	while (got < 2) { long n = net::recv_some(m_fd, r + got, 2 - got); if (n <= 0) goto fail; got += size_t(n); }
 	// lines: bit 0 INT, 1 NMI; v3: bit 2 RESET, bits 7-4 WAIT T-states of this cycle
 	m_lines = m_version >= 3 || op == 'H' ? r[1] : u8(r[1] & 3);
 	if (m_version >= 3 && op != 'H') m_wait += r[1] >> 4;
@@ -59,7 +38,7 @@ u8 ipc_target::req(char op, u16 a, u8 d)
 	return r[0];
 fail:
 	fprintf(stderr, "[prototype link lost]\r\n");
-	close(m_fd); m_fd = -1; m_lines = 0;
+	net::close(m_fd); m_fd = net::BAD; m_lines = 0;
 	return 0xff;
 }
 

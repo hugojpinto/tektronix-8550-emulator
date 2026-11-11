@@ -9,6 +9,20 @@
 #include <cstdio>
 #include <ctime>
 #include <algorithm>
+#ifdef _WIN32
+// kernel32 MoveFileExA, declared here rather than pulling <windows.h> into every user
+extern "C" __declspec(dllimport) int __stdcall MoveFileExA(const char *, const char *, unsigned long);
+#endif
+
+// atomic replace of path by tmp (rename does not overwrite an existing file on Windows)
+inline bool replace_file(const std::string &tmp, const std::string &path)
+{
+#ifdef _WIN32
+	return MoveFileExA(tmp.c_str(), path.c_str(), 0x1 | 0x8) != 0;   // MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+#else
+	return rename(tmp.c_str(), path.c_str()) == 0;
+#endif
+}
 
 
 // 8501 flexible disc geometry (061-2355-00 service manual, controller chapter):
@@ -105,7 +119,7 @@ inline bool save_imd_8501(const std::string &path, const std::vector<u8> &lin, c
 	}
 	bool ok = !ferror(f);
 	fclose(f);
-	if (!ok || rename(tmp.c_str(), path.c_str()) != 0) { err = "cannot replace " + path; return false; }
+	if (!ok || !replace_file(tmp, path)) { err = "cannot replace " + path; return false; }
 	return true;
 }
 
@@ -116,7 +130,7 @@ inline bool save_raw(const std::string &path, const std::vector<u8> &lin, std::s
 	if (!f) { err = "cannot write " + tmp; return false; }
 	bool ok = fwrite(lin.data(), 1, lin.size(), f) == lin.size();
 	fclose(f);
-	if (!ok || rename(tmp.c_str(), path.c_str()) != 0) { err = "cannot replace " + path; return false; }
+	if (!ok || !replace_file(tmp, path)) { err = "cannot replace " + path; return false; }
 	return true;
 }
 #endif

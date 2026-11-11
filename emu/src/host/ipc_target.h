@@ -2,6 +2,7 @@
 #ifndef TEK_HOST_IPC_TARGET_H
 #define TEK_HOST_IPC_TARGET_H
 #include "machine/prototype.h"
+#include "host/net.h"
 #include <string>
 
 class ipc_target : public prototype_bus
@@ -11,7 +12,7 @@ public:
 	bool open(const std::string &spec, std::string &err);
 	~ipc_target() override;
 
-	bool connected() const override { return m_fd >= 0; }
+	bool connected() const override { return m_fd != net::BAD; }
 	u8   mem_read(u16 a) override { return req('R', a, 0); }
 	u8   mem_fetch(u16 a) override { return req(m_version >= 2 ? 'F' : 'R', a, 0); }
 	void mem_write(u16 a, u8 d) override { req('W', a, d); }
@@ -31,7 +32,7 @@ public:
 	unsigned long requests() const { return m_requests; }
 
 private:
-	int m_fd = -1;
+	net::sock m_fd = net::BAD;
 	u8 m_lines = 0;
 	unsigned m_poll = 0;
 	int m_version = 1;

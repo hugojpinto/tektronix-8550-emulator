@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	if (tf) m->cpu.trace_hook = [&](u16 pc) { fprintf(tf, "%04x: %s\n", pc, dasm(*m, pc).c_str()); };
 
 	m->power_on();
-	bool interactive = isatty(0) && max_cycles < 0;
+	bool interactive = host::is_tty(0) && max_cycles < 0;
 	if (interactive) { host::tty_raw(true); fprintf(stderr, "[tek8301: Ctrl-] for monitor]\r\n"); }
 	using clk = std::chrono::steady_clock;
 	auto t0 = clk::now();

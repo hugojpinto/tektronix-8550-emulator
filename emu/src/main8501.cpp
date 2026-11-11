@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 
 	m->power_on();
 	if (odt_at_start) { m->cpu.set_halted(true); m->odt_enter(); }
-	bool interactive = isatty(0) && max_cycles < 0;
+	bool interactive = host::is_tty(0) && max_cycles < 0;
 	if (interactive) { tty_raw(true); fprintf(stderr, "[tek8501: Ctrl-] for monitor]\r\n"); }
 
 	using clk = std::chrono::steady_clock;

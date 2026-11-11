@@ -23,9 +23,9 @@ int main(int argc, char **argv)
 	std::string bad;
 	if (!opt.parse(argc, argv, bad)) { fprintf(stderr, "usage: %s %s\n", argv[0], tek8550_options::usage()); return 1; }
 
-	bool interactive = isatty(0) && opt.max_cycles < 0;
+	bool interactive = host::is_tty(0) && opt.max_cycles < 0;
 	std::string termmode = opt.termmode;
-	if (termmode.empty()) termmode = (interactive && isatty(1)) ? "ct8500" : "tty";
+	if (termmode.empty()) termmode = (interactive && host::is_tty(1)) ? "ct8500" : "tty";
 	const bool ct_mode = termmode == "ct8500";
 
 	tek8550_system sys(opt);

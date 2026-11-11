@@ -1,5 +1,6 @@
 .DS_Store
 emu/build/
+emu/build-win/
 *.dSYM/
 # large scans / photos: re-downloadable from bitsavers (see FEASIBILITY.md)
 *.pdf

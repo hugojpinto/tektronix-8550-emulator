@@ -8,6 +8,7 @@
 #ifndef TEK_HOST_SERIAL_LINK_H
 #define TEK_HOST_SERIAL_LINK_H
 #include "emu.h"
+#include "host/net.h"
 #include <string>
 #include <deque>
 
@@ -16,13 +17,13 @@ class serial_link
 public:
 	~serial_link();
 	bool open(const std::string &spec, std::string &err);
-	bool active() const { return m_listen >= 0 || m_fd >= 0; }
-	bool connected() const { return m_fd >= 0; }
+	bool active() const { return m_listen != net::BAD || m_fd != net::BAD; }
+	bool connected() const { return m_fd != net::BAD; }
 	void send(u8 c);                       // queued; flushed by poll()
 	template <typename F> void poll(F rx)  // deliver received bytes to rx(u8)
 	{
 		accept_pending();
-		if (m_fd < 0) return;
+		if (m_fd == net::BAD) return;
 		flush();
 		u8 buf[256];
 		for (;;) {
@@ -35,7 +36,7 @@ public:
 	unsigned long rx_count() const { return m_rx; }
 
 private:
-	int m_fd = -1, m_listen = -1;
+	net::sock m_fd = net::BAD, m_listen = net::BAD;
 	std::string m_spec;
 	std::deque<u8> m_out;
 	unsigned long m_tx = 0, m_rx = 0;
