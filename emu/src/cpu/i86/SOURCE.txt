@@ -1,0 +1,31 @@
+MAME src/devices/cpu/i86 (BSD-3-Clause) -- https://github.com/mamedev/mame
+commit e0a5e1cad5d8dc72c15a609c6323651847f4fdcd (reference/mame/cpu/i86)
+Files: i86.h, i86.cpp, i86inline.h. Only the 8086 and 8088 (not the 80186/80286); i86.txt is not copied.
+Verified locally: emu/tests/i86_test.cpp (make test).
+Modified for tek8550 (marked [tek8550]):
+- Framework glue: no device_t/cpu_device base, device types, address_space_config, memory caches,
+  save states or debugger state table. Small adapters with MAME's names stand in for them
+  (address_space, devcb_write_line/devcb_write32, has_space/space, standard_irq_callback,
+  debugger_*_hook, logerror, total_cycles, access_to_be_redone = false), all going to one
+  bus_interface: read/write(space, 20-bit address), io_read/io_write, inta, lock, esc_opcode/esc_data.
+  Spaces are MAME's AS_PROGRAM/AS_OPCODES/AS_STACK/AS_CODE/AS_EXTRA (always configured).
+  Word accesses are two byte accesses, low byte first (unaligned and 20-bit wrap allowed);
+  write_port_byte_al's masked word write writes the one selected byte to the given port.
+- Constructors take the bus (i8086_cpu_device(bus, i8088)); the 8088 differs from the 8086 only in
+  data bus width, which in MAME only changes the address space configuration: same timing tables.
+- Public interface added: reset(), run(cycles) (returns cycles executed), set_input_line(),
+  register getters/setters, flags()/set_flags(), pc(), halted(), locked(), mid_instruction()
+  (a prefix has run but not its instruction), trace_hook,
+  create_disassembler() made public. update_pc() moved to the common base for the setters.
+- endianness.h: NATIVE_ENDIAN_VALUE_LE_BE and swapendian_int16 are in emu.h; INPUT_LINE_IRQ0 = 0,
+  INPUT_LINE_NMI = 32 defined in i86.h.
+- Bug fix, calc_addr(): "m_easeg = m_seg_prefix" assigned the bool (1 = CS), so every segment
+  override sent the access to AS_CODE; it is now m_prefix_seg (es: -> AS_EXTRA, ss: -> AS_STACK).
+- LOCK pin made generic: MAME drives m_lock_handler only around "lock in al,imm8" (case 0xe4)
+  and otherwise leaves m_lock set. execute_run now asserts lock(1) before the first non-prefix
+  opcode after F0/F1 (segment prefixes and further LOCKs keep it pending) and releases lock(0),
+  clearing m_lock, when that instruction completes (opcode not F0/F1 and no m_seg_prefix_next);
+  device_reset releases it too. The case 0xe4 special case is removed.
+Unchanged MAME behaviour worth knowing: no prefetch queue; a segment prefix placed before a LOCK
+prefix is dropped (each prefix is a separate step); a REP string op restarted after the cycle
+budget runs out resumes after the LOCK prefix, so only its first slice is locked.

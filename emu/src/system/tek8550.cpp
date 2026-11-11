@@ -128,6 +128,23 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	mdu->pm_ext_comparator = opt.pm_ext;
 	if (opt.no_ep) mdu->ep_present = false;
 	mdu->board8085().present = opt.ep85;
+	if (opt.ep86) {
+		// the 8086/8088 emulator's kernel: two 1 KB PROMs, 160-1312-00 the even bytes and
+		// 160-1311-00 the odd ones (the same board set serves both processors; the probe differs)
+		std::vector<u8> ev, od;
+		const std::string d = opt.roms + "/../emulator_processor/8088/";
+		auto rd = [](const std::string &f, std::vector<u8> &v) {
+			FILE *fp = fopen(f.c_str(), "rb"); if (!fp) return false;
+			v.resize(1024); size_t n = fread(v.data(), 1, v.size(), fp); fclose(fp); return n == 1024;
+		};
+		if (!rd(d + "160-1312-00_emul.bin", ev) || !rd(d + "160-1311-00_emul.bin", od)) { err = "missing 8086 emulator PROMs (160-1311-00, 160-1312-00) in " + d; return false; }
+		ep8086_board &b = mdu->m_ep86;
+		b.prom.resize(2048);
+		for (int i = 0; i < 1024; i++) { b.prom[2 * i] = ev[i]; b.prom[2 * i + 1] = od[i]; }
+		b.present = true; b.is8088 = opt.ep88;
+		b.trace = getenv("TEK_EP86TRACE") != nullptr;
+		b.restart();
+	}
 	mdu->prom.present = opt.prom_on;
 	mdu->rtpa_board.present = opt.rtpa_on;
 	mdu->rtpa_board.probe_loopback = opt.rtpa_probe;

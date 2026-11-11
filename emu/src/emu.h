@@ -7,9 +7,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdarg>
+#include <cstring>
 #include <cassert>
 #include <string>
 #include <ostream>
+#include <sstream>
 #include <functional>
 #include <type_traits>
 
@@ -19,6 +21,14 @@ using offs_t = uint32_t;
 
 #define ATTR_COLD
 enum { CLEAR_LINE = 0, ASSERT_LINE = 1 };
+
+// MAME's endianness.h (used by the i86 core)
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define NATIVE_ENDIAN_VALUE_LE_BE(leval, beval) (beval)
+#else
+#define NATIVE_ENDIAN_VALUE_LE_BE(leval, beval) (leval)
+#endif
+constexpr u16 swapendian_int16(u16 v) { return u16((v << 8) | (v >> 8)); }
 
 template <typename T> constexpr T BIT(T x, int n) { return (x >> n) & T(1); }
 template <typename T> constexpr T BIT(T x, int n, int w) { return (x >> n) & ((T(1) << w) - 1); }

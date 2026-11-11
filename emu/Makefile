@@ -28,10 +28,11 @@ LDFLAGS += -static -static-libgcc -static-libstdc++
 endif
 BUILD ?= build
 
-DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o $(BUILD)/cpu/i8085/8085dasm.o
+DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o $(BUILD)/cpu/i8085/8085dasm.o $(BUILD)/cpu/i386/i386dasm.o
+I86_OBJ  := $(BUILD)/cpu/i86/i86.o
 T11_OBJ  := $(BUILD)/cpu/t11/t11.o
 M8501    := $(BUILD)/machine/tek8501.o $(BUILD)/machine/tek8501_fdc.o $(BUILD)/machine/flexdrive.o
-M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/tta_run.o $(BUILD)/machine/emulator_specifics.o $(BUILD)/machine/ep8085.o $(BUILD)/machine/z80_slaves.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
+M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/tta_run.o $(BUILD)/machine/emulator_specifics.o $(BUILD)/machine/ep8085.o $(BUILD)/machine/ep8086.o $(I86_OBJ) $(BUILD)/machine/z80_slaves.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
 SYS8550  := $(BUILD)/system/tek8550.o $(BUILD)/system/tta_console.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ct8500_ansi.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(BUILD)/host/net.o
 
 all: $(BUILD)/dasm$(EXE) $(BUILD)/tek8501$(EXE) $(BUILD)/tek8301$(EXE) $(BUILD)/tek8550$(EXE)
@@ -47,6 +48,8 @@ $(BUILD)/tek8550$(EXE): $(BUILD)/main8550.o $(SYS8550) $(M8301) $(M8501) $(T11_O
 
 # the 8K-entry opcode table makes -O2 very slow on this file; -O1 is plenty
 $(BUILD)/cpu/t11/t11.o: OPT = -O1
+# MAME's x86 disassembler compares offs_t with int (gcc's -Wall warns; MAME builds without it)
+$(BUILD)/cpu/i386/i386dasm.o: CXXFLAGS += -Wno-sign-compare
 
 $(BUILD)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
@@ -94,10 +97,13 @@ endif
 endif
 $(GUI_OBJ): CPPFLAGS += $(SDL_CFLAGS)
 
-test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE)
+test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE) $(BUILD)/i86_test$(EXE)
 	$(BUILD)/flexdrive_roundtrip$(EXE) $(wildcard ../sources/bitsavers/disks/*.imd ../sources/bitsavers/disks/*.IMD)
 	$(BUILD)/ct8500_keys$(EXE)
+	$(BUILD)/i86_test$(EXE)
 $(BUILD)/ct8500_keys$(EXE): $(BUILD)/tests/ct8500_keys.o $(BUILD)/host/ct8500.o
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+$(BUILD)/i86_test$(EXE): $(BUILD)/tests/i86_test.o $(I86_OBJ) $(BUILD)/cpu/i386/i386dasm.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/flexdrive_roundtrip$(EXE): $(BUILD)/tests/flexdrive_roundtrip.o $(BUILD)/machine/flexdrive.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)

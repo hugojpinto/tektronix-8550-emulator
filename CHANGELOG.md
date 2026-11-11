@@ -2,6 +2,14 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **8086/8088 emulator.** The board set (`-ep 8086`, `-ep 8088`) runs its real kernel. The kernel is a 2 KB 8086 program in two PROMs that had been in `roms/emulator_processor/8088/` all along (160-1312-00 even bytes, 160-1311-00 odd).
+  - **Core:** MAME's 8086/8088 core and x86 disassembler are ported (`cpu/i86`, `cpu/i386`). On the way, a MAME bug that sent every segment override to the code space is fixed, and the LOCK pin is modelled for every instruction; the board depends on it. `build/dasm i86` disassembles 8086 code.
+  - **The board** (`machine/ep8086.*`; `notes/8086.md`) was worked out from the kernel and the 1983 diagnostic's 8086 test:
+    - the 2650 talks to the kernel through a command port and a 32-byte common RAM;
+    - the board's breakpoint, mapping and relocation RAMs appear in program memory;
+    - LOCK marks the kernel's accesses to the user's side, and a LOCKed IRET starts the program;
+    - a break returns through NMI. Breakpoint arming is done by feeding flip-flops back into a breakpoint RAM's address.
+  - **Result:** the diagnostic (Select mode 17) passes every module of option 0 and the slow RAM test, for both processors. Module 31's PROM checksums confirm the dump. Still open: the TTA interface (module 70), the prototype modes, and the software, which needs the lost DOS/50 V2.
 - 2026-11-11: **TTA checked against TNIX's TTA help** (the 8560's 1983 menu script for the same commands). The Z80/8085 bus symbols are now established rather than chosen. Breaks act on a trigger's occurrence, not on every instruction while it holds, per its "3 events and 1 trigger" rule. Its timing and counting recipes run unchanged and give the hand-computed results.
 - 2026-11-11: **TTA on the 8085 and on target systems.** The TTA watches the 8085 emulator board too: the manual's 8085 session reproduces its Display 1-2 exactly, and DOS/50's 8085 support prints `<BREAK TRIG1>` itself. Checked in emulation modes 1 and 2 against `tools/proto_target.py`: target I/O and code running from target RAM are seen and recorded like any other cycle.
 - 2026-11-11: **TTA in use.** The TTA now watches the program under test.

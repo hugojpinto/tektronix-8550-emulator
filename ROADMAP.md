@@ -7,11 +7,13 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 - **TTA Data Acquisition Interface:** the probe's eight leads, the EVENT QUALIFIER input and the TRIG OUT / ACQ CLK OUT outputs as a separate connection (the real P6451 was a separate cable), so a target such as FUSE can feed the probe. Needs a small protocol agreed with target authors.
 - **User SVC exit under DOS/50 V1.0** hangs (function 1A at block 0040), on both emulator boards; see `notes/tta.md`.
 - **Extended Tekhex** (070-4478-00, Extended Hex Interface Users Manual, on bitsavers): symbol-carrying transfers for the host link (`tools/host_link.py`). 
-- **The 6800, 8080 and 8086 emulator processor boards.** The boards' firmware does not survive. The EMU.8086 disc survives, but only with DOS/50 **V2** support, and V2 itself is not in the collection; its monitor kills V1.0 (`notes/8301.md`). The 8086 board set (at least three boards) can still be reverse-engineered and checked against its diagnostic (Select mode 17).
+- **The 6800 and 8080 emulator processor boards.** Their firmware does not survive.
+- **8086/8088 emulator, the rest** (`notes/8086.md`): the TTA interface (diag module 70), prototype modes 1/2, the 8087, mapping RAM bits 1/3 and wait states. Its software is DOS/50 V2's (the EMU.8086 disc), which is lost. The 8540's OS/40 support in `roms/emulator_processor/8088/` (PDP-11) drives the same board and can be read for the command protocol.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 
 ## Fidelity
 - **Floppies:** the controller runs its real firmware, but the drive is a byte-cell model. IMD discs now round-trip track by track (deleted marks, CRC errors, layouts). Open: flux-level media (weak bits, speed variation, mixed density within a track), which needs a flux image format (HFE, SCP) first; no 8501 disc is known to need it.
+- **The Z80 emulator board** is still partly inside `tek8301` (E3, its PROM window, firmware calls, prototype-mode tests); it should be a self-contained board like the 8085 and 8086 ones.
 - **Undumped firmware** is emulated at high level: the Z80 and 8085 emulator boards (their PROM checksum tests 07/00D0 and 06/00D0 fail) and the PROM programmer's controller. A dump would replace each with the real thing; see "Wanted" in the [README](README.md#wanted).
 - **Unknown bits:** Z80 board E3 bits 4/1 and register-block byte 26; 8085 register block bytes 8 and 13; DOS/50 label byte 0x1C.
 - **CT8500:** the character ROM was never dumped, monitor mode (control characters shown as symbols) is not modelled, and the learn-status display is an approximation.

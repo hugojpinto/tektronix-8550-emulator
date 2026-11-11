@@ -58,12 +58,12 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 ## What's emulated
 | Unit | Boards and status |
 |---|---|
-| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80** and **8085** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), **TTA** (Trigger Trace Analyzer, with its command set) |
+| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80**, **8085** and **8086/8088** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), **TTA** (Trigger Trace Analyzer, with its command set) |
 | **8501 DMU** | LSI-11/2 with utility PROMs and LTC, HSI link to the 8301, **Flexible Disc Controller at chip level** (Z80 + ROM 160-0412-00), Qume DataTrak 8 drives in all four disc formats |
 | **CT8500** | the terminal's command set and host-control mode (ACE works), drawn as text or as its dot raster |
 
 **Not (yet) emulated:**
-- the 6800, 8080 and 8086 emulator boards;
+- the 6800 and 8080 emulator boards, and the 8086 board's TTA interface and prototype modes;
 - most of the Trigger Trace Analyzer;
 - 8085 target modes 1 and 2.
 
@@ -82,7 +82,7 @@ Help preserve the 8550: if you have any of these, please [open an issue](https:/
 | **The CT8500 character ROM**, and its service manual 061-2431-00 | the screen font is reconstructed from a Tektronix 308 ROM plus a hand-drawn lower case |
 | **A DOS/50 V2.x system disc** (part 062-5xxx) and the **DOS/50 System Users Manual** 070-3457 / 070-3936 | only DOS/50 V1.0 survives; the 8086 emulator support disc we have (EMU.8086) needs V2, as does the TTA's command set |
 | **Dumps of the 8301 bipolar PROMs** 160-0884-00, 160-0822-00, 160-0727-00 | their decoding is emulated from the schematics |
-| **The 6800, 8080 or 8086 emulator boards**, their firmware and support discs, and service manuals for any emulator board | needed to emulate them |
+| **The 6800 or 8080 emulator boards**, their firmware and support discs, and service manuals for any emulator board (the 8086/8088 service manual 070-3774-00 too) | needed to emulate them |
 | **Clear, straight-on photos of an 8301's and an 8501's front panels** | the panel artwork is drawn from a catalogue photo and photos of related units |
 
 ## Repository layout

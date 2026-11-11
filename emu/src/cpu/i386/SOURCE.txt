@@ -1,0 +1,5 @@
+MAME src/devices/cpu/i386/i386dasm.{h,cpp} (BSD-3-Clause) -- https://github.com/mamedev/mame
+commit e0a5e1cad5d8dc72c15a609c6323651847f4fdcd (reference/mame/cpu/i386)
+Verbatim. The i86 core passes a config whose get_mode() is 1 (16-bit); build/dasm i86 does the same.
+emu.h now includes <cstring> and <sstream>, which MAME's emu.h brings in. gcc warns about signed/unsigned
+comparisons in this file, so the Makefile builds it with -Wno-sign-compare.

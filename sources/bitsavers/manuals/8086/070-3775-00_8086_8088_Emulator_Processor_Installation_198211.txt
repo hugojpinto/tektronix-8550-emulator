@@ -1,0 +1,2261 @@
+                                                            COMMITTED TO EXCELLENCE
+
+
+
+
+                                             WARNING
+                       THE FOLLOWING SERVICING INSTRUCTIONS
+                       ARE FOR USE BY QUALIFIED PERSONNEL ONLY.
+                       TO AVOID PERSONAL INJURY, DO NOT
+                       PERFORM ANY SERVICING OTHER THAN THAT
+                       CONTAINED IN OPERATING INSTRUCTIONS
+                       UNLESS YOU ARE QUALIFIED TO DO SO.
+
+
+
+
+                                            PLEASE CHECK FOR CHANGE INFORMATION
+                                                 AT THE REAR OF THIS MANUAL.
+
+
+
+
+This manual supports the
+following TEKTRONIX products:
+                                                          8500
+                                                     MODULAR MDL SERIES
+   8550
+  Options
+              8540
+             Options    Products                       8086/8088
+    2K
+    3P
+               2K
+               3P
+                        8300E15
+                        8300P15                  EMULATOR PROCESSOR
+    3X         3X       8300P16
+                        8300P15 Option 01       PROTOTYPE CONTROL PROBES
+                        8300P16 Option 01             INSTALLATION
+                                                         SERVICE
+
+
+
+
+    Tektronix, Inc.
+    P.O. Box 500
+    Beaverton, Oregon           97077                    Serial N u m b e r - - - - - - -
+    070-3775-00                                                         First Printing APR 1982
+    Product Group 61                                                    Revised NOV 1982
+Copyright © 1982 by Tektronix, Inc. All rights reserved.
+Contents of this publication may not be reproduced in any
+form without the permission of Tektronix, Inc.
+
+Products of Tektronix, Inc. and its subsidiaries are
+covered by U.S. and foreign patents and/or pending patents.
+
+TEKTRONIX, TEK, SCOPE-MOBILE, and ~ are registered
+trademarks of Tektronix, Inc. TELEQUIPMENT is a registered
+trademark of Tektronix U.K. Limited.
+
+There is no implied warranty of fitness for     a particular
+purpose. Tektronix, Inc. is not liable for      consequential
+damages.
+
+Specification and price   change   privileges   are   reserved.
+
+
+
+                    Printed in U.S.A.
+                                                    8086/8088 E.P. Installation
+
+
+
+
+                                    PREFACE
+
+
+
+ABOUT THIS MANUAL
+
+This manual tells how to install the 8086/8088 Emulator Processor boards and
+prototype control probe in an 8500-series TEKTRONIX microcomputer development
+system.
+
+Throughout this manual, all references to a "microcomputer development
+system" refer to the 8301 Microprocessor Development Unit or the 8540
+Integration Unit. All references to the 11 8086/8088 Emulator Processor" or to
+the "emulator" refer to the 8086/8088 Emulator Processor boards plus either
+the 8086 or the 8088 Prototype Control Probe.
+
+
+MANUAL ORGANIZATION
+
+The 8086/8088 Emulator Processor Installation Manual      is   divided   into   four
+sections:
+
+      •   Section 1 contains general information about the emulator       processor
+          boards and prototype control probe.
+
+      •   Section 2 contains information about jumpers.
+
+      •   Section 3 provides detailed installation procedures for the emulator
+          processor boards and the prototype control probe.
+
+      •   Section 4 describes procedures used      to   verify proper functional
+          performance of the emulator processor.
+
+
+
+GENERAL INFORMATION
+
+
+REVISION HISTORY
+
+Revision history information is included in the text and illustrations as
+they are revised and reprinted. Original manual pages are identified with an
+'@' symbol at the bottom inside corner of the page. When existing pages are
+revised, the '@' symbol is replaced with a revision code and date. New pages
+added to a section, whether they contain old, new, or revised inf'ormation,
+will be identified with the '@' symbol and a date.
+
+
+
+
+                                                                                  i
+8086/8088 E.P. Installation
+
+
+CHANGE INFORMATION
+
+Change information is located at the back of this manual in the CHANGE
+section.   Change information should be entered into the body of the manual
+when the manual is received.
+
+
+
+
+ii
+                                                                         8086/8088 E.P. Installation
+
+
+                                                 CONTENTS
+
+
+                                                                                                              Page
+SAFETY SUMMARY
+Operators.                                                                                                . .... v
+Servicing.                                                                                                . •• vii
+
+Section 1          GENERAL INFORMATION
+
+Introduction •.•••••.•.•.•••••                                                                                   .1-1
+Modes of Operation ..•••••.•••••••••.                                           . . . . . . . . . . . . . . . . . 1-2
+Emulator Processor Overview ••.••••..                                                                         • .1-3
+ Emulator Processor Boards .••                                                                                 . .1-3
+ Prototype Control Probe •.•••                                                                            • ••• 1-4
+  Prototype Control Probe LEDs ••                                                                             • .1-4
+Specifications •.••..•••....•.••                                                                    . ..... . 1-6
+
+Section 2          JUMPERS
+
+Introduction. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2-1
+Jumpers on the 8086/8088 Emulator Processor Boards..                                                  ..2-1
+ Emulator Board I Jumpers...............                                      ..•••••           . .... 2-1
+ Emulator Board II Jumpers..............                                    ...•••••••                ..2-2
+Jumpers in the Prototype Control Probe.................                                               ..2-3
+ Control Board Jumpers...                         .•••.                       . .•••••••••.•.•.• 2-4
+ Buffer Board Jumpers..................                                   ••••••            • •••••• 2-5
+  Dummy Address Jumpers........................                                             . ••••.• 2-8
+ Accessing the Prototype Control Probe Jumpers.                                                   • ••• 2-9
+32k System/Program Memory Board Jumpers,
+Straps, and Switches •.•.•.•••••••.•.•••                                                    •••••. 2-10
+64k/128k Program Memory Board Jumpers ••••                                                          •• 2-10
+
+Section 3          INSTALLATION
+
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         . . . . . . . 3-1
+Installing the 8086/8088 Emulator Processor •••••••••                                                    • ••• 3-1
+Connecting to the Trigger Trace Analyzer (Optional)                                                    .... 3-9
+Connecting to the Prototype ••                                                                        •••• 3-10
+Grounding . . . . . . . . . . . . . . . . . . . . . . . . . . .                                        • •• 3-11
+Installing 8540 Option ROM •••                                                                     . ••••• 3-12
+
+Section 4          PERFORMANCE VERIFICATION
+
+Introduction •.••••••                                                                    . . . . . . . . . . . . . 4-1
+Equipment Required.                                                    . . . . . . . . . . . . . . . . . . . . . . 4-1
+Test Procedures ••••                                           . . . . . . . . . . . . . . . . . . . . . . . . . . 4-2
+ Equipment Setup ••.•                                                                                        . •• 4-2
+ Functional Test Procedure ..                                                                        . ...... 4-2
+  No' 'HELLO'' Display ••.•.                                             . . . . . . . . . . . . . . . . . . . . . 4-3
+
+
+
+
+REV NOV 1982                                                                                                   iii
+8086/8088 E.P. Installation
+
+
+                                                                                                        Page
+Section 4           PERFORMANCE VERIFICATION (cont)
+ Processor Test Procedure ••••••••••••••••••••••••.•••••••.•••• 4-4
+Emulator Timing Verification •••••••••••••••••••••••••••••••••• 4-4
+ Measurement Considerations ••••••.•••.••••••••••••••••••••.••• 4-4
+     Equipment Required . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4-5
+ Controlling the Signal Lines Under Test •••••••••••••••••••••• 4-5
+                                             ILLUSTRATIONS
+Fig.
+No.                                                                                                     Page
+1-1  Emulation modes 0, 1, and 2 •••••••••••••••••••••••••.•••• 1-2
+1-2  8086/8088 Emulator Processor interconnections •.•••••••••• 1-5
+2-1  8086/8088 Emulator Processor Board I jumper locations •••• 2-2
+2-2  8086/8088 Emulator Processor Board II jumper locations ••• 2-3
+2-3  Control board jumper locations ••••••••••••••••••••••••••• 2-5
+2-4  Buffer board jumper locations •••••••••••••••••••••••.•••• 2-6
+3-1  Removal/installation of top cover •••••••••••••••••••..••• 3-2
+3-2  8086/8088 Emulator Processor Boards with
+     prototype control probe •••••••••••••••••••••••••••••••••• 3-3
+3-3 Interconnections of the 8086/8088 Emulator
+     Processor Boards ••••••••••••••••••••••••••••••••••••••••• 3-4
+3-4 Recommended board arrangement for the 8301 MDU ••••••••••• 3-5
+3-5 Recommended board arrangement for the 8540 Iu •••••••••••• 3-6
+3-6 Strain relief plate installation/removal ••••••••••••..••• 3-7
+3-7 Ribbon cable installation •••.•••.••••••••••••••••••••.••• 3-7
+3-8 Connecting the 8086/8088 Emulator Processor
+     to the optional Trigger Trace Analyzer ••••••••••••••••••• 3-9
+3-9 Pin identification and proper plug insertion •••••••••••• 3-10
+3-10 Using a zero-insertion-force socket ••••••••••••••••••.•• 3-11
+3-11 System ROM Board socket locations .••••.•••••••••••••...• 3-13
+                                                   TABLES
+Table
+No.                                                                                                     Page
+1-1       8086/8088 Emulator Processor Electrical
+          Characteristics •.••••••••••••••••••••••••••••••••••••.••• 1-6
+1-2       8086/8088 Emulator Processor Environmental
+          Characteristics ••••••••••••••••.••••••••••••••••••••••••• 1-6
+2-1       READY Fault/Timeout Jumpers ••••••.••••••••••••••••••••••• 2-8
+2-2       Dummy Address Jumpers ••••••.•••.••••••••••••••••••••••••• 2-9
+
+
+
+
+iv                                                                                                    REV NOV 1982
+                                                      8086/8088 E.P. Installation
+
+
+
+
+                           OPERATORS SAFETY SUMMARY
+
+The general safety information in this part of the summary is for both
+operating and servicing personnel. Specific warnings and cautions will be
+found throughout the manual where they apply, but may not appear in this
+summary.
+
+TERMS
+
+
+In This Manual
+CAUTION statements identify conditions or practices       that   could   result   in
+damage to the equipment or other property.
+WARNING statements identify conditions or   practices     that   could   result   in
+personal injury or loss of life.
+
+
+As Marked on Equipment
+
+CAUTION indicates a personal injury hazard not immediately accessible as one
+reads the marking, or a hazard to property including the equipment itself.
+
+DANGER indicates a personal injury hazard immediately accessible as one reads
+the marking.
+
+
+SYMBOLS
+
+As Marked on Equipment
+
+
+    ~     DANGER high voltage.
+
+
+    ~     Protective ground (earth) terminal.
+
+
+    ~     ATTENTION - Refer to manual.
+
+
+
+
+                                                                                  v
+8086/8088 E.P. Installation
+
+
+SAFETY PRECAUTIONS
+
+Grounding the Product
+The product is grounded through       the   grounding conductors  in  the
+interconnecting cables.    To avoid electrical shock, plug the supporting
+system's power cord into a properly wired receptacle. A protective ground
+connection by way of the grounding conductor in the system power cord is
+essential for safe operation.
+
+Use the Proper Fuse
+
+To avoid fire hazard, use only the fuse specified in the parts list for your
+product.   Be sure the fuse is identical in type, voltage rating, and current
+rating.
+Refer fuse replacement to qualified service personnel.
+
+
+Do Not Operate in Explosive Atmospheres
+
+To avoid explosion, do not operate this product in an atmosphere of explosive
+gases.
+
+
+Do Not Remove Covers or Panels
+
+To avoid personal injury, do not remove covers or panels from this product.
+Do not operate the product without the covers and panels properly installed.
+
+
+
+
+vi
+                                                        8086/8088 E.P. Installation
+
+
+
+
+                             SERVICING SAFETY SUMMARY
+                       FOR QUALIFIED SERVICE PERSONNEL ONLY
+
+           (Refer also to the preceding Operators Safety Summary)
+
+
+DO NOT SERVICE ALONE
+
+Do not perform internal service or adjustment on this product unless        another
+person capable of rendering first aid and resuscitation is present.
+
+
+USE CARE WHEN SERVICING WITH POWER ON
+
+Dangerous voltages exist at several points in this product.       To avoid
+personal injury, do not touch exposed connections and components while power
+is on.
+Disconnect power before removing protective panels, soldering,        or   replacing
+components.
+
+
+POWER SOURCE
+
+The system that supports this product is intended to operate from a power
+source that will not apply more than 250 volts rms between the supply
+conductors or between either supply conductor and ground.       A protective
+ground connection by way of the grounding conductor in the supporting
+system's power cord is essential for safe operation of this product.
+
+
+
+
+                                                                                vii
+8086/8088 E.P. Installation
+
+
+
+
+                                                                      3755- 1
+
+
+
+         8086/8088 Emulator Processor boards with the 8086 and 8088
+                         Prototype Control Probes.
+
+
+
+viii
+                                                   8086/8088 E.P. Installation
+
+
+
+
+                                  Section 1
+
+                             GENERAL INFORMATION
+
+
+
+
+INTRODUCTION
+
+The 8086/8088 Emulator Processor is an accessory designed to function as part
+of the 8301 Microprocessor Development Unit (MDU) or the 8540 Integration
+Unit (IU). The 8086/8088 Emulator Processor provides in-circuit emulation
+for an 8086 or 8088 device.
+This manual contains procedures for installing the 8086/8088 Emulator
+Processor in the 8301 MDU or the 8540 IU.     This manual also contains
+performance verification procedures.
+
+For user information about the 8086/8088 Emulator Processor, refer to your
+System Users Manual and to the 8086/8088 Emulator Specifics supplement.
+Servicing information is contained in the 8086/8088 Emulator Processor
+Prototype Control Probes Service Manual.
+
+
+                                 ~
+    The 8086 or 8088 device contained within the prototype control
+    probe is extremely static-sensitive.    Although this device is
+    protected from static discharge damage when installed in the
+    emulator processor, static discharge may interrupt the normal
+    operation of the emulator if the following precautions are not
+    taken:
+
+    1.   Avoid touching the prototype control probe cables and 40-pin
+         plug,   whenever   possible, while the emulation system is
+         operating.
+
+    2.   Under some conditions, you may find it necessary to use an
+         anti-static wrist strap while operating this equipment.
+
+
+
+
+                                                                            1-1
+General Information - 8086/8088 E.P. Installation
+
+
+MODES OF OPERATION
+
+The 8086/8088 Emulator Processor operates in one of three emulation modes:
+
+MODE 0     System mode.    Mode 0 is used to develop software for a prototype
+           circuit based on an 8086 or 8088 device.          In   mode O,   the
+           microcomputer development system acts as a stand-alone 8086- or
+           8088-based microcomputer. Thus, the prototype software is stored in
+           your development system's program memory, and the 8086/8088 Emulator
+           Processor provides the I/O facilities and clock.         Figure 1-1A
+           illustrates mode 0 operation.
+
+MODE 1 Partial emulation mode. Mode     is used to develop some of the
+       hardware   functions of the prototype circuit.       In mode 1, the
+       prototype control probe is connected between the 8086/8088 Emulator
+       Processor boards and the microprocessor socket of the prototype
+       circuit. In this way, the prototype's memory, I/O, and clock are
+       exercised, while the development system retains full control over the
+       prototype system.
+
+           In mode 1, the memory mapping feature allows various portions of the
+           prototype software to be stored in prototype memory while the rest of
+           the prototype software remains in the development system's program
+           memory. Figure 1-1B illustrates mode 1 operation.
+MODE 2     Full emulation mode. Mode 2 is used in the final software/hardware
+           integration phases of prototype system design, or is used when
+           troubleshooting hardware with known-good      software.  The   only
+           difference between mode 1 and mode 2 is that here, the entire
+           prototype program is stored in the prototype's memory.  Figure 1-1C
+           illustrates mode 2 operation.
+
+ (a) Emulation Mode 0       (b) Emulation Mode 1          (c)   Emulation Mode 2   (3771-2)3775-2
+
+
+
+
+                                                                                     Control,
+                                                                                     Memory,
+                                                                                     and
+                                                                                     Clock
+
+
+
+
+                        Fig. 1-1.     Emulation modes o, 1, and 2.
+
+
+
+
+1-2
+                              General Information - 8086/8088 E.P. Installation
+
+
+EMULATOR PROCESSOR OVERVIEW
+The 8086/8088 Emulator Processor consists of three circuit boards and either
+an 8086 or 8088 Prototype Control Probe. The three circuit boards plug into
+the microcomputer development system mainframe, and the prototype control
+probe attaches to one of the three circuit boards.
+The 8086/8088 Emulator Processor serves two purposes in the microcomputer
+development system.    First, the emulator has the ability to run a program
+written specifically for the target microprocessor. With the help of other
+boards in the system, the emulator processor can check the program for
+run-time errors or program logic errors. Second, with the prototype control
+probe connected between the emulator processor boards and the prototype
+circuit, the prototype circuit can be debugged and stepped through the final
+stages to design completion.
+The 8086/8088 Emulator Processor emulates the operation of a         target
+microprocessor device that will be used in the final version of a prototype
+system. The emulator processor responds to software in the same way as the
+target microprocessor, and also allows software debugging.
+
+
+EMULATOR PROCESSOR BOARDS
+
+The three 8086/8088 Emulator Processor boards plug into the main interconnect
+board of the system mainframe. These boards are designated as board I, II,
+and III. The functions of each of these boards are as follows:
+
+Board I     contains breakpoint circuitry, clocks, address and data strobes,
+            and the TTA connectors.
+Board II    contains the address latch and buffer, the prototype control probe
+            interface, mainframe interface timing, the queue, Mapping RAM, and
+            Relocation RAM.
+Board III   contains the data bus interface, PROM, Function RAM, Command Port,
+            Status Port, and Master Register.
+
+
+
+
+                                                                              1-3
+General Information - 8086/8088 E.P. Installation
+
+PROTOTYPE CONTROL PROBE
+The prototype control probe allows an emulator processor to functionally
+replace the microprocessor of a prototype system. The probe is the interface
+between the emulator processor boards and         the  prototype   circuit's
+microprocessor socket.
+The prototype control probe consists of:
+1.      Two 6-foot ribbon cables that attach to a cable termination board, which
+        plugs into 8086/8088 Emulator Processor board II.
+2.      An interface assembly, which contains the Buffer board, the Control
+        board, the Power Supply board, and an 8086 or 8088 Mobile Microprocessor
+        board.
+3.      A 40-pin dual in-line plug that inserts in the microprocessor socket of
+        the prototype circuit. The plug is connected to the interface assembly
+        via two 1.5 foot ribbon cables.
+Figure 1-2 shows 8086/8088 Emulator Processor interconnections.
+
+Prototype Control Probe LEDs
+Six indicator LEDs are visible on the prototype control probe's           interface
+assembly. When lit, these LEDs indicate the following conditions:
+RESET         The prototype circuit has asserted the RESET line and caused       the
+              processor to stop current activity.
+TEST          The prototype circuit has asserted the TEST line.   (This    LED    is
+              always lit in mode 0.)
+
+WAIT           The processor is in a wait state.
+BUS ACK        The processor is acknowledging a bus request.
+SELECT         The emulator processor has been selected.
+PROTOTYPE POWER -- The prototype circuit's +5 V supply is present.
+
+
+
+
+1-4
+                                 General Information - 8086/8088 E.P. Installation
+
+
+
+
+                         1.5-footCables
+
+
+
+
+     Board I
+
+~
+c:
+0
+c.
+E                                         c:
+0
+u                c:                       "
+                                          c:
+                 "
+                 c:
+                 g_
+                                          0
+                                          c.
+                                          E
+                                          0
+                 E                        u
+                 0
+                u
+                                                                        (3771-3)3775-3
+
+
+
+
+         Fig. 1-2.    8086/8088 Emulator Processor interconnections.
+
+                                                                                         1-5
+General Information - 8086/8088 E.P. Installation
+
+SPECIFICATIONS
+
+
+
+                                     Table 1-1
+                           8086/8088 Emulator Processor
+                            Electrical Characteristics
+
+ Characteristics     Performance Requirement         Supplemental Information
+ ------------------ -------------------------
+Supply Voltage           +5.2 Vdc +1%/-2%
+                                              -----------------------------
+                          +12.0 Vdc + 5%
+                          -12.0 Vdc ~ 5%            -12.0 Vdc used by prototype
+                                                     control probe only
+Current (typical)                                   +5.2 Vdc @ 10.22 A
+                                                    +12.0 Vdc @ 1.65 A
+                                                    -12.0 Vdc @ 0.40 A
+
+Power Dissipation                                   80 W (max.)   Selected
+                                                    65 W (max.)   Not Selected
+
+
+
+
+                                     Table 1-2
+                           8086/8088 Emulator Processor
+                           Environmental Characteristics
+
+        Characteristics            I             Description
+       =========================!====================================
+      Temperature                  I
+          Operating                I       0° C to 50° C ( 32 F to 122° F)
+          Storage                  I    -55° C to +75° C (-67° F to +16f F)
+                                   I
+       Relative Humidity           I       90% maximum non-condensing
+                                   I
+       Altitude                    I
+            Operating              I          5 000 m (15,000 ft) maximum
+            Storage                I         16 400 m (50,000 ft) maximum
+
+
+
+
+1-6
+                                                     8086/8088 E.P. Installation
+
+
+
+
+                                     Section 2
+
+                                      JUMPERS
+
+
+
+
+INTRODUCTION
+
+The 8086/8088 Emulator Processor boards and prototype control probe contain
+user-selectable jumpers. This section describes the function and location of
+each jumper. Only user-selectable jumpers are described here; all other
+jumpers are strictly for factory use.
+
+This section consists of three parts: the first part describes jumpers
+located on the emulator processor boards, the second part describes jumpers
+located in the prototype control probe, and the third part describes jumpers,
+straps, and switches located on the 32K System/Program Memory and 64K/128K
+Program Memory boards.
+
+                                       NOTE
+
+        For all jumpers, position 1 is indicated by an arrow on the circuit
+        board, unless otherwise noted.
+
+
+
+
+JUMPERS ON THE 8086/8088 EMULATOR PROCESSOR BOARDS
+
+There are four user-selectable jumpers located on 8086/8088         Emulator
+Processor boards I and II. (There are no jumpers located on board III.) See
+Fig. 2-1 and Fig. 2-2 for jumper locations on boards I and II, respectively.
+Note that the jumper positions shown in these figures are the factory
+settings.
+
+
+EMULATOR BOARD I JUMPERS
+
+
+P4029    Prototype clock match. The position at which this jumper is set
+         depends on the speed of the prototype circuit's clock. The jumper
+         must be set to the "HI" position if the clock is operating in the
+         4.5--8.0 MHz range (normal jumper position), or to the "LO" position
+         if the prototype clock is operating in the 2.0--4.5 MHz range.
+
+
+
+
+                                                                              2-1
+Jumpers - 8086/8088 E.P. Installation
+
+
+
+
+          /
+
+
+
+
+                    P4029
+                      •
+                     I
+
+
+
+
+                                                                                   3775-4
+
+
+
+
+        Fig. 2-1.   8086/8088 Emulator Processor board I jumper locations.
+
+
+EMULATOR BOARD II JUMPERS
+
+
+P3106     Write protect break option. When this jumper is set to position 2
+          ("YES"), the emulator will cause a break condition if you attempt to
+          write to a protected area of memory. This is the normal position.
+
+          When this jumper is set to position 1 ("NO"), no break condition          will
+          occur if you attempt to write to protected memory.
+
+P3505     Wait state option select. The jumper is used to select        one   of      two
+          wait state sources or used to disable wait states.
+
+          When this jumper is set to position 2 ("DYN"), wait states are
+          inserted under program control during program memory accesses. (Note
+          that under program control, the default condition is zero wait
+          states.) This is the normal jumper position.
+
+          When this jumper is set to position 3 ("ALLF"),   no   wait    states       are
+          inserted during program memory accesses.
+
+
+
+
+2-2
+                                                      Jumpers - 8086/8088 E.P. Installation
+
+
+          When this jumper is set to position 1 ("ALLS"), wait states are
+          inserted (as designated by jumper P7005) during program memory
+          accesses. This position is mainly used for diagnostic purposes.
+
+P7005     Wait state generator. The jumper selects the number of wait states to
+          be inserted when jumper P3505 is set to position 1. (Note that jumper
+          P7005 can also select the number of wait states to be inserted when
+          jumper P3505 is set to position 2.    This occurs only if you are
+          accessing memory that you have allocated as "slow" with the AL -S
+          command.)
+          P7005 allows up to seven wait states to             be   inserted   during   program
+          memory accesses.
+
+
+
+          /
+
+
+
+
+                                                                               P3106
+                  •                                                              •
+              -       P3505
+                  •                                                             I
+
+
+
+
+           •      P7005
+                  ••••••
+                  • •••••
+
+                                                                                         3775-5
+
+
+
+
+        Fig. 2-2.             8086/8088 Emulator Processor board II jumper locations.
+
+
+JUMPERS IN THE PROTOTYPE CONTROL PROBE
+
+There are 22 user-selectable jumpers located on the Control and Buffer boards
+in the prototype control probe. (The Control and Buffer boards are identical
+for both types of probes.) See Fig. 2-3 and Fig. 2-4 for jumper locations on
+the Control and Buffer boards, respectively. Note that the jumper positions
+shown in these figures are the factory settings.
+
+
+
+
+                                                                                                  2-3
+Jumpers - 8086/8088 E.P. Installation
+
+
+In order to access these jumpers you must disassemble the housing of the
+interface assembly and, in most cases, also remove the Control board located
+inside the housing.   Refer to the discussion, "Accessing the Prototype
+Control Probe Jumpers", later in this section.
+
+CONTROL BOARD JUMPERS
+
+P2    Outread option. Basically, the outread option enables data out to the
+      prototype circuit that has been read from program memory or mapped-in
+      memory.   Sending this data to the prototype allows        a  prototype
+      coprocessor (such as the 8087) to follow program flow.
+
+      When this jumper is in position 1, the outread option is not selected and
+      the emulator functions normally. This is the normal jumper position.
+      When this jumper is set in position 2, the outread option is enabled.
+      Position 2 must be selected whenever a coprocessor is used in the
+      prototype circuit during mode 1 operation. Note that in order to use the
+      outread option, the prototype circuit's data buffers must be designed to
+      disable during outreads.
+
+P3    DMA disable option. When this jumper is set to position 2, DMA (RQ/GT)
+      operations while the emulator is in mode 3 are enabled. (Mode 3 is not a
+      true emulation mode, but encompasses all emulator activity that occurs
+      while the emulator is not executing a prototype program.)   This is the
+      normal position and must be selected if DMA operations continuously need
+      to be used by the prototype circuit (for CRT refresh, for example).
+
+      When this jumper is set to position 1, all DMA operations during mode 3
+      are disabled.    This jumper setting ensures stable memory data or status
+      during mode 3 and must be selected if you want to use the D (Dump) or EX
+      (Examine) command to inspect memory affected by DMA operations.
+
+P4    Hold timeout option. When this jumper is set to position 2, the emulator
+      will wait indefinitely for the current DMA cycle to end before any break
+      request is honored. This is the normal jumper position.
+      When this jumper is set to position 1, any break request will start a
+      timeout that lasts for about 0.5 second of DMA access. At the end of the
+      timeout, the break request is honored. If the jumper is set to this
+      position, jumper P3 must also be set to position 1.
+
+P5    Clock deskewer enable. When this jumper is set to position 1 ("DESKEW"),
+      the clock deskewer circuit is enabled. This is the normal position. If
+      you select this position, be sure to set jumper P8 to the appropriate
+      position.
+
+      When this jumper is set to position 2 ("BYPASS"), the clock deskewer is
+      disabled.   This position should be selected only if the prototype clock
+      is operating at something other than a steady state 33% duty cycle.
+
+
+
+2-4
+                                             Jumpers - 8086/8088 E.P. Installation
+
+
+P8   Deskewer prototype clock match. The position at which this jumper is set
+     depends on the speed of the prototype circuit's clock. The jumper must
+     be set to the "HI" position if the clock is operating in the 4.5--8.0 MHz
+     range (normal jumper position), or to the "LO" position if the prototype
+     clock is operating in the 2.0--4.5 MHz range.
+
+
+
+
+                 J
+                                                                ·-
+                                                               LO
+                                                                    PS
+
+                                                                         HI
+
+
+
+
+             -·
+            <I
+                     P2                        1>•- P3
+                                               I>•- P4
+                 l
+                                             BYPASS
+
+                                               l   ·- DESKEW
+                                                        P5
+
+                                                                              3775-6
+
+
+
+
+                     Fig. 2-3.   Control board jumper locations.
+
+
+BUFFER BOARD JUMPERS
+
+
+P6012   Synchronize RESET option. This option synchronizes the RESET signal
+        from the prototype circuit with emulator bus cycles in order to
+        minimize the likelihood of writing randomly to memory.
+
+        When this jumper is set to position 1, this option is disabled and the
+        RESET signal from the prototype circuit is transparently emulated.
+        This is the normal position.
+
+        When this jumper is set to position 2, the synchronize RESET option is
+        enabled.
+
+
+                                                                                   2-5
+Jumpers - 8086/8088 E.P. Installation
+
+
+P7072   Prototype READY control. When this jumper is set to position 2, the
+        prototype's READY signal does not control mode 1 access to program
+        memory. This is the normal jumper setting and should be selected for
+        full-speed operation of program memory while in mode 1.
+
+        Position 2 should also be selected if the prototype circuit is in a
+        system (such as a Multi-Bus) where nonexistent memory accesses produce
+        a not-ready status. In such a case, the READY line would become stuck
+        and the system would hang.       (This feature is necessary because a
+        mode 1 program memory access of a particular address also produces an
+        access of the same address in prototype memory. However, the data
+        accessed in prototype memory under these circumstances is never read.)
+
+        When this jumper is set to position 1, the prototype's READY signal
+        controls mode 1 access to program memory. This position may be needed
+        if prototype memory control circuitry requires that wait states be
+        inserted to avoid memory or memory controller destructive states.
+        (Again, this feature is necessary because of memory bus cycles that
+        occur simultaneously in program memory and prototype memory.)
+
+
+
+
+                                                      ~-· P6012
+
+
+
+
+                                 ••••
+                            ••••
+                            1111
+                                                          C> • P7072
+                                                             I
+                                 ••••                 P7076 { •
+                                                              -~• •-  P7077
+                                 COC">qoCO
+                                 ................             : : · - P7078
+                                 0000
+                                 (l')qoqoq.                   d d
+                                 D.. D.. D.. D..
+
+
+
+
+                                                                              3775-7
+
+
+
+
+                     Fig. 2-4.        Buffer board jumper locations.
+
+
+2-6
+                                          Jumpers - 8086/8088 E.P. Installation
+
+
+P7076   READY fault/timeout wait state select. These four sets of pins allow
+        you to select the number of wait states before a READY error. The
+        position of this jumper must be selected in conjunction with jumpers
+        P7077 and P7078.     Refer to Table 2-1 for a look at the functions
+        produced by various combinations of these three jumpers.
+P7077   READY timeout option. This option forces the prototype's READY signal
+        after a specified number of wait states (as selected by P7076).
+
+        When this jumper set to position 1, the READY timeout option is
+        disabled, and any number of consecutive wait states is allowed before
+        READY can become true. This is the normal position.
+
+        When this jumper is set to position 2, the READY timeout option is
+        enabled. If your prototype is in a Multi-Bus system, this setting may
+        be used in conjunction with the prototype READY control option (P7072
+        set to position 1) in order to avoid hanging the bus when addressing
+        nonexistent prototype memory.
+        Refer to Table 2-1 for   more   information   on   the   function   of   this
+        jumper.
+P7078   Break on READY fault option. When this jumper is set to position 2, a
+        READY fault will not produce a break and will not be reported to you.
+        This is the normal jumper position.
+
+        When this jumper is set to position 1, a READY fault will produce a
+        break, force the READY line true, and cause the operating system to
+        display an error message.
+        Refer to Table 2-1 for   more   information   on   the   function   of   this
+        jumper.
+
+
+
+
+                                                                                    2-7
+Jumpers - 8086/8088 E.P. Installation
+
+                                       Table 2-1
+                              READY Fault/Timeout Jumpers
+
+         Jumper Positions
+                                             Function Produced
+      P7076   P7077   P7078
+  ------- -------
+  ------- ------- -------- ================================================
+        0     Don't   Don't     Fully transparent emulation of prototype
+              Care    Care      READY signal. The emulator will wait
+                                indefinitely for READY to turn true.
+      n(a)      2       2       After a READY error, the emulator will timeout
+                                after n wait states and force READY true.
+                                However, the emulator will not create a break
+                                or produce an error message.
+      n(a)      1       2       Fully transparent emulation of prototype
+                                READY signal. The emulator will wait
+                                indefinitely for READY to turn true (except any
+                                other break condition will force READY true
+                                after n wait states and break with no error
+                                message).
+      n(a)     x        1       After a READY error, the emulator will timeout
+                                after n wait states and force READY true. The
+                                emulator will also create a break and produce
+                                an error message.
+
+  (a) Any jumper setting other than o.
+
+Dummy Address Jumpers
+
+There are twelve jumpers on the Buffer board that specify a 256-byte block of
+memory to which pseudo code-fetches can be directed.          This feature is
+necessary because system accesses to prototype memory or I/O may cause dummy
+read cycles.    Generally, the only precaution you must take when setting the
+dummy address jumpers is to avoid specifying any memory-mapped I/O addresses.
+Table 2-2 lists the dummy address jumpers and their corresponding address
+lines.   Note that with each jumper, position 1 specifies a low level and
+position 2 specifies a high level. The normal position for each of the dummy
+address jumpers is position 1.
+
+
+
+
+2-8
+                                             Jumpers - 8086/8088 E.P. Installation
+
+
+                                  Table 2-2
+                            Dummy Address Jumpers
+
+
+                           Jumper    I   Address Line
+                           =========!===============
+                           P3051     I       DA8
+                           P4051     I       DA9
+                           P3041     I       DA10
+                           P3053     I       DA11
+                           P3042     I       DA12
+                           P3052     I       DA13
+                           P4031     I       DA14
+                           P4032     I       DA15
+                           P4073     I       DA16
+                           P4074     I       DA17
+                           P3076     I       DA18
+                           P4076     I       DA19
+
+
+
+
+ACCESSING THE PROTOTYPE CONTROL PROBE JUMPERS
+The following procedure tells how to disassemble the interface           assembly      in
+order to gain access to jumpers in the prototype control probe.
+
+1.   Lay the interface assembly top-side down on a flat surface,             and   orient
+     the assembly so that the 1.5-foot cable is facing you.
+
+2.   Remove the four screws that    secure    the   top   cover   of   the     interface
+     assembly's plastic housing.
+
+3.   Gently raise the bottom cover of the plastic housing off of the
+     midsection and top cover, and flip over to its left side. Be careful
+     not to pull any of the cables loose that connect the bottom cover to the
+     rest of the interface assembly.
+4.   On the now-exposed   underside of the bottom cover, remove the six
+     self-locking nuts    that secure the metal shield, then lift off the
+     shield.
+
+5.   Remove the six metal spacers. Carefully lift the top circuit board (the
+     Control board) from its supporting posts, and then flip the board over
+     on its connecting cable so that both the Control and Buffer boards are
+     now exposed.
+
+
+
+
+                                                                                       2-9
+Jumpers - 8086/8088 E.P. Installation
+
+
+32K SYSTEM/PROGRAM MEMORY BOARD JUMPERS, STRAPS, AND SWITCHES
+When the 8086/8088 Emulator Processor is installed, two jumpers, one strap,
+and one set of switches must be set on each 32K System/Program Memory board
+(in the Program section of your development system).         Refer to your
+development system's installation manual for information on the location and
+function of these jumpers and switches.
+
+W5011   Delayed read strap.     Cut the cuttable run between pins 1 and 2, and
+        then solder a strap between pins 2 and 3.
+J6175   Low/high board jumper. If there is only one 32K System/Program Memory
+        board installed in the Program Section of your development system, set
+        this jumper to position 2. If two 32K System/Program Memory boards
+        are installed in the Program Section, set this jumper to position 2 on
+        one of the boards, and set to position 1 on the other board.
+J7171   Extended bank jumper.      This jumper must be set to position 1.
+
+S7170   Extended memory      DIP   switch.   All switches must be set to 0 (the ON
+        position).
+
+
+64K/128K PROGRAM MEMORY BOARD JUMPERS
+
+When the 8086/8088 Emulator Processor is installed, jumpers must be set on
+each 64K/128K Program Memory board. Refer to the 64K/128K Static Program
+Memory Installation Manual for information on the location and function of
+these jumpers.
+
+J7090   Read delay jumper.     This jumper must be set to   the   0 ns   (no   delay)
+        position.
+J8100--J8160 Address select jumpers. These jumpers must be set such that
+       there is continuous memory from 0--128K. This is done by setting
+       jumper group A to O, group B to 32K, group C to 64K, and group D to
+       96K.   Refer to the 64K/128K Static Program Memory Installation Manual
+       for information on setting these jumpers.
+
+
+
+
+2-10
+                                                    8086/8088 E.P. Installation
+
+
+
+
+                                  Section 3
+
+                                INSTALLATION
+
+
+
+
+INTRODUCTION
+
+This section tells how to install the 8086/8088 Emulator Processor and
+prototype control probe in your TEKTRONIX microcomputer development system.
+This section also contains information for connecting the 40-pin probe plug
+to your prototype circuit.
+
+                                  ~
+     Before inserting or removing any circuit board, ensure that primary
+     power to the microcomputer development system is OFF. Inserting or
+     removing a board while the power is ON may result in component
+     damage.
+
+
+
+                                  ~
+     Under no circumstances can any other Emulator Processor module be
+     installed in your TEKTRONIX microcomputer development system while
+     the 8086/8088 Emulator Processor module is installed.    Excessive
+     power supply loading will result.
+
+
+
+                                    NOTE
+
+     The 8086/8088 Emulator Processor and        the   Memory   Allocation
+     Controller board cannot be installed        in the same microcomputer
+     development system.
+
+
+
+
+INSTALLING THE 8086/8088 EMULATOR PROCESSOR
+The 8086/8088 Prototype Control Probe, with its cable termination board,
+attaches to 8086/8088 Emulator Processor board II. The 8086/8088 Emulator
+Processor boards, with the prototype control probe attached, can then be
+installed in your development system.       To install the 8086/8088 Emulator
+Processor, perform the following procedure:
+
+1.   Verify that primary power     (115 Vac    or 230 Vac) to the microcomputer
+     development system is OFF.
+
+
+                                                                              3-1
+Installation - 8086/8088 E.P. Installation
+
+2.    Remove the     cover       retainers at the upper rear corners of the mainframe
+      (Fig. 3-1).
+
+
+
+
+         ~---
+
+          \      ~Cover                 l!I
+                               Retainers-;-;-;-~!-----.~~1
+
+
+              Cover Retainer                  ~
+              Screws                           ~
+
+
+                                                                               (3665-6)3775-8
+
+
+
+                Fig. 3-1.          Removal/installation of top cover.
+
+3.    Remove the top cover by sliding it straight back,          then   set   the    cover
+      aside.
+4.    Remove the two retaining screws from the cable                termination      board
+      mounting posts located on board II (see Fig. 3-2).
+
+5.    Hold the cable termination board above socket J1 on the back of
+      board II.   Make sure the component side of the cable termination board
+      faces away from board II. (Cable connectors J100 and J200 should not
+      yet be connected to the cable termination board.)
+6.    Guide edge connector P1 of the cable termination board into socket J1 on
+      board II.
+7.    Install the two retaining screws, removed in step 4, at the upper
+      corners of the cable termination board. Tighten the screws securely.
+
+
+
+
+3-2
+                                         Installation - 8086/8088 E.P. Installation
+
+
+
+
+  Q)
+ "C
+       Board I
+ Cii
+  ~
+  c:
+  Q)
+  c:
+  0
+  Q.
+  E
+  0
+                                         E
+                                         Q)
+ u                                       c:
+                                         0
+                                         Q.
+                                         E
+                                         0
+                                         u
+
+                                                                              3775-9
+
+
+
+
+Fig. 3-2.        8086/8088 Emulator Processor boards with prototype control probe.
+
+
+
+
+                                                                                       3-3
+Installation - 8086/8088 E.P. Installation
+
+
+8.           Connect boards I, II, and III together, using the              ribbon   cables
+             provided. Dress the cables as illustrated in Fig. 3-3.
+
+
+
+
+      Cl)
+      :'5!      Board I                                         Board Ill
+      ...c
+      !/)
+
+      Cl)
+       c
+       0
+       Q.
+       E
+       0
+                                                         ...c
+                                                         Cl)
+      (,)                                                c
+                                                         0
+                                                         e
+                                                         0
+                                                         (,)
+
+                                     Cable
+                                     Termination Board
+                                                                                       3775-10
+
+
+
+     Fig. 3-3.        Interconnections of the 8086/8088 Emulator Processor boards.
+
+9.           Facing the front of the mainframe, hold the three emulator boards by
+             their upper side edges. With the component sides facing left, align the
+             boards with other circuit boards in the mainframe.
+10.          While holding all three boards, guide board I down the vertical channel
+             to J14 on the Main Interconnect board. Next, guide board II down the
+             vertical channel to J15, then guide board III into slot J16.   Refer to
+             Fig. 3-4 (if your development system is an 8301 MDU) or Fig. 3-5 (if
+             your system is an 8540 IU).
+
+
+
+
+3-4
+                                                               Installation - 8086/8088 E.P. Installation
+
+
+                                                                    NOTE
+    When the emulator boards reach their connectors on the Main
+    Interconnect board, do not snap them into place yet. You may
+    need to lift the boards slightly when performing later steps
+    in this procedure.
+
+
+
+
+                                                                                                 -       =         -=
+                                                                                   ...    N
+                                                                                                 "'C
+                                                                                                  1i
+                                                                                                  0
+                                                                                                         "'C
+                                                                                                          1i
+                                                                                                          0
+                                                                                                                    ..
+                                                                                                                   "'C
+                                                                                                                    ca
+                                                                                                                    0
+                                                                                   =II:   =II:   ID      ID        ID
+
+                  .           ~             0
+                                                                                   Q)
+                                                                                   (.J
+                                                                                   ca
+                                                                                  .=  ..
+                                                                                           Q)
+                                                                                           (.J
+                                                                                           ca     0Ill    0Ill      0Ill
+                  e.... E e
+                                            Ill
+
+                                                                                   a; ..
+                  ~                         Ill    >     ~                                I-
+                                                                                                  Ill     Ill       Ill
+                        ~
+                                                                                                          Q)
+
+                        0     ....c:        Q)
+                                            (.J
+                                                   0    0
+                                                                                                  Q)
+                                                                                                  (.J     (.J
+                                                                                                                    Q)
+                                                                                                                    (.J
+                                                   E    E                                  Q)     0       0         0
+                  c:
+                   0
+                  (.)
+                        Q)
+
+                        ~
+                               0
+                               .
+                              (.)
+                                            0
+                                           Q.
+                                            Q)
+                                                   Q)
+
+                                                   ~
+                                                        Q)
+
+                                                        ~
+                                                                                   Cl
+                                                                                  .21
+                                                                                  .=I .=I
+                                                                                           Cl
+                                                                                          .21     .
+                                                                                                 Q.
+                                                                                                  0
+                                                                                                 ....
+                                                                                                         Q.
+                                                                                                         ....ca0
+                                                                                                                   Q.
+                                                                                                                   ....0
+                              ....0         Cl     E    E                                         ca                ca
+      ~
+      ca
+      Q.
+             .. ....> ....> E
+             Q)
+
+             ca
+             a.
+                  E
+                  Q)
+                  Ill
+                        E
+                        Q)
+                        Ill
+                              ~
+                              :::l
+                                            ca
+                                            :::l
+                                            Cl
+                                            c:
+                                                   ca
+                                                   Ci
+                                                   0
+                                                        ca
+                                                        Ci
+                                                        0
+                                                              ~
+                                                              ca
+                                                              Q.
+                                                                   ~
+                                                                   ca
+                                                                   Q.
+                                                                   en
+                                                                           ~
+                                                                           ca
+                                                                           Q.
+                                                                           en
+                                                                                  <t
+                                                                                  ~
+                                                                                          <t
+                                                                                          ~
+                                                                                                 3
+                                                                                                 E
+                                                                                                 w
+                                                                                                         3
+                                                                                                         E
+                                                                                                         w
+                                                                                                                   3
+                                                                                                                   E
+                                                                                                                   w
+                                            ca     Q.   Q.
+     en      en   en    en    w                               en
+                                                                   ...-, ......-, ...-, ...-,
+                                           ...I
+
+     ...-,   N
+             -,
+                  C'l
+                  -,    ~
+                        -,    LO
+                              -,
+                                           I.I)
+                                           -,      I'
+                                                   -,   CX>
+                                                        -,    en
+                                                              -,
+                                                                   0              N       C'l
+                                                                                                 ...-,
+                                                                                                 ~
+                                                                                                         ...-,
+                                                                                                         LO
+                                                                                                                   ...-,
+                                                                                                                   I.I)
+
+
+
+
+      1      2    3     4      5            6      7    8     9    10     11      12 13          14      15        16 \
+
+    LsvsTEM_J
+      SECTION
+                                       l                                        PROGRAM
+                                                                                 SECTION
+                                                                                                                           J
+L                                                       8301 Front Panel
+                                                                                                                            J
+                                                                                                                           (2354-43)3775· 11
+
+
+
+
+    Fig. 3-4.            Recommended board arrangement for the 8301 MDU.
+
+
+
+
+                                                                                                                                               3-5
+Installation - 8086/8088 E.P. Installation
+
+
+
+
+            ~
+            0...
+                                                                                                                     -       =        -=
+            ...c:                                                                                      ....   N
+                                                                                                                     "Eca
+                                                                                                                      0
+                                                                                                                             "E
+                                                                                                                              ca
+                                                                                                                              0
+                                                                                                                                       "E
+                                                                                                                                       ca
+                                                                                                                                       0
+            0                                                                                                 :ii:   IXl     IXl      IXl
+                                                                                                       :ii:
+            ()
+             ...al                                                                                      al     al
+                                                                                                                      ...
+                                                                                                                      0      0         0
+                                                                                                        u      u
+             E       ~                       ~                                                          ca    ca      "'"'   "'"'      "'"'
+                                             0...         >       ~                                    ~      ~       al     al        al
+             E
+             ~
+                     0...
+                     ...c:                   ...c:        0       0
+                                                                                                        Gi     Gi
+                                                                                                                      u
+                                                                                                                      0
+                                                                                                                             u
+                                                                                                                              0
+                                                                                                                                       u
+                                                                                                                                       0
+             Cl
+                             :::!E
+                             <(
+                                     :::!E
+                                     0
+                                              0
+                                                          E
+                                                          al
+                                                                  E
+                                                                  al                                    Cl     Cl    a:      a:       a:
+             ...
+             0        0
+                     ()      a:      a:
+                                             ()
+                                              ...        :::!E   :::!E                                 .!al   .!al
+                                                                                                              ~      ...0    ...0ca   ...0
+            a..                                                                                        ~
+                      E      E       E   ...0 E                   E
+                                                                                         2!             I      I     ..!!!            ..!!!
+            :::!E
+            0        ...
+                      al      al
+                             ti      ... :;ca 0ca...
+                                      al
+                                                          Cl
+                                                                  ca
+                                                                  a,      2!
+                                                                         ca
+                                                                                 al
+                                                                                 ;a      ca
+                                                                                         Q.
+                                                                                                2!
+                                                                                                ca     <(     <(
+                                                                                                              I-
+                                                                                                                      ::J
+                                                                                                                      E
+                                                                                                                             :;
+                                                                                                                              E
+                                                                                                                                       ::J
+                                                                                                                                       E
+            a:
+            a..
+                      "'>     >       "'>     E
+                                                         a: a:
+                                                                  0       Q.      Q.    I/)
+                                                                                                Q.
+                                                                                               I/)     I=     I-     w       w        w
+            ....
+                     I/)     I/)     I/)     w                           I/)     I/)
+                                                                                        0
+                                                                                        ....   ....    N      M      .q-
+                                                                                                                     ....    LO       co
+                                                                                               ....    .... ....             ....     ....
+                                                                 " co
+                     N       M       .q-     LO          co                      CJ)
+            ""')     ""')    ""')    ""')    ""')        ""')    ""')    ""')    ""')   ""')   ""')    ""')   ""')   ""')    ""')     ""')
+
+
+
+            1         2       3      4       5            6       7      8        9     10     11      12 13         14      15       16 \
+
+            LsvsTEM_J
+              SECTION
+                                                     l                                                PROGRAM
+                                                                                                       SECTION
+                                                                                                                                              I
+        L                                                                                                                                         j
+                                                                                8540 Front Panel
+                                                                                                                                                      3775-12
+
+
+
+
+          Fig. 3-5.                  Recommended board arrangement for the 8540 IU.
+11 •   Remove the two mounting screws at the top and bottom of the strain
+       relief plate, as shown in Fig. 3-6. Then remove the strain relief/cable
+       clamp assembly from the rear panel.
+
+
+
+
+3-6
+                                     Installation - 8086/8088 E.P. Installation
+
+
+
+
+                                                              Ribbon Cables
+
+
+
+                                                          Data Acquisition
+                                                          Interface
+                                                          (Part of TTA Option)
+
+
+
+
+                                                                              (2354-44)3775-13
+
+
+
+
+             Fig. 3-6.   Strain relief plate installation/removal.
+
+
+                                        NOTE
+
+           The standard cable clamps provided with your development
+           system are not compatible with the ribbon cables used with the
+           8086/8088 Prototype Control Probe. The standard clamps must
+           be replaced with the clamps provided with your 8086/8088
+           Prototype Control Probe.
+
+
+
+12.   Ensure that you have allowed enough ribbon cable to reach the cable
+      termination board (already attached to board II, which is now located in
+      the development system's card cage).        Then mount the long prototype
+      control probe ribbon cables to the cable clamp assembly, using the new
+      clamps provided.    Secure the cable clamps with hex nuts and lock
+      washers. Refer to Fig. 3-7.
+
+
+
+
+                                                                                             3-7
+Installation - 8086/8088 E.P. Installation
+
+
+
+
+                          8086/8088
+                          Cable Clamps
+
+
+
+
+                                          ~     Stralo Rollef .,.,.
+
+
+
+
+                                                                      To J100
+                                                                      and J200
+                                                                             (3773-9)3775-14
+
+
+
+
+                   Fig. 3-7.    Ribbon cable installation.
+
+
+13.   Feed the prototype control probe cable connectors (J100 and J200)
+      through the cableway opening. Then guide the strain relief/cable clamp
+      assembly into the cableway opening. Attach the strain relief plate to
+      the rear panel, using the two screws removed in step 11.
+
+14.   Attach the ribbon cable connector labeled J200 to P200 (refer back to
+      Fig. 3-2).   Be sure that pin 1 of the cable connector (blue stripe) and
+      pin 1 of the socket align. (Pin 1 is to the left when viewed from the
+      component side of the board.)
+
+15.   Following the procedure of step 14, attach ribbon cable          connector       J100
+      to P100 on the cable termination board.
+
+17.   Now slide the three emulator boards down until they reach their
+      respective connectors on the Main Interconnect board in your development
+      system's mainframe. Then press down firmly and evenly on the top edges
+      (one board at a time), until each board snaps into place.
+18.   Dress the cables along the cableway at the side of the mainframe and
+      over the side of the card cage. Make sure the cables are dressed to lie
+      flat, to allow clearance for the top cover.
+
+19.   Slide the top cover back into the guide tracks at the top of the
+      mainframe. Be sure the cover is properly seated in the slot at the
+      front of the mainframe.
+
+
+
+
+3-8
+                                          Installation - 8086/8088 E.P. Installation
+
+
+20.     Install the cover retainers at the upper corners on the rear of the
+        mainframe (see Fig. 3-1). Tighten the cover retainer screws securely.
+
+
+CONNECTING TO THE TRIGGER TRACE ANALYZER (OPTIONAL)
+The following procedure explains how to connect the 8086/8088 Emulator
+Processor to the optional Trigger Trace Analyzer (TTA). Refer to the Trigger
+Trace Analyzer Installation Manual for further information. Figure 3-8 shows
+the connection between the TTA and the 8086/8088 Emulator Processor.
+
+
+
+                                   Trigger Trace
+                                   Analyzer --~...._
+
+
+
+
+      TT A/Emulator
+      Interconnect
+      Cable - - - -
+
+
+
+
+                 TTA #2   TTA #1
+                                                                         (3773-12)3775-15
+
+
+
+
+              Fig. 3-8.    Connecting the 8086/8088 Emulator Processor to
+                              the optional Trigger Trace Analyzer.
+
+
+1.     Install the 8086/8088 Emulator Processor in your development system,
+       using the procedures described earlier in this section. (Don't replace
+       the cover of the development system until this entire procedure is
+       completed.)
+
+2.     There are two interconnect cables that connect the TTA with the
+       8086/8088 Emulator Processor. Attach one interconnect cable to P1 and
+       the other cable to P2, on the back of TTA board No. 1.
+
+                                                                                            3-9
+Installation - 8086/8088 E.P. Installation
+
+
+3.     Install the TTA, using the procedures described in the Trigger Trace
+       Analyzer Installation Manual.
+4.     Attach the two interconnect cables from P1 and P2 of the TTA to P1 and
+       P2 of emulator board I, respectively.
+5.     Replace the top cover of the development system, using the procedures
+       described earlier in this section.
+
+
+CONNECTING TO THE PROTOTYPE
+The 40-pin plug at the end of the 1.5-foot ribbon cables fits into the
+8086/8088 microcomputer socket on the prototype circuit. Pin 1 on the plug
+must be mated with receptacle 1 on the socket. A notch is located near pin 1
+on both the protective spring-loaded plate and the body of the plug, to aid
+in pin identification (see Fig. 3-9).
+
+
+
+
+                                                                        (3773-13)3775-16
+
+
+
+
+            Fig. 3-9.   Pin identification and proper plug insertion.
+
+
+
+
+3-10
+                                     Installation - 8086/8088 E.P. Installation
+
+
+                                   ~
+     If the prototype control probe plug is incorrectly inserted in the
+     prototype socket, damage to the prototype control probe will
+     result. Figure 3-9 shows the proper method of plug insertion.
+
+
+
+If you are using a zero-insertion-force (ZIF) socket for the 8086/8088
+microprocessor on your prototype, you should insert a standard low-profile
+40-pin DIP socket between the probe plug and the prototype's ZIF socket, to
+ensure a secure mechanical and electrical connection (see Fig. 3-10).
+
+
+
+
+                                                   Zero
+                                               ~Insertion
+                                                   Force
+                                                   Socket
+
+                                                                         (3773-14)3775-17
+
+
+
+
+              Fig. 3-10.    Using a zero-insertion-force socket.
+
+GROUNDING
+
+A proper ground system is necessary for the satisfactory operation of the
+8301 MDU or 8540 IU.       The emulator processor board and prototype control
+probe, as well as any other optional and peripheral equipment, must be
+properly grounded to eliminate ground loops and prevent static discharge
+damage. Ensure that primary power cords of all units (including the
+prototype circuitry) are connected to outlets on the same ground system.
+Refer to your    system's   Installation Guide     for      additional   grounding
+procedures.
+
+
+
+
+                                                                                        3-11
+                         Installation - 8086/8088 E.P. Installation
+
+
+
+INSTALLING 8540 OPTION ROM
+
+When you are installing a new option on your 8540 or installing
+an 8550-to-8540 Option Conversion Kit, you must install Option
+ROM devices on the System ROM Board. Figure 3-11 shows the
+locations and the assigned labels for the 32 ROM sockets on the
+System ROM board.  It is recommended that the Option ROM be
+installed in the following locations:
+
+• Install the Emulator Option ROM in the sockets labeled
+  CS82-CS8B in Fig. 3-11 (circuit numbers Ul010-Ul070 and
+  U3010-U3070 on the System ROM board) •
+
+•   Install the PROM Programmer Option ROM in locations CS90 and
+    CS91 in Fig. 3-11 (circuit numbers UlllO and Ull20 on the
+    System ROM board).
+
+• Install the Communications Option (COMM Option) ROM in location
+  CS8F, in Fig. 3-11 (circuit number U4060 on the System ROM
+  board) •
+
+• Install the Trigger Trace Analyzer Option ROM in locations
+  CS8E, CS8D and CS8C, in Fig. 3-11 (circuit numbers U4050, U4030
+  and U4010 on the System ROM board) •
+
+The spare ROM sockets for options are limited. When you add or
+replace Emulator Processor Boards, you may need to remove
+unneeded ROM to allow installation of required ROM.
+
+
+
+
+3-12                                                         REV NOV 1982
+                                                    Installation - 8086/8088 E.P. Installation
+
+
+
+
+      DDDDD ""'!·D~DDDDDDD
+      0000
+      0000
+               0000
+               0000
+                       0000
+                       0000
+                               0000
+                               0000
+                                        0000
+                                        0000
+                                                          0000
+                                                          0000
+                                                                     0000
+                                                                     0000
+                                                                                0000
+                                                                                0000
+                                                                                             0000
+                                                                                             0000
+                                                                                                        0000
+                                                                                                        0000
+                                                                                                                    0000
+                                                                                                                    0000
+                                                                                                                            0000
+                                                                                                                            0000
+                                                                                                                                       0000
+                                                                                                                                       0000
+
+
+
+
+      LI~LJDD LJLJg~g~DLl~D
+      rl
+      gggg
+      00000
+               gggg
+               00000
+                       gggg
+                       00000
+
+
+
+                c.:. c.:.      r:,
+                               gggg
+                               00000
+                                       gggg
+                                       00000
+
+
+
+                                       io      0
+                                                          gggg
+                                                          00000
+
+
+
+                                                          0      0
+                                                                     gggg
+                                                                     00000
+
+
+
+                                                                     0      0
+                                                                                gggg
+                                                                                00000
+
+
+
+                                                                                0      0
+                                                                                             ggg~
+                                                                                             00000
+
+
+
+                                                                                             0
+                                                                                           TP Vpp
+                                                                                                    0
+                                                                                                        gggg
+                                                                                                        000
+
+
+
+                                                                                                        •
+
+
+
+                                                                                                              1
+                                                                                                               0
+                                                                                                                    gggg
+                                                                                                                    00000
+
+
+
+                                                                                                                   °':   r. gggg
+                                                                                                                            00000
+
+
+
+                                                                                                                                   r
+                                                                                                                                       gggg
+                                                                                                                                       00000
+
+                                                                                                                                       0
+                                                                                                                                              •
+
+
+
+
+      0000     0000    0000    0000
+      0000     0000    0000    0000
+      00000    00000   00000   00000
+      00000000
+
+
+
+
+                       Fig. 3-11.                  System ROM Board socket locations.
+
+
+
+
+ADD NOV 1982                                                                                                                                  3-13
+                                                      8086/8088 E.P. Installation
+
+
+
+
+                                   Section 4
+
+                           PERFORMANCE VERIFICATION
+
+
+
+INTRODUCTION
+
+After the 8086/8088 Emulator Processor has been installed in your development
+system, it should be checked for proper operation. The first part of this
+section discusses equipment necessary to generally verify that the emulator
+processor is operating properly. The second part of this section discusses
+equipment necessary to verify timing relationships of signals at the pins of
+the prototype control probe.
+
+Every time you install an emulator processor, you should run system
+verification checks. Emulator processor diagnostics are run automatically as
+part of the system diagnostic test program.    Procedures for running this
+diagnostic test program are included in your system's Installation Guide.
+
+EQUIPMENT REQUIRED
+
+To check the operation of the installed   8086/8088     Emulator   Processor,   the
+following equipment is required:
+
+      e   TEKTRONIX MicroLab I (067-0892-xx).
+
+      •   8086/8088 Personality Card
+The MicroLab I checks the 8086/8088 Emulator Processor by providing a circuit
+with known characteristics (the personality card). The personality card is
+monitored by MicroLab I circuitry, and test results are indicated on the
+MicroLab I display. The MicroLab I operating system also contains tests that
+functionally exercise the prototype control probe.
+
+Throughout this section it is assumed that you are familiar with the
+MicroLab I and its characteristics. For more information on this equipment,
+refer to the MicroLab I Instruction Manual and the 8086/8088 Personality Card
+supplement.
+
+
+
+
+                                                                                 4-1
+Performance Verification - 8086/8088 E.P. Installation
+
+
+TEST PROCEDURES
+
+
+EQUIPMENT SETUP
+
+1.    Ensure that the power to the development system and to the MicroLab I is
+      turned OFF.
+2.    Verify that all jumpers are installed correctly on the personality card.
+      (Refer to the 8086/8088 Personality Card supplement.)
+3.    Install the personality card in the MicroLab I.
+
+4.    Attach a standard low-profile DIP socket to the 40-pin plug of the
+      prototype control probe, and insert the plug in the ZIF socket of the
+      personality card.
+
+FUNCTIONAL TEST PROCEDURE
+
+1.    Turn ON power to the development system and to the MicroLab I.
+
+2.    Start up the operating system.       For detailed information on system
+      operation, refer to your System Users Manual.
+3.    At the system terminal, enter the following command line:
+
+                         >SEL 8086 <CR>
+
+                             or
+
+                         >SEL 8088 <CR>
+      This identifies the emulator processor to be tested.
+4.    Enter the desired emulation mode.    Perform step a .2!:. b:
+
+      a.   To generally verify    memory   mapping   capability, select emulation
+           mode 1. Enter:
+
+                         >EM 1 <CR>
+
+
+           When the prompt character (>) is displayed, enter:
+                         >MAP U 00000 OFFFFF <CR>
+
+           This transfers all memory to the MicroLab I.
+
+
+
+
+4-2
+                       Performance Verification - 8086/8088 E.P. Installation
+
+     b.   If only the operation       of the emulator processor is to be tested,
+          select emulation mode 2.    Enter:
+
+                        >EM 2 <CR>
+
+
+5.   To start program execution, first enter:
+
+                        >RESET <CR>
+
+
+     Then, while holding down the RESET key on the MicroLab I, enter:
+
+                        >G 0 <CR>
+
+     Release the RESET key.
+
+If the 8086/8088 Emulator Processor is operating properly, the MicroLab I
+will display "HELLO".     This display indicates that most of the emulator
+circuitry is working properly.    However, several control lines are not
+checked during initialization and should be verified with the MicroLab I
+Processor Tests, which are explained later in this section.
+
+No "HELLO" Display
+If the MicroLab I does not display "HELLO", a problem is indicated with the
+8086/8088 Emulator Processor boards, the prototype control probe, or the
+MicroLab I. The following procedure may be used to determine which unit is
+not working:
+
+1.   Turn off the power to the MicroLab I and to the development system.
+
+2.   Disconnect the prototype        control   probe   from   the   ZIF socket of the
+     personality card.
+
+                                       E3
+           The 8086 or 8088 microprocessor is subject to damage by static
+           discharge   when   not   installed in a socket.      Hold the
+           microprocessor by the ends only and do not touch the pins.
+           The microprocessor should be stored in conductive foam when
+           not in use.
+
+
+
+3.   Install the personality card's microprocessor device in the ZIF socket.
+
+4.   Turn on the power to the MicroLab I.
+
+
+
+
+                                                                                    4-3
+Performance Verification - 8086/8088 E.P. Installation
+
+
+If the MicroLab I now displays "HELLO", the problem is with the 8086/8088
+Emulator Processor or the prototype control probe. Refer to the 8086/6088
+Emulator Processor Prototype Control Probes Service Manual for servicing
+information.
+If the MicroLab does not display "HELLO", a problem with the. MicroLab I is
+indicated.    Refer to the MicroLab I Instruction Manual and 8086/8088
+Personality Card supplement for servicing information.
+
+PROCESSOR TEST PROCEDURE
+If the emulator processor has passed the Functional Test Procedure, you are
+ready to run the Processor Tests. While each test is being performed, the
+display will show "PrOC n" (where n is the number of the test being
+performed). Perform the following procedure:
+
+1.    Press the RESET key on the MicroLab I keypad.       This       initializes        the
+      Processor Test hardware in the MicroLab I.
+
+2.    Press the PROC TEST (Shift 1) key to start   the   Processor             Tests.   The
+      display will show "Pn".
+3.    Press the 0 key.   The MicroLab I will execute PROC 0        and     then     display
+      "SPECIAL".
+4.    If the MicroLab I does not automatically transfer control to PROC 1,
+      press the SPECIAL key.      The MicroLab I will perform each of the
+      remaining Processor Tests in order.
+
+Refer to the appropriate personality card supplement           to        the     MicroLab I
+Instruction Manual for Processor Test error codes.
+
+
+EMULATOR TIMING VERIFICATION
+You may occasionally want to verify timing relationships between the signals
+at the pins of the prototype control probe. The following paragraphs discuss
+equipment necessary to perform these timing verifications.
+Details of these timing relationships are provided            in     the        appropriate
+Emulator Specifics section of your System Users Manual.
+
+
+MEASUREMENT CONSIDERATIONS
+
+Emulator timing verification involves measurement of extremely fast signals.
+Test equipment used for these measurements should be able to resolve timing
+differences of less than 5 ns between two signals. A resolution of 1 ns is
+best for examining the most critical timings.
+
+
+
+
+4-4
+                        Performance Verification - 8086/8088 E.P. Installation
+
+
+Be careful that errors are not introduced by the test equipment being used.
+Test equipment calibration should be checked carefully. If you are using a
+dual trace oscilloscope rather than a dual beam model, be sure to account for
+any possible skew between the the two input channels. In general, good
+laboratory measurement practices should should be followed to ensure accurate
+results.
+
+Equipment Required
+
+To measure timing relationships with the preferred accuracy      and   resolution,
+the following equipment may be used:
+      •   TEKTRONIX 7844 Dual Beam Oscilloscope, or equivalent
+
+      •   Two TEKTRONIX 7A26 Vertical Amplifiers, or equivalent
+
+      •   TEKTRONIX 7B85 Delaying Time Base, or equivalent
+
+
+
+CONTROLLING THE SIGNAL LINES UNDER TEST
+Some processor signal lines, such as interrupt lines, are normally connected
+to asynchronous circuits. Timing relationships of asynchronous signals may
+be difficult to measure with an oscilloscope. To exercise these signal lines
+in a periodic manner, it may be necessary to develop software routines or use
+an external test fixture such as the TEKTRONIX MicroLab I.
+
+
+
+
+                                                                                 4-5
+                 MANUAL CHANGE INFORMATION
+   At Tektronix, we continually strive to keep up with latest electronic developments
+by adding circuit and component improvements to our instruments as soon as they
+are developed and tested.
+
+  Sometimes, due to printing and shipping requirements, we can't get these
+changes immediately into printed manuals. Hence, your manual may contain new
+change information on following pages.
+
+   A single change may affect several sections. Since the change information sheets
+are carried in the manual until all changes are permanently entered, some
+duplication may occur. If no such change pages appear following this page, your
+manual is correct as printed.
+

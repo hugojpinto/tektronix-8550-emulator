@@ -28,6 +28,7 @@ extern "C" {
 #include "machine/tta.h"
 #include "machine/emulator_specifics.h"
 #include "machine/ep8085.h"
+#include "machine/ep8086.h"
 #include "machine/z80_slaves.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
@@ -89,6 +90,8 @@ public:
 	friend class emulator_board; friend class ep8085_board; friend class z80_slave; friend class z80_board; friend class language_processor;
 	ep8085_board m_ep85{*this};               // 8085 board (8300E06, control port E5)
 	ep8085_board &board8085() { return m_ep85; }
+	friend class ep8086_board;
+	ep8086_board m_ep86{*this};               // 8086/8088 emulator (boards I-III, ports 80-8F and A7)
 	emulator_board *active_slave() const;      // the one the Emulator Controller drives, if any
 	void slave_run(emulator_board &b, int cycles2650);
 	std::unique_ptr<emulator_specifics> m_spec_z80 = make_z80_specifics(ep);
@@ -164,9 +167,10 @@ private:
 		// -ep-prom supplies an image (Z80 diag 07/00D0 checksums it, expecting 0852).
 		if (ep_present && (m_e3 & 0x90) == 0x80 && (a & 0xfe00) == 0xf800) return ep_prom.empty() ? 0xff : ep_prom[(a - 0xf800) % ep_prom.size()];
 		{ u8 v; if (m_ep85.prom_window(a, v)) return v; }   // other boards' firmware PROMs
+		{ u8 v; if (m_ep86.overlay_read(a, v)) return v; }  // 8086 board RAMs (RAMINH)
 		return prog_present(ext, a) ? m_progmem[a] : 0xff;
 	}
-	void prog_wr(u8 ext, u16 a, u8 d) { if (prog_present(ext, a)) m_progmem[a] = d; }
+	void prog_wr(u8 ext, u16 a, u8 d) { if (m_ep86.overlay_write(a, d)) return; if (prog_present(ext, a)) m_progmem[a] = d; }
 	u64 m_cycles = 0, m_next_timer = 0, m_next_refresh = 0;
 	u32 m_pending = 0;            // latched interrupt flip-flops (bit n = int n)
 

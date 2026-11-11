@@ -213,6 +213,9 @@ void tek8301::lp_run(int cycles2650)
 	// (TTA.TST module 50 halts three times without an F9 write in between).
 	bool new_halt = cpu.halted() && !m_master_was_halted;
 	m_master_was_halted = cpu.halted();
+	// the 8086 emulator with emulation enabled (MASTER<3>) takes the halted 2650's bus itself
+	// and reports its stop (ep8086_board::enter_kernel)
+	if (m_ep86.run_enabled()) return;
 	if (cpu.halted() && !slave_enabled() && (!(m_ec_pend & 0x10) || new_halt)) { ec_interrupt(INT_SLV_HALT); return; }
 	if (!slave_enabled() || !cpu.halted()) return;
 	slave_run(*active_slave(), cycles2650);
@@ -302,6 +305,7 @@ void tek8301::restart()
 	m_hsi_da = false; m_hsi_oe = false; m_hsi_tbre = true; m_hsi_tx_timer = 0;
 	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_e3 = 0; m_ep85.control = 0; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
 	lp_reset();
+	m_ep86.restart();
 	cpu.reset();
 }
 
@@ -375,6 +379,7 @@ u8 tek8301::io_read(offs_t port)
 	// shows the TTA's break there, so DOS/50 prints <BREAK TRIGn>. An emulator bridge, not hardware.
 	else if (port == 0xc2 && tta_board.present && tta_board.break_status()) v = tta_board.break_status();
 	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; v = tta_board.read(port & 7, now_cycles()); }
+	else if (m_ep86.decodes(u8(port))) v = m_ep86.io_read(u8(port));
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
@@ -418,6 +423,7 @@ void tek8301::io_write(offs_t port, u8 d)
 	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
 	if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; rtpa_board.write(port & 7, d); update_irq(); return; }
+	if (m_ep86.decodes(u8(port))) { m_ep86.io_write(u8(port), d); update_irq(); return; }
 	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; tta_board.write(port & 7, d, now_cycles()); if (tta_board.take_irq()) tta_interrupt(); update_irq(); return; }
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
@@ -639,6 +645,7 @@ void tek8301::run_slice(int cycles)
 		m_in_cpu = false;
 		if (c <= 0) c = chunk;
 		lp_run(c);
+		m_ep86.run(c);
 		used += c; m_cycles += c;
 		if (tta_board.present) tta_board.sync(m_cycles);
 		remote.tick(c); aux.tick(c); term.tick(c);

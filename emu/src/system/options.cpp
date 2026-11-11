@@ -5,7 +5,7 @@
 
 const char *tek8550_options::usage()
 {
-	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-aux8301 SPEC] [-aux8501 SPEC] [-printer SPEC] [-rtpa [probe]] [-tta [probe]] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE]";
+	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|8086|8088|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-aux8301 SPEC] [-aux8501 SPEC] [-printer SPEC] [-rtpa [probe]] [-tta [probe]] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE]";
 }
 
 bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
@@ -18,7 +18,7 @@ bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
 		else if (a.size() == 2 && a[0] == '-' && a[1] >= '0' && a[1] <= '3') disks[a[1] - '0'] = next();
 		else if (a == "-sw") sw = int(strtol(next().c_str(), nullptr, 16));
 		else if (a == "-pm") pm_ext = next() == "ext";
-		else if (a == "-ep") { std::string v = next(); no_ep = v == "none" || v == "8085"; ep85 = v == "8085"; }
+		else if (a == "-ep") { std::string v = next(); no_ep = v != "z80"; ep85 = v == "8085"; ep86 = v == "8086" || v == "8088"; ep88 = v == "8088"; }
 		else if (a == "-prom-dev") prom_dev = next();     // image of the device in the PROM programmer socket
 		else if (a == "-prom") { std::string v = next(); prom_on = v == "on" || v == "fix"; prom_fix = v == "fix"; }
 		else if (a == "-ep-prom") ep_prom_file = next();   // Z80 emulator board firmware PROM dump (512 bytes, F800-F9FF)
