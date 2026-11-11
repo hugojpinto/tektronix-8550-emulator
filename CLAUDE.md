@@ -50,6 +50,24 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 - **Commits:** local only, no remote. Commit when asked.
 
 ## Known gaps
-- The CT8500 character ROM is unknown. The screenshot font is the Tek 308 ROM for upper case plus a hand-drawn lower case.
-- Not emulated: other emulator boards (8085, 6800, 8086…), the RTPA/TTA analysers, the PROM programmer, and the 8501 printer port beyond logging.
-- The meaning of Z80 emulator board E3 bits 4/1 and register-block byte 26 is unknown. Target-system interrupts are only lightly tested.
+**Not emulated:**
+- the 8301's host-computer link: the "remote" ACIA (CA/CB) has no peer, so `COMM`/`HOST` can't reach a host;
+- the RTPA/TTA trace analysers (`BIF`, `EVT`, `DRT`, `RTT`, `CNT`, diagnostic `RTPA.TST`);
+- the 6800, 8080 and 8086 emulator boards (an EMU.8086 disc exists);
+- target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
+- the 8501 printer/aux port beyond logging.
+
+**High-level, with known limits:**
+- **Board firmware:** the Z80 and 8085 boards' firmware was never dumped. Their tests fail only the PROM checksums 07/00D0 and 06/00D0.
+- **PROM programmer:** its controller is simulated, and only the 2708/2716/2732 module exists. Under `-prom fix`, a read after a write in one session hangs, because the PROM software V2.1 expects a later DOS/50.
+- **Floppy controller:** no timing, no media errors or retries, a blank image reads as formatted, and no mixed density.
+
+**Unknown:**
+- Z80 board: E3 bits 4/1 and register-block byte 26;
+- 8085 register block: bytes 8 and 13;
+- DOS/50 label byte 0x1C.
+
+**Other:**
+- Target-system interrupts are only lightly tested.
+- Mode 2 runs slowly: one socket round trip per access.
+- **Cosmetic:** the CT8500 character ROM is unknown. The screenshot font is the Tek 308 ROM for upper case plus a hand-drawn lower case.
