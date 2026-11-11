@@ -13,7 +13,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `emu/src/machine/` | `tek8501.*` (DMU: utility PROMs, LTC, serial ports, high-level floppy controller, HSI I/O board, ODT); `tek8301.*` (MDU: system controller, ACIAs, DMA, program memory, Language Processor, Emulator Controller, Z80 emulator board, memory map); `rtpa.*` (Real-Time Prototype Analyzer); `prototype.h` (target-system interface); `imd.h` (disk images) |
 | `emu/src/host/` | `ct8500.*` (terminal model and ANSI renderer), `ipc_target.*` (target system over a socket), `serial_link.*` (REMOTE port over a socket), `tty.h` |
 | `emu/src/main8550.cpp` | command-line driver for the full system (options are listed in `emu/README.md`) |
-| `notes/` | hardware findings: `8301.md`, `8501.md`, `prototype-link.md`, `host-link.md`, `rtpa.md`, and `dasm/` (ROM listings). **Facts established by reverse engineering live here** |
+| `notes/` | hardware findings: `8301.md`, `8501.md`, `prototype-link.md`, `host-link.md`, `rtpa.md`, `tta.md`, and `dasm/` (ROM listings). **Facts established by reverse engineering live here** |
 | `roms/` | curated ROM set (`MANIFEST.md`). The 8550 set is `roms/8550/8301`, `roms/8550/8501` |
 | `disks/` | working disk images. `System_helpfix.img` = DOS/50 V1.0 with the HELP file repaired |
 | `sources/` | original material (bitsavers manuals with OCR `.txt`, disk images, photos, tekwiki). **Read-only; never modify** |
@@ -53,7 +53,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 
 ## Known gaps
 **Not emulated:**
-- the TTA (Trigger Trace Analyzer, `TTA.TST`), RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
+- most of the TTA (Trigger Trace Analyzer, `-tta`): ports, RAM window and the Am9513 work, and TTA.TST modules 00–23 and 40–43 pass; events, triggers, counting, interrupt and acquisition are being reverse-engineered (`notes/tta.md`). RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
 - the 6800, 8080 and 8086 emulator boards (an EMU.8086 disc exists);
 - target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
 - the 8301 AUX port and the 8501 printer/aux port beyond logging.
