@@ -115,21 +115,27 @@ bool ep8086_board::overlay_write(u16 a, u8 d)
 
 // The user's memory: 4 KB blocks relocated into program memory (relocation RAM, indexed by
 // A19-12). Mapping RAM bits (diag modules 56, 57): 0 non-existent memory, 2 write protect.
+// The relocation RAM's output is the physical A19-A12: A15-A12 go to the program memory
+// boards as the bus address, A19-A16 onto the extended address lines (the "X-bus"), where
+// the boards' extended-bank comparators decide (186.TST module 42: markers written at
+// 10000, 20000, 40000 and 80000 must not reach physical 0000).
 u32 ep8086_board::user_addr(u32 a) const
 {
-	return u32((m_reloc[(a >> 12) & 0xff] << 12) | (a & 0xfff)) & 0xffff;
+	return u32((m_reloc[(a >> 12) & 0xff] << 12) | (a & 0xfff)) & 0xfffff;
 }
 
 u8 ep8086_board::user_read(u32 a, bool fetch)
 {
 	bus_wait(a, fetch);
-	return mdu.progmem(u16(user_addr(a)));
+	const u32 pa = user_addr(a);
+	return mdu.prog_rd(u8(~(pa >> 16)), u16(pa));    // extended bank lines, active low as F4
 }
 
 void ep8086_board::user_write(u32 a, u8 d)
 {
 	bus_wait(a, false);
-	mdu.progmem_w(u16(user_addr(a)), d);
+	const u32 pa = user_addr(a);
+	mdu.prog_wr(u8(~(pa >> 16)), u16(pa), d);
 }
 
 // Wait states on the program's memory cycles: one per bus cycle on the 80186 board

@@ -126,6 +126,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	lines(printer, dmu->printer);
 	mdu->mode_switch = u8(opt.sw);
 	mdu->pm_ext_comparator = opt.pm_ext;
+	if (opt.pm_32k) mdu->program_memory_32k();
 	if (opt.no_ep) mdu->m_epz80.present = false;
 	mdu->board8085().present = opt.ep85;
 	if (opt.ep86) {

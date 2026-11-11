@@ -15,6 +15,7 @@ struct tek8550_options
 	bool writeback = false;            // -rw
 	int sw = 0;                        // -sw HEX: 8301 mode DIP switch
 	bool pm_ext = false;               // -pm ext
+	bool pm_32k = false;               // -pm 32k (one 32 KB board, relocation jumper J5175 enabled)
 	bool no_ep = false, ep85 = false, ep86 = false, ep88 = false, ep186 = false;  // -ep z80|8085|8086|8088|80186|80188|none
 	std::string ep_prom_file;          // -ep-prom
 	bool prom_on = false, prom_fix = false; std::string prom_dev;

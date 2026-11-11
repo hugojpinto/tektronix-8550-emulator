@@ -1,0 +1,1152 @@
+       8500
+  MODULAR MDL SERIES
+MEMORY ALLOCATION
+   CONTROLLER
+    INSTALLATION
+       SERVICE
+                                                     COMMITTED TO EXCELLENCE
+
+
+
+
+                                     WARNING
+                   THE FOLLOWING SERVICING INSTRUCTIONS
+                   ARE FOR USE BY QUALIFIED PERSONNEL ONLY.
+                   TO AVOID PERSONAL INJURY, DO NOT
+                   PERFORM ANY SERVICING OTHER THAN THAT
+                   CONTAINED IN OPERATING INSTRUCTIONS
+                   UNLESS YOU ARE QUALIFIED TO DO SO.
+
+
+
+
+                                     PLEASE CHECK FOR CHANGE INFORMATION
+                                          AT THE REAR OF THIS MANUAL.
+
+
+
+
+This manual supports the following
+TEKTRONIX product:                                 8500
+    8550F06                                   MODULAR MDL SERIES
+                                           MEMORY ALLOCATION
+                                              CONTROLLER
+                                                INSTALLATION
+                                                   SERVICE
+
+
+
+
+Tektronix, Inc.
+P.O. Box 500
+Beaverton, Oregon            97077                Serial Number   Bof/0'11-
+070-3925-00                                                        First Printing JAN 1982
+Product Group 61                                                   Revised JAN 1984
+Copyright © 1982 by Tektronix, Inc. All rights reserved.
+Contents of this publication may not be reproduced in any
+form without the permission of Tektronix, Inc.
+
+Products of Tektronix, Inc. and its subsidiaries are
+covered by U.S. and foreign patents and/or pending patents.
+
+TEKTRONIX, TEK, SCOPE-MOBILE, and ~ are registered
+trademarks of Tektronix, Inc. TELEQUIPMENT is a registered
+trademark of Tektronix U.K. Limited.
+
+There is no implied warranty of fitness for     a particular
+purpose. Tektronix, Inc. is not liable for      consequential
+damages.
+
+Specification and price   change   privileges   are   reserved.
+
+
+
+                    Printed in U.S.A.
+                                                                 MAC Installation
+
+
+
+
+                                     PREFACE
+
+
+ABOUT THIS MANUAL
+
+This manual tells how to install the 8500 MDL Series Memory Allocation
+Controller in an 8301 Microcomputer Development Unit or an 8540 Integration
+Unit.
+
+                                   ~
+     The Memory Allocation Controller should only be installed by a
+     Tektronix Field Service Specialist.      Tektronix, Inc., is not
+     obligated to furnish service to repair damage resulting from
+     attempts by unauthorized personnel to install this product. Please
+     call your nearest Tektronix Field Service Office for installation.
+
+
+
+
+EQUIPMENT NOMENCLATURE
+
+Throughout this manual, the terms "development system" and "the mainframe"
+apply equally to the 8301 Microprocessor Development Unit and to the 8540
+Integration Unit, unless otherwise stated.
+
+
+MANUAL ORGANIZATION
+
+The 8500 MDL Series Memory      Allocation   Controller   Installation   Manual   is
+divided into four sections:
+
+      •   Section 1 contains general information about the     Memory    Allocation
+          Controller, including specifications.
+
+      •   Section 2 contains information about jumper and switch settings.
+
+      •   Section 3 provides installation procedures for the Memory Allocation
+          Controller.
+
+      •   Section 4 discusses    verification of the installed Memory Allocation
+          Controller.
+
+
+
+
+@                                                                                 i
+Preface - MAC Installation
+
+
+DOCUMENTATION OVERVIEW
+
+Support documentation for TEKTRONIX development systems consists of three
+groups   of manuals: service manuals, installation manuals, and user's
+manuals.
+
+SER VICE MANUALS
+
+Service manuals provide the information necessary to perform system testing,
+to isolate hardware problems, and to repair system components. Service
+manuals are identified by their blue covers and may be purchased from
+Tektronix as optional accessories.
+
+The following manuals provide service information for the   Memory    Allocation
+Controller and its host systems:
+
+      •   8500 MDL Series Memory Allocation Controller Service Manual
+
+      •   8301 Microprocessor Development Unit Service Manual
+
+      •   8540 Integration Unit Service Manual
+
+
+Also available are service manuals for Emulator Processor modules, peripheral
+equipment,   and other optional features, such as the PROM Programmer
+Controller.
+
+
+INSTALLATION MANUALS
+
+Installation manuals or guides tell how to unpack and install equipment, and
+how to verify the equipment's proper operation. Installation manuals may be
+separate manuals with blue covers, or may be provided as supplements to
+existing   publications.   Installation manuals are provided with system
+components as standard accessories.
+
+The following manuals provide installation       information    for   the   Memory
+Allocation Controller's host systems:
+
+      •   8550 Microcomputer Development Lab Installation Guide
+
+      •   8540 Integration Unit Installation Guide
+
+
+
+
+ii                                                                               @
+                                                       Preface - MAC Installation
+
+
+USER'S MANUALS
+
+User's manuals tell how to operate the development system and its peripheral
+devices. User's manuals are identified by their grey covers and are provided
+as standard accessories with the development system or option.
+
+For an overview of your development       system   and    its   capabilities,   the
+following manuals may be of interest:
+
+      •   8550 Microcomputer Development Lab System User's Manual
+
+      •   8540 Integration Unit System User's Manual
+
+To derive the greatest benefit from this manual, you should be familiar with
+your   TEKTRONIX microcomputer development system, as described in the
+appropriate manual listed here.
+
+
+GENERAL INFORMATION
+
+
+REVISION HISTORY
+
+As this manual is revised and reprinted, revision history information is
+included on the text and diagram pages. Original manual pages are identified
+with an '@' symbol at the bottom inside corner of the page.    When existing
+pages are revised, the '@' symbol is replaced with a revision date (REV OCT
+1981). New pages added to a section, whether they contain old, new, or
+revised information, will be identified with the '@' symbol and a date (@ OCT
+1981).
+
+
+CHANGE INFORMATION
+
+Change notices are issued by Tektronix, Inc., to document changes to the
+manual after it has been published. Change information is located at the
+back of this manual, following the yellow tab marked "CHANGE INFORMATION".
+When you receive the manual, you should enter any change information into the
+body of the manual, according to the instructions on the change notice.
+
+
+
+
+@                                                                               iii
+                                              MAC Installation
+
+
+
+
+                                   CONTENTS
+
+
+
+SAFETY SUMMARIES
+
+                                                          Page
+Operators                                                  vii
+Servicing                                                   ix
+
+
+Section 1 GENERAL INFORMATION
+
+Introduction                                               1-1
+Description                                                1...: 1
+Operating Information                                      1-2
+  Commands ••••••••••.                                     1-2
+  Board Configuration                                      1-3
+Specifications •••••••                                     1-4
+
+
+Section 2   JUMPERS AND SWITCHES
+
+About '!his Section                                        2-1
+Description •••••••                                        2-1
+  Address Range Jumper ••••••                              2-1
+  Relocation Jumpers                                       2-1
+  Address Feedthrough Switches ••••••                      2-2
+Configuration Procedures ••••••                            2-3
+  Setting the Address Range Jumper                         2-3
+  Setting the Relocation Jumpers                           2-4
+  Setting the Address Feedthrough Switches                 2-6
+
+Section 3   INSTALLATION PROCEDURES
+
+Introduction •..•••••                                      3-1
+Installing the MAC                                         3-1
+Grounding                                                  3-3
+
+Section 4   VERIFICATION
+
+Verification Procedures                                    4-1
+
+CHANGE INFORMATION
+
+
+
+
+                                                               v
+Contents - MAC Installation
+
+
+
+
+                                   ILLUSTRATIONS
+
+Fig.
+No.
+                                                                             Page
+1-1     How the MAC functions within the development system                   1-2
+
+2-1     MAC jumper and switch locations •••••••••••••••••••••••••••••••••••• 2-2
+2-2     Address Range jumper (J2101) settings •••••••••••••••••••••••••••••• 2-3
+2-3     Connecting P3151 to J3151 ••..••..•••••••••••••••••••••••..••.•••••• 2-5
+2-4     Connecting P5140 to J5140 ••••••••••••••••••••••••.••••••••••••••••• 2-5
+
+3-1     Removing the cover retainers ••••••••••••••••••••••••••••••••••••••• 3-2
+
+
+
+
+                                      TABLES
+
+Table
+No.
+                                                                             Page
+1-1     Electrical Characteristics                                            1-4
+1-2     Environmental Characteristics ••.•...•••.....•.....•................ 1-4
+1-3     Physical Characteristics .......................................... . 1-4
+
+2-1     Minimum Block Sizes ............................................... . 2-4
+2-2     Relocation Jumper Positions •••••••••••••••••••••••••••••••••••••••• 2-4
+2-3     Address Feedthrough Switch Settings ••••••••••••••••.••••••••••••••• 2-6
+
+
+
+
+vi                                                                              @
+                                                               MAC Installation
+
+
+
+
+                           OPERATORS SAFETY SUMMARY
+
+
+The general safety information in this part of the summary is for both
+operating and serv1c1ng personnel. Specific warnings and cautions will be
+found throughout the manual where they apply, but may not appear in this
+summary.
+
+
+TERMS
+
+
+In This Manual
+
+CAUTION statements identify conditions or practices     that   could   result    in
+damage to the equipment or other property.
+
+WARNING statements identify conditions or   practices   that   could   result    in
+personal injury or loss of life.
+
+
+As Marked on Equipment
+
+CAUTION indicates a personal inJury hazard not immediately accessible as one
+reads the marking, or a hazard to property including the equipment itself.
+
+DANGER indicates a personal injury hazard immediately accessible as one reads
+the marking.
+
+
+SYMBOLS
+
+
+As Marked on Equipment
+
+
+   ~      DANGER high voltage.
+
+
+  ~       Protective ground (earth) terminal.
+
+
+  LD.     ATTENTION - Refer to manual.
+
+
+
+
+                                                                                vii
+Safety Summaries - MAC Installation
+
+
+SAFETY PRECAUTIONS
+
+
+Grounding the Product
+
+The product is grounded through       the   grounding conductors  in  the
+interconnecting cables.    To avoid electrical shock, plug the supporting
+system's power cord into a properly wired receptacle. A protective ground
+connection by way of the grounding conductor in the system power cord is
+essential for safe operation.
+
+
+Use the Proper Fuse
+
+To avoid fire hazard, use only the fuse specified in the parts list for your
+product.   Be sure the fuse is identical in type, voltage rating, and current
+rating.
+
+Refer fuse replacement to qualified service personnel.
+
+
+Do Not Operate in Explosive Atmospheres
+
+To avoid explosion, do not operate this product in an atmosphere of explosive
+gases.
+
+
+Do Not Remove Covers or Panels
+
+To avoid personal injury, do not remove covers or panels from this product.
+Do not operate the product without the covers and panels properly installed.
+
+
+
+
+viii                                                                        @
+                                            Safety Summaries - MAC Installation
+
+
+
+
+                            SERVICING SAFETY SUMMARY
+
+                       FOR QUALIFIED SERVICE PERSONNEL ONLY
+
+           (Refer also to the preceding Operators Safety Summary)
+
+
+DO NOT SERVICE ALONE
+
+Do not perform internal service or adjustment on this product unless    another
+person capable of rendering first aid and resuscitation is present.
+
+
+USE CARE WHEN SERVICING WITH POWER ON
+
+Dangerous voltages exist at several points in this product.       To avoid
+personal injury, do not touch exposed connections and components while power
+is on.
+
+Disconnect power before removing protective panels, soldering,    or   replacing
+components.
+
+
+POWER SOURCE
+
+The system that supports this product is intended to operate from a power
+source that will not apply more than 250 volts rms between the supply
+conductors or between either supply conductor and ground.       A protective
+ground connection by way of the grounding conductor in the supporting
+system's power cord is essential for safe operation of this product.
+
+
+
+
+@                                                                             ix
+MAC Installation
+
+
+
+
+                                                                   3925- 1
+
+
+
+
+                   8500 MDL Series Memory Allocation Controller.
+
+
+
+                                                                   @
+  x
+                                                              MAC Installation
+
+
+
+
+                                  Section 1
+
+                             GENERAL INFORMATION
+
+
+
+
+INTRODUCTION
+
+The 8500 MDL Series Memory Allocation Controller (MAC) facilitates the
+development   of microprocessor-based prototypes that have large memory
+addressing capabilities (typically, over 256K bytes).   The MAC provides a
+means of mapping selected blocks of the development system's program memory
+into any part of the target microprocessor's address space.
+
+This section provides a brief description of the MAC,   and   the   instrument's
+specifications.
+
+
+DESCRIPTION
+
+The MAC is a single circuit board that plugs into the development system's
+Main Interconnect board.     The MAC is also connected to the emulator (and
+optionally to the Trigger Trace Analyzer) through a connector on the top of
+the MAC board.
+
+Figure 1-1 shows how the MAC functions within the development system.   The
+top plane bus, which links the MAC with the emulator and optional Trigger
+Trace Analyzer (TTA), carries several signals generated by the emulator.
+Among these signals are the upper bits (A12 and above) of all addresses
+generated by the target microprocessor. These addresses are referred to as
+logical addresses. The MAC translates logical addresses into physical
+addresses • Physical addresses access the development system's program
+memory, via the Main Interconnect board. Data bits from the memory are then
+transmitted across the Main Interconnect board to the emulator.
+
+User commands configure the MAC relocation circuits that translate logical
+addresses to physical addresses.      When these and other MAC circuits are
+programmed by the System Processor, all data, addresses, and control signals
+are supplied to the MAC through the backplane connector.
+
+
+
+
+                                                                               1-1
+General Information - MAC Installation
+
+
+
+
+                                       .i~#1··A4~.;~s.~•~#~•A1•?+
+                                           (Top Plane)              } f   IT:f@(~o5P~o:!:>
+                                                                    I :::::~     Control Probe)
+                                                                        <::::1
+                                                                    j       I
+
+
+
+
+            PROGRAM              MAC                         EMULATOR
+             MEMORY
+
+
+
+
+                                                                                                  3925-2
+
+
+       Fig. 1-1.   How the MAC functions within the development system.
+
+
+OPERATING INFORMATION
+
+
+COMMANDS
+
+Four operating system commands control operation of the MAC: AL, DEAL, MEM,
+and NOMEM. More information about these commands is available in your system
+user's manual. The following paragraphs provide a general overview of the
+MAC commands.
+
+AL         Allocate. Assigns blocks of physical memory to corresponding
+           blocks of logical addresses. Optional command parameters specify
+           the boundaries of the assigned logical address block, and the
+           microprocessor   memory   spaces   affected.   When used without
+           parameters, AL displays a list o_f all       memory  allocations.
+           (A similar AL command performs this function for standard address
+           space emulators; however, it is not a MAC command.)
+DEAL       De-allocate. Removes a current allocation of a physical memory
+           block. DEAL accepts additional parameters similar to those used
+           with the AL command.
+
+
+
+
+1-2                                                                                                        @
+                                          General Information - MAC Installation
+
+
+MEM         Memory. Indicates that the specified memory block exists in the
+            prototype. MEM accepts additional parameters similar to those used
+            with the AL command. When used without parameters, MEM displays
+            all current assignments of the MEM command.
+
+NOMEM       No memory. Indicates that there is no memory in the prototype for
+            the specified range of addresses.       NOMEM accepts    additional
+            parameters similar to those used with the MEM command. When used
+            without parameters, NOMEM displays all current assignments of the
+            NOMEM command.
+
+The AL and DEAL commands operate independently of the MEM and NOMEM commands.
+The standard operating system command MAP, in conjunction with the emulation
+mode, determines if the emulator will address development system or prototype
+memory for a specific memory access. (Refer to your system user's manual for
+more information about the MAP command.)
+
+All four MAC commands are a part of the emulator software. If the MAC is not
+needed with a given emulator, the development system will not recognize MAC
+commands.
+
+
+BOARD CONFIGURATION
+
+Three jumpers and a set of switches on the MAC configure the MAC for a
+specific emulator.    Procedures for setting the jumpers and switches are
+presented in Section 2 of this manual.
+
+
+                                        NOTE
+
+        Be sure to verify MAC   configuration   every   time   you   install   an
+        emulator.
+
+
+
+
+                                                                                    1-3
+General Information - MAC Installation
+
+
+SPECIFICATIONS
+
+The following tables contain the specifications         for    the   MAC's   electrical,
+environmental, and physical characteristics.
+
+
+                                      Table 1-1
+                             Electrical Characteristics
+
+
+      Characteristic       Performance Requirement      Supplemental Information
+  -------------------
+   Input Power
+                      -------------------------
+                       +5.2 Vdc +1%/-2%
+                                                ---------------------------
+                                                 @ 2.8 A (typical, board)
+                                                        selected)
+
+   Power Dissipation       14.6 W                       (typical, board selected)
+
+
+
+
+                                     Table 1-2
+                            Environmental Characteristics
+
+
+               Characteristic       Description
+              ================ -------------------------------------
+               Temperature
+                 Operating          0° C to 50° C (+32° F to +122° F)
+                 Storage            -55° C to 75° C (-67° F to +167° F)
+
+               Humidity             0 to 90%, non-condensing
+
+               Altitude
+                Operating           To 4 500 m (15,000 feet)
+                Storage             To 15 000 m (50,000 feet)
+
+
+
+
+                                        Table 1-3
+                                Physical Characteristics
+
+
+                       Characteristic     Description
+                       ================
+                        Weight
+                                        -------------------------
+                                         700 grams (1.5 pounds)
+
+                       Height             188 mm (7.4 inches)
+                       Length             279 mm (11.0 inches)
+
+
+
+
+1-4                                                                                    @
+                                                                MAC Installation
+
+
+
+
+                                   Section 2
+
+                             JUMPERS AND SWITCHES
+
+
+
+
+ABOUT THIS SECTION
+
+This section is divided into two parts. The first part describes MAC jumper
+and switch functions.     The second part contains procedures for setting the
+jumpers and switches.
+
+
+DESCRIPTION
+
+The MAC board contains three jumpers and one set of switches:
+
+      •   The Address Range jumper (J2101).
+
+      •   The Relocation jumpers (J3151/P3151 and J5140/P5140).
+
+      •   The Address Feedthrough switches (SW2180).
+
+Figure 2-1 shows the locations of these jumpers and switches.
+
+
+ADDRESS RANGE JUMPER
+
+This jumper enables or disables logical address lines A26--A31 on the MAC.
+Some emulators use these lines strictly for address signals; other emulators
+use these lines to transmit data to the TTA.
+
+
+RELOCATION JUMPERS
+
+These jumpers determine the size of the relocated memory block. Each jumper
+consists of a set of square pins and a cable connector. Both jumpers are
+marked with seven positions (A12--A18).
+
+The internal relocation circuits of the MAC accept the 14 most significant
+bits of the logical address generated by the emulator. Since the maximum
+address space varies from one emulator to another, the Relocation jumpers are
+required to determine which bits of logical address bits A12--A31 are the 14
+most significant for a given emulator.
+
+
+
+
+@                                                                              2-1
+Jumpers and Switches - MAC Installation
+
+
+
+
+                                                                         3925-3
+
+
+
+                Fig. 2-1.   MAC jumper and switch locations.
+
+For example, with an emulator that generates 26-bit or smaller addresses
+(such as the Z8000 or 68000 emulators), both jumpers are normally set to
+position A12; this position routes lines A12--A25 (the most significant bits)
+to the MAC's relocation circuits. Line A12 toggles for every 4K segment of
+memory, resulting in a block size of 4K. Similarly, with an emulator that
+generates 29-bit addresses, both jumpers are normally set to A15, routing
+lines A15--A28 to the internal circuits. Line A15 toggles for every 32K
+segment of memory, and the resulting block size is 32K.
+
+
+ADDRESS FEEDTHROUGH SWITCHES
+
+This set of six switches works with the Relocation jumpers to determine the
+size of the relocated memory block. When the Relocation jumpers are moved
+from A12 to a higher position, one or more lines (starting with A12) are
+disconnected from the relocation circuit. Switches in SW2180, corresponding
+to the disconnected lines, are closed to route these lines directly to the
+physical address bus.
+
+
+
+
+2-2                                                                           @
+                                           Jumpers and Switches - MAC Installation
+
+
+CONFIGURATION PROCEDURES
+
+Configuration of the MAC consists of the following procedures:
+
+      •   Setting the Address Range jumper.
+
+      •   Setting the Relocation jumpers.
+
+      •   Setting the Address Feedthrough switches.
+
+
+                                         NOTE
+
+     Before you can configure the MAC jumpers and switches, you must
+     know the maximum number of logical address bits generated by the
+     emulator. This number may not be the same as the number of address
+     bits   generated by the target microprocessor; some emulators
+     translate microprocessor status signals into additional address
+     bits.   Refer to the installation manual for your emulator to
+     determine the number of logical address bits that the emulator
+     generates.
+
+
+
+
+SETTING THE ADDRESS RANGE JUMPER
+
+If the emulator generates 26 or fewer address bits, set J2101 to the 12--25
+position.   If the emulator generates 27 or more address bits, set J2101 to
+the 12--31 position. Figure 2-2 illustrates these positions.
+
+
+
+
+                                    or
+                   12-25 Position
+
+
+
+
+                                                                              3925-4
+
+
+              Fig. 2-2.    Address Range jumper (J2101) settings.
+
+
+@                                                                                  2-3
+Jumpers and Switches - MAC Installation
+
+
+SETTING THE RELOCATION JUMPERS
+
+
+         1.   Determine the desired block        size      for   your   application.
+              Table 2-1 lists the minimum        block     sizes imposed by emulator
+              address ranges.
+                                          Table 2-1
+                                     Minimum Block Sizes
+
+
+                       Total Number of Logical        Minimum Block
+                            Address Bi ts            Size (in bytes)
+                      -------------------------
+                              26 or less
+                                                -----------------
+                                                        4K
+                                    27                         BK
+                                    2B                        16K
+                                    29                        32K
+                                    30                        64K
+                                    31                       12BK
+                                    32                       256K
+
+
+
+         2.   Locate the proper position for the Relocation jumpers               in
+              Table 2-2. The same position is used for both jumpers.
+
+                                           Table 2-2
+                                  Relocation Jumper Positions
+
+
+                                 Block Size    Jumper Position
+                              ------------
+                                    4K
+                                           -----------------
+                                                 A12
+                                      BK             A13
+                                     16K             A14
+                                     32K             A15
+                                     64K             A16
+                                    12BK             A17
+                                    256K             A1B
+
+
+
+         3.   As shown in Fig. 2-3, attach cable connector P3151 to the
+              adjacent set of square pins (J3151).         Be sure to align the
+              connector index mark with the proper position mark on the
+              circuit board, as determined from Table 2-2.
+
+                                              NOTE
+
+                   Depending on the        jumper positions, some square pins
+                   will be exposed.
+
+2~                                                                                 @
+                                                    Jumpers and Switches - MAC Installation
+
+
+
+
+          Index M a r k r r m
+                    r-~~
+
+
+
+
+                  r;r~1~~ 1u1mm1111111~/
+                              rt/ ,../ c:::::::J c::::::J c:::::::J                      Cable Connector
+
+
+
+                  lJLYll II            I
+
+
+
+
+                     : : : ijililililflilililililllilil
+                    ,,,,,,,
+                    1111
+
+                    No:rcoco
+                                                          ~
+                    .... .- ,... ,...                                       Square Pins
+                    <(   <(     <(    <(
+
+
+                    Position Marks
+
+
+                                                                                                            3925-5
+
+
+                    Fig. 2-3.               Connecting P3151 to J3151.
+
+    4.   As shown in Fig. 2-4, connect P5141 to J5141. Be sure to align
+         the connector index mark with the proper position mark on the
+         circuit board.
+
+
+
+
+                                                                      Position Marks
+                                                                      CO     CO    o:t   N
+                              Square Pins ~                           :;:    :;:   :;:   :;:
+
+
+                                                                      '''''''
+                                                                       I
+                                                                       I     I
+                                                                              I           I
+                                                                                          I
+
+                                                    UUUITITITU : I                        :
+         Cable Connector~                                              I     I     I      I
+
+                               ""                                      I     I     I      I
+
+
+                                     ~......1-llL-11L-111-11L-1!~1-~~jl
+                                                                            --'-~              Index Mark
+
+
+                                                                                                            3925-6
+
+
+               Fig. 2-4.             Connecting P5140 to J5140.
+
+
+@                                                                                                                2-5
+Jumpers and Switches - MAC Installation
+
+
+SETTING THE ADDRESS FEEDTHROUGH SWITCHES
+
+Set the Address Feedthrough switches to correspond to the desired block size,
+as shown in Table 2-3.
+                                          NOTE
+
+      On the switch pack, the open position is labeled OPEN or OFF.
+
+
+
+
+                                   Table 2-3
+                      Address Feedthrough Switch Settings
+
+
+                                           Switch Positions
+
+             Block Size        A12     A13 II A14 II A15 II A16 II A17
+            ------------
+                  4K
+                              ======
+                               open
+                                     ======l======l======l======l=======
+                                      open II open II open II open II open
+            ------------   ------ ------:------:------:------:-------
+                  BK       closed open    open
+                                           I
+                                           I     open
+                                                   I
+                                                   I    open
+                                                          I
+                                                          I    open
+                                                                  I
+                                                                  I
+
+            ------------
+                 16K      a
+                           ------ ------ ------.------
+                                            I
+
+                           closed closed open
+                                                   I
+
+                                                 open
+                                                       ------
+                                                          I
+
+                                                        open
+                                                              -------
+                                                               open
+            ------------.------
+                 32K
+                          I
+                                  ------ ------ ------
+                         I closed closed closed open
+                                                       ------
+                                                        open
+                                                              -------
+                                                               open
+            ------------:------
+                 64K
+                                  ------ ------ ------ ------
+                         I closed closed closed closed open
+                                                              -------
+                                                               open
+            ------------:------   ------ ------ ------ ------ -------
+                128K     lclosed closed closed closed closed open
+            ------------:------   ------ ------ ------ ------ -------
+                256K     I closed closed closed closed closed closed
+
+
+
+
+                                      ~
+      Make sure that the Address Feedthrough switches are set correctly.
+      Incorrect switch settings may result in damage to the MAC.
+
+
+The MAC is now ready for installation in          the   development          system.
+Installation procedures are described in Section 3 of this manual.
+
+
+
+
+2-6                                                                                @
+                                                                   MAC Installation
+
+
+
+
+                                   Section 3
+
+                            INSTALLATION PROCEDURES
+
+
+
+
+INTRODUCTION
+
+This section describes how to install the MAC in the development system. You
+may need to repeat part or all of this procedure each time an you install an
+emulator.
+
+                                  ~
+    Some emulators contain their own memory allocation circuits.
+    (These emulators are identified in their installation manuals.)
+    With such emulators, the MAC is not necessary and should not be
+    installed. Excessive power consumption may result.
+
+
+
+
+INSTALLING THE MAC
+
+
+                                  I WARNING    I
+     Dangerous voltages exist at several points within the development
+     system.   To avoid personal injury, be sure that the development
+     system's primary power switch is OFF and that the line cord is
+     disconnected.
+
+
+
+         1.    Place the development system on the workbench so      that   you   are
+               facing the rear panel.
+
+         2.    Remove the upper left and   upper   right   cover   retainers.     See
+               Fig. 3-1.
+
+
+
+
+@                                                                                   3-1
+Installation Procedures - MAC Installation
+
+
+
+
+                                                                      (3665-6)3925- 7
+
+
+                      Fig. 3-1.   Removing the cover retainers.
+
+
+         3.   Remove the top cover by sliding it toward the back of the unit.
+
+         4.   Turn the unit around 180 degrees, so that you are now facing the
+              front panel.
+
+         5.   Verify the jumper settings of the development system's Program
+              Memory boards.    The boards should be jumpered so that all
+              program memory is contiguous, and the lowest memory location is
+              OOOOH.   Refer to your development system's installation guide
+              for more information about memory board jumper settings.
+
+
+                                             NOTE
+
+                   Before you continue with this procedure, be sure you
+                   have set the MAC jumpers and switches, as described in
+                   Section 2 of this manual.
+
+
+
+         6.   Insert the MAC into slot 14 (marked "SPARE") of the mainframe.
+
+         7.   Connect the MAC to the emulator and to the    optional TTA        (if
+              present),   according   to   the procedures   described in        the
+              emulator's installation manual.
+
+         8.   Replace the mainframe's top cover, and the two cover retainers.
+              The MAC is now ready for use.
+
+
+
+
+3-2
+                                  Installation Procedures - MAC Installation
+
+
+GROUNDING
+
+A proper ground system is mandatory for satisfactory operation of your
+microcomputer development system.     The MAC, as well as any optional or
+peripheral equipment, must be properly grounded to reduce susceptibility to
+static discharge.    See your system installation guide for proper grounding
+procedures.
+
+
+
+
+@                                                                          3-3
+                                                             MAC Installation
+
+
+
+
+                                  Section 4
+
+                                VERIFICATION
+
+
+
+
+VERIFICATION PROCEDURES
+
+The performance of the MAC is verified by running the development system's
+diagnostics. When the system diagnostics are executed in the 11 RUN ALL" mode,
+the MAC is detected and tested. Refer to the Verification section of the
+development system's Installation Guide for instructions on how to execute
+these system diagnostics. If an error message indicates that the MAC failed
+system diagnostics, contact authorized repair personnel.
+
+
+
+
+@                                                                            4-1
+

@@ -53,6 +53,7 @@ public:
 	s2650_device cpu;
 	mc6850 remote, aux, term;     // CA/CB, CC/CD, CE/CF
 	bool pm_ext_comparator = false;   // see Program Memory notes below (-pm ext)
+	void program_memory_32k() { m_pm[1].present = false; m_pm[0].jumper = true; }   // -pm 32k: one board, J5175 on
 	u8 mode_switch = 0x00;        // ED read D7-D2 (1 = open); all closed = normal boot
 	bool trace_io = false;
 
@@ -139,7 +140,7 @@ private:
 	bool m_fr_pending = false, m_fj_pending = false, m_fi_pending = false;   // forced reset / jump / interrupt
 	u8 m_f5 = 0xff;
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;
-	u8 m_b8 = 0, m_b9 = 0, m_eb_out = 0;
+	u8 m_eb_out = 0;
 	u8 m_f4 = 0xff;               // Emulator Controller extended bank (A16-A23) for system-side accesses
 	// Program Memory: two 32 KB boards (low/B8, high/B9) strapped at extended bank 00.
 	// pm_ext_comparator = true models the 1981+ boards with an extended-bank comparator:
@@ -151,17 +152,39 @@ private:
 	// writes F4 = 00 and B8 = 10 and only works that way. The 1983 diagnostic disk
 	// needs true (-pm ext).
 	static constexpr u8 PROG_BANK = 0xff;   // F4 value (active low) that selects bank 00
-	bool prog_present(u8 ext, u16 a) const {
-		if (!pm_ext_comparator) return true;
-		u8 c = (a & 0x8000) ? m_b9 : m_b8;
-		return (c & 0x40) || ext == PROG_BANK;
+	// Each board (8301 service manual 070-2976 sections 7 and 11): the low board answers bus
+	// addresses 0000-7FFF and the high board 8000-FFFF. With its relocation jumper J5175 on and
+	// relocation enabled (B8/B9 D4 = 0), the bus address's A15-A12 index a 16 x 4-bit
+	// relocation RAM whose output is the physical A15-A12: one 32 KB board then spans the
+	// 64 KB bus space in 4 KB blocks, and blocks relocated to the other half are absent.
+	// B8/B9 writes load the RAM through a counter (D5 = 1 resets it); D4 and D6 are latched.
+	struct pm_board_t {
+		bool present = true;
+		bool jumper = false;                  // J5175: relocation possible
+		u8 ctl = 0x00;                        // D4 relocation disable, D6 extended-bank comparator disable
+		u8 reloc[16] = {};
+		u8 ctr = 0;
+	};
+	pm_board_t m_pm[2];
+	int prog_phys(u8 ext, u16 a) const {      // physical byte in m_progmem, or -1: nothing answers
+		for (int b = 0; b < 2; b++) {
+			const pm_board_t &B = m_pm[b];
+			if (!B.present) continue;
+			if (pm_ext_comparator && !(B.ctl & 0x40) && ext != PROG_BANK) continue;
+			const u16 pa = (B.jumper && !(B.ctl & 0x10)) ? u16((B.reloc[a >> 12] << 12) | (a & 0x0fff)) : a;
+			if ((pa >> 15) == b) return int(pa);
+		}
+		return -1;
 	}
 	u8 prog_rd(u8 ext, u16 a) const {
 		{ u8 v; if (m_epz80.prom_window(a, v) || m_ep85.prom_window(a, v)) return v; }   // the boards' firmware PROMs
 		{ u8 v; if (m_ep86.overlay_read(a, v)) return v; }  // 8086 board RAMs (RAMINH)
-		return prog_present(ext, a) ? m_progmem[a] : 0xff;
+		const int p = prog_phys(ext, a);
+		return p >= 0 ? m_progmem[p] : 0x00;      // nothing answers: the bus reads 00 (the power-up test skips such banks, diag ROM 0499)
 	}
-	void prog_wr(u8 ext, u16 a, u8 d) { if (m_ep86.overlay_write(a, d)) return; if (prog_present(ext, a)) m_progmem[a] = d; }
+	void prog_wr(u8 ext, u16 a, u8 d) { if (m_ep86.overlay_write(a, d)) return; const int p = prog_phys(ext, a); if (p >= 0) m_progmem[p] = d; }
+	u8 pm_read(int b);
+	void pm_write(int b, u8 d);
 	u64 m_cycles = 0, m_next_timer = 0, m_next_refresh = 0;
 	u32 m_pending = 0;            // latched interrupt flip-flops (bit n = int n)
 

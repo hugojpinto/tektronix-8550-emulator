@@ -1,0 +1,1548 @@
+                                               ~ronoo   COMMITTED TO EXCELLENCE
+
+
+
+
+                                        WARNING
+                       THE FOLLOWING SERVICING INSTRUCTIONS
+                       ARE FOR USE BY QUALIFIED PERSONNELONLY.
+                       TO AVOID PERSONAL INJURY, DO NOT
+                       PERFORM ANY SERVICING OTHER THAN THAT
+                       CONTAINED IN OPERATING INSTRUCTIONS
+                       UNLESS YOU ARE QUALIFIED TO DO SO.
+
+
+
+
+                                        PLEASE CHECK FOR CHANGE INFORMATION
+                                             AT THE REAR OF THIS MANUAL.
+
+
+
+
+This manual supports the following
+                                                      8500
+TEKTRONIX products:                              MODULAR MOL SERIES
+   8550        8540
+  Option      Option       Products
+                                           64K/128K STATIC PROGRAM
+    04          04         8550F04
+    05          05         8550F05                  MEMORY
+                                                   INSTALLATION
+                                                      SERVICE
+
+
+
+
+     Tektronix, Inc.
+     P.O. Box 500
+     Beaverton, Oregon          97077                Serial Number _ _ _ _ _ __
+     070-3923-00                                                   First Printing NOV 1981
+     Product Group 61                                              Revised MAY 1983
+Copyright © 1981 by Tektronix, Inc. All rights reserved.
+Contents of this publication may not be reproduced in any
+form without the permission of Tektronix, Inc.
+
+Products of Tektronix, Inc. and its subsidiaries are
+covered by U.S. and foreign patents and/or pending patents.
+
+TEKTRONIX, TEK, SCOPE-MOBILE, and ~ are registered
+trademarks of Tektronix, Inc. TELEQUIPMENT is a registered
+trademark of Tektronix U.K. Limited.
+
+There is no implied warranty of fitness for    a particular
+purpose. Tektronix, Inc. is not liable for     consequential
+damages.
+
+Specification and price, change   privileges   are   reserved.
+
+
+
+                    Printed in U.S.A.
+                                  64K/128K Static Program Memory Installation
+
+
+                                   PREFACE
+
+
+ABOUT THIS MANUAL
+This manual tells how to install the 64K/128K Static Program        Memory     in
+TEKTRONIX 8300 and 8500 series microcomputer development systems.
+
+
+MANUAL ORGANIZATION
+The 64K/128K Static Program Memory Installation Manual is divided   into     four
+sections:
+
+Section 1 contains general information about the memory and its available
+option configurations.
+
+Section 2 provides details on jumper configurations.
+
+Section 3 gives step by step installation instructions.
+
+Section 4 describes verification procedures.
+
+
+
+INTENDED USE
+This manual is designed to be used by trained service technicians.        The
+intent is to provide sufficient guidelines and accompanying reference
+material to enable a technician to carry out satisfactory installation of the
+memory into an existing 8301 or 8540 series emulation and development system
+mainframe.
+
+
+GENERAL INFORMATION
+
+
+Revision History
+
+Revision history information is included in the text and diagrams as they are
+revised and reprinted.     Original manual pages are identified with an '@'
+symbol at the bottom inside corner of the page.    When existing pages are
+revised, the '@' symbol is replaced with a revision code and date. New pages
+added to a section, whether they contain old, new, or revised information,
+will be identified with the !@! symbol and a date.
+
+
+
+
+                                                                                i
+Preface - 64K/128K Static Program Memory Installation
+
+
+Cliange InformatTon
+Change information is located at the back of this manual in the CHANGE
+section.   Change information should be entered into the body of the manual
+when the manual is received.
+
+
+Slashed Zeros (0)
+
+In this manual, zeros are slashed only where necessary for clarity.
+
+
+DOCUMENTATION OVERVIEW
+Support documentation for TEKTRONIX microprocessor emulation systems and
+system options consists of three groups of manuals - installation manuals,
+service manuals and user's manuals.
+
+Service manuals provide the information necessary to perform system testing,
+to isolate hardware problems, and to repair system components. Service
+manuals are identified by their blue covers and may be purchased from
+Tektronix as optional accessories.
+
+The following manuals provide service information for related equipment:
+
+      •   Memory Allocation Controller Service Manual
+
+      •   8301 Microprocessor Development Unit Service Manual
+
+      •   8501 Data Management Unit Service Manual
+
+
+
+
+ii
+                                                                        64K/128K Static Program Memory Installation
+
+
+
+
+                                                                         CONTENTS
+
+
+                                                                                                                                                           Page
+
+
+Safety Summary
+
+               ...............................................................                                                                                v
+Servicing                                                                                                                                                  vii
+
+
+Seotion        General Information
+Introduction
+Compatibility
+                  ............................................................ 1-1
+                   •   • • •   • •   • •   •   •   •   • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • eo • • eo _    1-1
+Memory Organization •••••••••••••••••••••••••••••••••••••••••••••••••••••                                                                                   1-2
+Specifications ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••                                                                                   1-3
+Seotion 2      Jumpers, Straps, and Switohes
+
+Jumpers and Straps                                                                                                                                         2-1
+  System/Program Select                                                                                                                                    2-1
+  Address Select .••.•..                                                                                                                                   2-2
+    Using the Address Select Jumpers In Test Mode                                                                                                          2-4
+  Read Delay Jumper                                                                                                                                        2-5
+Switches                                                                                                                                                   2-5
+
+
+Seotion 3 Installation Prooedures
+Introduction                                                                                                                                                3-1
+  Procedure                                                                                                                                                 3-1
+
+Seotion 4      Performance Verifioation
+
+Introduction                                                                                                                                                4-1
+
+
+Seotion 5      Referenoe Material
+
+
+
+
+REV MAY 1983                                                                                                                                          iii
+Contents - 64K/128K Static Program Memory Installation
+
+
+                                  ILLUSTRATIONS
+
+Fig.
+No.
+                                                                            Page
+1-1    Memory block partitions                                               1-2
+2-1    Jumper and strap locations ••••••••••...••.•..•.•...•...•••.•••.••.. 2-2
+2-2    Jumper data example ............................................... . 2-3
+2-3    Jumper example in 128K mode ••••..•••.•.•.•.•••••••.••••••••.•.•.... 2-3
+2-4    Jumper example for test mode ••••••••.••••••••••••••••••••••••.•.••• 2-4
+3-1    Removal/Installation of top cover .••..••••••••••.••••••••••••.••.•. 3-2
+3-2    8540 I.U. module arrangement .••••.•••••••••••••••.•..••••••••••.... 3-3
+3-3    8301/8550 MDU module arrangement ••..••.•••••••••..••••••••.•••••... 3-3
+5-1    Jumper configuration for base address of AOOOOO ••••••.••.•••••••... 5-2
+
+
+
+
+                                      TABLES
+
+Table
+No.
+                                                                            Page
+1-1     System/Memory Options •.•.••••••.••.•••..•..••••..••.•.••.•.•..••... 1-1
+1-2     Electrical Characteristics ..•••..••.••.•••••..••..•...•..•.•...•... 1-3
+1-3     Enviromental Characteristics •••..•••••.•....•..•••.•.....•...•..•.• 1-4
+1-4     Physical Characteristics .•.•.....•.•..•.....•..•.•••.••..•..••.•.•. 1-4
+2-1     Address Jumper Condensed Look-up Table ..•..........•.......•..•.... 2-4
+5-1     Address Jumper Look-up Table .•........•.•.•..........•............. 5-2
+
+
+
+
+iv
+                                      64K/128K Static Program Memory Installation
+
+
+
+
+                              OPERATORS SAFETY SUMMARY
+
+
+The general safety information in this part of the summary is for both
+operating and servIcIng personnel. Specific warnings and cautions will be
+found throughout the manual where they apply, but may not appear in this
+summary_
+
+
+
+TERMS
+
+
+
+In This Manual
+
+CAUTION statements identify conditions or practices         that   could   result   in
+damage to the equipment or other property.
+
+WARNING statements identify conditions or       practices   that   could   result   in
+personal injury or loss of life.
+
+
+As Marked on Equipment
+
+CAUTION indicates a personal InJury hazard not immediately accessible as one
+reads the marking, or a hazard to property including the equipment itself.
+
+DANGER indicates a personal injury hazard immediately accessible as one reads
+the marking.
+
+
+SYMBOLS
+
+
+
+As Marked on Equipment
+
+        ~ DANGER high voltage.
+
+        IT\
+        ~     Protective ground (earth) terminal.
+
+
+        ~ ATTENTION - Refer to manual.
+
+
+
+
+                                                                                     v
+Operators Safety Summary - 64K/128K Static Program Memory Installation
+
+
+SAFETY PRECAUTIONS
+
+
+
+Grounding the Product
+
+This product is grounded through grounding conductors in the cables.   To
+avoid electrical shock, plug the supporting system's power cord into a
+properly wired receptacle. A protective ground connection by way of the
+grounding conductor in the power cord is essential for safe operation.
+
+
+Use the Proper Power Cord
+
+Use only the power cord and connector specified for your product.
+
+Use only a power cord that is in good condition.
+
+Refer cord and connector changes to qualified service personnel.
+
+
+Use the Proper Fuse
+
+To avoid fire hazard, use only the fuse specified in the parts list for your
+product.   Be sure the fuse is identical in type, voltage rating, and current
+rating.
+
+Refer fuse replacement to qualified service personnel.
+
+
+Do Not Operate in Explosive Atmospheres
+To avoid explosion, do not operate this product in an atmosphere of explosive
+gases unless it has been specifically certified for such operation.
+
+
+Do Not Remove Covers or Panels
+To avoid personal injury, do not remove the product covers or panels.    Do not
+operate the product without the covers and panels properly installed.
+
+
+
+
+vi
+                                    64K/128K Static Program Memory Installation
+
+
+
+
+                             SERVICING SAFETY SUMMARY
+                       FOR QUALIFIED SERVICE PERSONNEL ONLY
+
+           (Refer also to the preceding Operators Safety Summary)
+
+
+Do Not Service Alone
+
+Do not perform internal service or adjustment of this product unless    another
+person capable of rendering first aid and resuscitation is present.
+
+
+Use Care When Servicing With Power On
+
+Dangerous voltages exist at several points in this product.       To avoid
+personal injury, do not touch exposed connections and components while power
+is on.
+
+Disconnect power before removing protective panels, soldering,    or   replacing
+components.
+
+
+Power Source
+
+This product is intended to operate from a power source that will not apply
+more than 250 volts rms between the supply conductors or between either
+supply conductor and ground. A protective ground connection by way of the
+grounding conductor in the power cord is essential for safe operation.
+
+
+
+
+                                                                             vii
+                                         64K/128K Static Program Memory Installation
+
+
+
+
+                                         Section 1
+
+                                   GENERAL INFORMATION
+
+
+
+
+INTRODUCTION
+
+The 64K/128K Static Program Memory provides your TEKTRONIX microcomputer
+development   system   with   additional memory capabilities. The memory
+incorporates the following features:
+
+       •    64K or 128K byte versions
+
+       •     Byte (8-bit), or Word (16-bit) operation
+
+       •     Fast (92ns) memory cycle
+
+       •     Fully strappable 32K memory address block segmentation
+
+       •     Static memory cell operation
+
+       •     Low power consumption
+
+The memory is primarily designed for program storage applications, but may be
+used as system memory in test applications.
+
+The 64K/128K Static Program Memory is designed to be installed in TEKTRONIX
+8301 and 8540 mainframes. Table 1-1 indicates the memory options supported
+by this manual.
+
+                            Table 1-1.   System/Memory Options
+
+
+           System : Option:      Product No.         Item Description
+           --------------------------------------------------------------
+            8540       04         8550F04         64K Static Program Memory
+            8550       04         8550F04         64K Static Program Memory
+            8540       05         8550F05        128K Static Program Memory
+            8550       05         8550F05        128K Static Program Memory
+
+
+COMPATIBILITY
+
+When the 64K/128K Static Program Memory is used with a Z80 Emulator Processor
+(circuit board 670-7225-00 or 670-5295-00 and up), an incompatibility may
+occur with one of the following options:
+
+       •       Trigger Trace Analyzer
+
+       •       Real-Time Prototype Analyzer
+REV MAY 1983                                                                       1-1
+General Information - 64K/128K Static Program Memory Installation
+
+
+With this combination of options, errors may occur in the displayed data of
+the TTA or RTPA Trace-Line Buffer.  If you have these errors with this
+combination of options, consult your Tektronix Field Service Office for more
+information.
+
+MEMORY ORGANIZATION
+The 128K memory is organized into four 32K blocks.                           The 64K option         uses    two
+of these blocks. Refer to Fig. 1-1.
+
+
+
+
+        ...             64K Byte Options
+
+
+
+
+              Block A                Block B                      Block C             Block 0
+
+
+
+
+         32K x 8                     32K x 8                       32K x 8             32K x 8
+            or                         or                            or                  or
+         16K x 16                   16K x 16                      16K x 16            16K x 16
+
+
+
+
+                                               128K Byte Option
+                                                                                              ..
+                                                                                                        3924-10
+
+
+
+
+                            Fig.     1-1.      Memory block partitions.
+
+                        Note:      16K x 16 is selected by WD ACCESS (L)
+                                   32K x 8 is selected by WD ACCESS (H)
+
+The base address is selected by jumpers controlling address lines A15--A23
+for each block. For example, to have 8-bit memory based at oooe and running
+to 1FFFF;
+
+        Block A - A15--A23 =0
+        Block B - A15 = 1 , A16--A23 = 0
+        Block C - A15 = 0, A16 = 1 A17--A23 :: 0 9
+
+        Block D - A15 = 1 , A16 = 1 , A17--A23 = 0
+
+Section 2 provides more details on address selection.
+
+
+1-2                                                                                                REV MAY 1983
+               General Information - 64K/128K Static Program Memory Installation
+
+
+SPECIFICATIONS
+Tables 1-2, 1-3, and 1-4 specify electrical,           enviromental,     and   physical
+characteristics of the memory board.
+
+
+
+
+                                       Table 1-2.
+                               Electrical Characteristics
+
+
+     Characteristic        I Performance Requirements       I Supplemental Info.
+    ====================I===============~~~~~=======I=======:::::===:===
+                        I                           I
+                           f                                f
+
+    Power - 128K Config.~ Calculated (typical + 20%)1
+                          Active: 5.2A
+                          Standby: 3.9A
+
+    Power - 64K Config.        Active: 4.4A (typical +
+                               20%)
+                               Standby: 3.1A
+
+    Vol tage                    +5Vdc
+
+    Dissipation                                                 Active: 22W (approx.)
+
+
+
+
+ REV FEB 1982                                                                             1-3
+General Information - 64K/128K Static Program Memory Installation
+
+
+
+
+                                   Table 1-3.
+                           Environmental Characteristics
+
+
+                Characteristic        : Performance Requirements
+               ===================='===========================
+                Air Temperature
+                  Operating             OCto 50 C
+                                        (+32 F to 122 F)
+
+                  Storage               -55 C to 75
+                                        (-67 F to 167 F)
+
+                Humidity                To 95% non-condensing
+
+                Altitude
+                 Operating              To 4500m (15,000 ft) max.
+                 Storage                To 15000m (50,000 ft) max.
+
+
+
+
+                                    Table 1-4.
+                             Physical Charactertistics
+
+
+                Characteristic        : Performance Requirement
+               ===================='===========================
+                Height                  195 rnm (7.68 in)
+
+                Width                   280 mm (11.0 in)
+
+                Weight (approx.):       1.36 kg (3.0 lb)
+
+
+
+
+1-4
+                                       64K/128K Static Program Memory Installation
+
+
+
+
+                                       Section 2
+
+                            JUMPERS, STRAPS, AND SWITCHES
+
+
+
+
+JUMPERS AND STRAPS
+The 64K/128K Static Program Memory has three jumper/strap options:
+
+         •     System/Program Select
+
+         •     Address Selection
+
+         •     Read Delay Select
+
+Physical locations of the jumper/strap options are shown in Fig. 2-1.    A
+description of the jumpers and straps, and instructions for using them are
+included in the following paragraphs.
+
+
+SYSTEM/PROGRAM SELECT
+
+The strapping of the four System/Program groups (see Fig. 2-1) determines
+whether the memory module will respond to system or program memory control
+signals.
+
+The default condition for each group (J119i--J1194) is program select. In
+the default condition (without any strap), the appropriate memory block (A,
+B, C, or D, as marked on board) becomes operational when the CMEM(L) signal
+goes low, indicating program memory selection. wben one or more blocks are
+wire-strapped from the center pad to the system pad, the selected memory
+blocks become operational when CMEM(L) goes high.     This indicates system
+memory selection.
+
+
+
+
+REV MAY 1983                                                                     2-1
+Jumpers, Straps, and Switches - 64K/128K Memory Installation
+
+
+
+
+                                                                                                         I
+                                                                                              -
+                                                                                              Program
+                                                                                              System
+
+                                               Read
+                                               Delay                                  J71~4:      B ~ J7 191
+                                             -         J7090
+
+                                           80
+                                             20
+                                             :g
+                                               o
+                                                                     Address Select      c:
+                                                                                      J7193
+                                                                                                  D·     1
+                                                                                                    • J7192
+                                          100
+
+                                                               r~--------~------~~,
+                                                                      ...
+                                         I                           ......
+                                                                     .. .     ....
+                          Note:   Time in nS
+
+                                                                A     B       c          o
+                                                                    r
+
+                                                                                                        3924-11
+
+
+
+
+                   Fig.   2-1.      Jumper and strap locations.
+
+
+
+
+ADDRESS SELECT
+The address select jumpers (J8120--J8180) are located at the lower right of
+the board (refer to Fig. 2-1). Each of the four jumper groups represents a
+32K byte segment of the 128K (or 64K) memory available on the board.      In
+order for any segment to be addressed, the incoming upper address (A15--A23)
+must match the jumpered configuration.
+
+
+Note that A15 is included in the upper address.      The highest number of
+addresses available to the lower address block (AO--A14) is 7FFF (32K). This
+is the address range for a memory segment jumper group strapped for all
+zeroes.   The inclusion of A15 in the upper address also means that the
+smallest increment of upper range addressing is equal to the size of one
+memory segment, e.g.     32K.   By this means, any cf four 32K blocks can be
+based anywhere within an address range of 0 to FF8000 (16M).
+
+ 2-2                                                                                            REV MAY 1983
+                           Jumpers, straps, and Switches - 64K/128K Memory Installation
+
+
+The method of programming an address block is best given by example.
+     2-2 depicts jumper information for the address range 10000 (64K) to
+t:''';1'''P
+4- ~5.
+
+18000 (96K) •
+
+      A23-20      A19-16    A15-12   A11-8     A1-4        A3-0
+       0000        0001      0000     0000     0000        0000          Binary Address
+        0           1         0        0        0           o            Hexadecimal Address
+
+      ~       Upper Address~~        Lower Address
+
+                                Fig. 2-2.     Jumper data example.
+
+
+
+This illustration shows the hexadecimal equivalent (10000)                        of   the   decimal:
+65,536 (64K), and its binary equivalent jumper position.
+
+The upper address for the segment is computed by adding the base address to
+the 32K span of lower addresses, i.e. 10000 C64K) + 8000 C32K) = 18000 C96K).
+
+The jumper positions correspond to the binary address.                        The above example    is
+implemented as shown in Fig. 2-3
+
+                                                       0
+
+                                     A23(H)    0      0---0     A23(L)
+                                     A22(H)    0   0---0        A22(L)
+                                     A21(H)    0   0---0        A21(L)
+                                     A20(H)    0   0---0        A20CL)
+                                     A19(H)    0   0---0        A19(L)
+                                     A18CH)    0   0---0        A18(L)
+                                     A11(H)    0   0---0        A17(L)
+                                     A16(H)    0---0   0        A16(L)
+                                     A15(H)    0   0---0        A15(L)
+
+                             Fig.    2-3.    Jumper example in 128K mode.
+
+
+
+ Table 2-1 provides an abbreviated look-up table for jumper connecting
+ contiguous base addresses up to 40000 (256K) and major orders thereafter up
+ to FF8000 (16M).     Section 5 (Technical Reference) includes a table listing
+ contiguous addresses through 800000 (8192K), and instructions for jumper
+ connecting base addresses up to the limit of FF8000.
+
+
+
+
+                                                                                                    2-3
+Jumpers, Straps, and Switches - 64K/128K Memory Installation
+
+
+                                     Table 2::"1
+                      Address Jumper Condensed Look-up Table
+
+      ---------------------------------------------------------------------
+        Base Memory       I
+                          I                               Jumper Setting:
+          Address         I
+                          I    A23          I
+                                            I   A22   I
+                                                      I   A21 II A20 II A19   I
+                                                                              I   A18    I
+                                                                                         I   A17    I
+                                                                                                    I   A16   I
+                                                                                                              I   A15
+      ---------------------------------------------------------------------
+      00000    (0 )                0             0         0      0     0          0          0          0         0
+      08000    (32K)               0             0         0      0     0          0          0          0         1
+      10000    (64K)               0             0         0      0     0          0          0          1         0
+      18000    (96K)               0             0         0      0     0          0          0          1         1
+      20000    ( 128K              0             0         0      0     0          0                     0         0
+      28000    (160K)              0             0         0      0     0          0                     0         1
+      30000    (192K)              0             0         0      0     0          0                               0
+      38000    C224K)              0             0         0      0     0          0          1          1         1
+      40000    C256K)              0             0         0      0     0          1          0          0         0
+      80000    (512K)              0             0         0      0                f"\
+                                                                                   u
+                                                                                              f"\
+                                                                                              u          0         'u"
+      100000   C1024K)             0             0         0      1      0         0          0          0         0
+      200000   C2048K)             0             0         1      0      0         0          0          0         0
+      400000   (4096K)             0             1         0      0      0         0          0          0         0
+      800000   (8192K)             1             0         0      0      0         a          a          0         0
+      FF8000   C16352K)            1             1         1             1                               1         1
+      ---------------------------------------------------------------------
+
+
+Using the Address Select Jumpers in Test Mode
+
+This mode provides addressing capabilities when the LAS board is used in the
+test   mode for system memory.      Note that for system usage the full
+capabilities of the board are limited to 64K by the system controller.
+
+To use this mode, remove all the address jumpers on the two memory segments
+to be addressed except for A15.        On the remaining two Cunused) memory
+segments, refer to Table 2-1 and connect a high order address which is
+outside the range to be addressed. Jumper connections on the two addressed
+segments are shown in Fig. 2-4.
+
+                              Low Segment                                           High Segment
+                A23CH)        0         0        0     A23CL)          A23CH)       0   0   0  A23CL)
+                A22CH)        0         0        0     A22CL)          A22(H)       0   0   0  A22(L)
+                A21CH)        0         0        0     A21CL)          A21 CH)      0   0   0  A21(L)
+                A20CH)        0         0        0     A20CL)          A20CH)       0   0   0  A20CL)
+                A19CH)        0         0        0     A19CL)          A19(H)       0   0   0  A19CL)
+                A18(H)        0         0        0     A18(L)          A18CH)       0   0   0  A18(L)
+                A17CH)        0         0        0     A17(L)          A17CH)       0   0   0  A17CL)
+                A16CH)        0         0   0          A16 CL)         A16CH)       0   0   0  A16 (L)
+                A15CH)         0        0---0          A15CL)          A15CH)       0---0   0  A15(L)
+
+                              0000 to 7FFF                                        8000 to FFFF
+
+                      Fig.             2-4.          Jumper example for test mode.
+
+2-4
+                     Jumpers, Straps, and Switches - 64K/128K Memory Installation
+
+
+ The board will       now   respond   only   to A15 which will operate as a high-low
+ Segment selects
+
+
+
+ READ DELAY JUMPER
+
+ The read delay is implemented using J7090. A choice of six delay times from
+ o to 100ns, in 20ns increments, is available. The signal being delayed is
+ OPeration REQuest (OPREQ(L)). This delay prevents bus contention in the read
+ mode.   A fixed delay is also used to prevent an accidental memory write
+ cycle. The potential for an accidental write is due to the late arrival of
+ RAM INH (RAM inhibit), which would otherwise have prevented memory operation.
+ OPREQ is hardwire delayed at 20ns for the write enable logic, and is strapped
+ at 60ns at the factory for the read enable logic.
+
+ The 60ns strapping for the read logic should be satisfactory for use with all
+ types of emulators; however, if bus contention continues (at 60ns delay) when
+ an 8-bit emulator is in use, the selectable delay prOVIsIon allows for a
+ longer period to be checked against the observed fault.
+
+
+ SWITCHES
+
+ There are no switches on the 64K/128K Static Program Memory module.
+
+
+
+
+REV FEB 1982                                                                       2-5
+                                       64K/128K Static Program Memory Installation
+
+
+
+
+                                       Section 3
+
+                              INSTALLATION PROCEDURES
+
+
+
+
+INTRODUCTION
+The following procedures tell how to install the 64K/128K              Static       Program
+Memory in your TEKTRONIX Microcomputer Development System.
+
+
+
+
+     Excessive power supply loading may result if more than one 64K/128K
+     memory is installed in the same unit. Consult your Tektronix field
+     service office for more information.
+
+
+
+
+PROCEDURE
+
+            1.   Verify that primary    power   to     the   microcomputer     development
+                 system is OFF.
+
+            2.   Remove the ~over retainers at the upper corners on the             rear   of
+                 the mainframe - see Fig. 3-1.
+
+            3.   Remove the top cover by sliding it straight back,           then    set   it
+                 aside.
+
+                                                NOTE
+
+                     The memory slot options are slightly different for the
+                     8540 and 8301/8550 development system mainframes - see
+                     Figs. 3-2 and 3-3. In both mainframes, the program
+                     memory modules fit into the slots marked "Spare" or
+                     "Program Memory" on the "Program Section" side of the
+                     main interconnect board. If the module is to be used
+                     as system memory for test purposes, the module must be
+                     inserted into the slotes) marked "System Memory" or
+                     "Spare" on the "System Section" side of the main
+                     interconnect board.
+
+
+
+
+                                                                                            3-1
+Installation Procedures - 64K/128K Static Program Memory Installation
+
+
+
+
+                                                                             3665·6   J
+                     Fig.   3-1.   Removal/Installation of top cover.
+
+         4.   Facing the front of the mainframe, hold the memory module by the
+              upper edges, component side facing left, and align it with other
+              modules in the mainframe.
+
+         5.   Guide the module down the vertical channels      at   the   selected
+              position (see NOTE following step 3).
+
+         6.   When the module reaches the connector on the main interconnect
+              board, press down firmly and evenly on the top edge of the
+              module until it snaps into place.
+
+         7.   Slide the top cover back into the guide tracks at the top of the
+              mainframe. Be sure the cover is properly seated in the slot at
+              the front of the mainframe guide tracks.
+
+         8.   Install the cover retainers (removed in step 2) at the upper
+              corners on the rear of the mainframe (Fig. 3-1). Tighten the
+              cover retainer screws securely.
+
+
+
+
+3-2
+(Q)
+
+
+
+
+                                                                                                                                                                           H
+                                                                                                                                                                           ::l
+                                                                                                                                                                           CIl
+                                                                                                                                                                           cT
+                               '--                                                                                 I      ...... J1 PIROM Programmer Controller            ....
+                                                                                                                                                                           \l)
+
+                                                                                                                                                                           ....
+                                             ...      J1   PROM Programmer Controller                            en en
+                                                                                                                                                                           \l)
+                                                                                                                                                                           cT
+      'TJ                        en                                                                              m-o(                                                      ~.
+      ~.                         m                    J2                                                         nen      I'\)       J2 System Controller
+      (JQ                        n
+                                 -i
+                                             I'\)          Spare
+                                                                                        --   'TJ
+                                                                                             ~.
+                                                                                                                 -i-i
+                                                                                                                 Om                1--.                              •.   o
+                                                                                                                                                                          ::l
+                                 oZ                   J3 System Controller                   OQ                  zS:      w         J3 S't'stem RAM
+      w
+                                             Co)
+
+
+                                                                                                                   L~
+                                                                                                                                                                     -    "'U
+                                                                                                                                                                          '"1
+      I
+      w                                      ... J4 System Memory                            w                                           J4 S'vstem ROM
+                                                                                                                                                                     -    o
+                                                                                        --    I
+                                                                                             I'\)                         U1             J5    Emulator Controller
+                                                                                                                                                                          o
+                                                                                                                                                                          CD
+                                             U1       J5 Emulator Controller                                       r--             t-.                               ..   0-
+                                                                                                                                                                          C
+      00
+      w                                               J6   Language Processor                                             QI         J6 Pl'Ogram Memory                   '"1
+      0
+                                             QI
+                                                                                        --   00
+                                                                                             Ul                           ......
+                                                                                                                                   t---.
+                                                                                                                                         J7 Pvogram Memory
+                                                                                                                                                                     --   (1)
+                                                                                                                                                                          CIl
+                                             ......   J7 Program Memory
+      .......                                                                                                                                                        .
+      00
+      Ul                                     00       J8 Program Memory
+                                                                                        --   0
+                                                                                              -'=          'TI
+                                                                                                           a              00
+                                                                                                                                   t---.
+                                                                                                                                         J8 Spare
+      Ul
+      0                  'TI
+                         a                            J9 Spare
+                                                                                        --   H             a
+                                                                                                           "0             CD
+                                                                                                                                   t-.
+                                                                                                                                         J9    Spare
+                                                                                                                                                                          '"
+                                                                                                                                                                          -'=
+                                                                                                                                                                          :::-;;
+                                             CD
+                                                                                             c::                                                                     -
+      3::
+      t::1
+                         a
+                         "0
+                                             ... J10 Spare                              --                 DJ
+                                                                                                           ::I
+                                                                                                           !!.
+                                                                                                                          ... J10 Spare
+                                                                                                                          0
+                                                                                                                                   ~                                      .......
+      c::                DJ
+                         ::I
+                                             0
+                                             ...... J11 Spare                           --   a
+                                                                                             0                            ...... J11 Spare                           -    I'\)
+                                                                                                                                                                          00
+      9                  !!.                                                                 0-                                                                           :::-;;
+      0
+      0-                         CI 1"0
+                                      1::0   ... J12 RTPA                               .-   C
+                                                                                             ......
+                                                                                                                 en "0
+                                                                                                                 m::O     ... J12 ITA                                -    Ul
+      C
+      ......                     "Ie>
+                                 (' 10
+                                             I'\)
+
+                                             ...w J13 RTPA
+                                                                                             CD                  nO
+                                                                                                                 -ie>
+                                                                                                                          I'\)
+
+                                                                                                                          ...                                        -    cT
+                                                                                                                                                                          \l)
+      CD                         CI»'::0                                                     \l)                 -::0
+                                                                                                                          w J13 -ITA                                      cT
+      \l)
+                                 :2 :s:                                                 --   '"1
+                                                                                             '"1
+                                                                                                                 0»
+                                                                                                                 zs:
+                                                                                                                                                                          ~.
+                                                                                                                                                                          Q
+      '"1
+      '"1
+       \l)                                   ...... J14 Spare                           --   \l)
+                                                                                             ::l
+                                                                                             (JQ                          ......         J14 Spare
+                                                                                                                                                                     -    "'U
+                                                                                                                                                                          '"1
+      ::3                                                                                     (1)                                                                         o
+                                                                                                                                                                          (JQ
+      (JQ                                                                                    9                                                                            '"1
+       CD
+       9                                     ... J15 Emulator Processor
+                                                                                             CD
+                                                                                             ::l                          .... -  '                                  -    \l)
+                                                                                                                                                                          9
+       (1)
+                                             U1
+                                                                                             cT                           U1   J15 Emulator Processor
+       ::l
+                                                                                                                                   -'                                     3::
+       cT
+
+                                             ... J16 Emulator Processor                                                   ....
+                                                                                                                               _.                                    -
+                                                                                                                                                                          CD
+                                                                                                                                                                          9
+                                                                                                                          QI             J16    Emulator Processor        o
+                                             QI                                                                                                                           '"1
+
+                               ~
+                                             -                                                                     L---
+                                                                                                                                                                          "<
+                                                                                                                                                                          H
+                                                                                                                                                                          ::3
+                                                                                                                                                                          CIl
+                                                                                                                                                                          cT
+                                                                                                                                                                          ....
+                                                                                                                                                                          \l)
+
+                                                                                                                                                                          ....
+                                                                                                      w                                                                   \l)
+                fg                                                                                    to
+                                                                                                                                                                          cT
+                '"'-:"                                                                                ~                                                                   ~.
+
+
+w                                                                                                                                                                         o
+I
+                '"                                                                                                                                                        ::l
+w
+                                 64K/128K Static Program Memory Installation
+
+
+
+
+                                 Section 4
+
+                         PERFORMANCE VERIFICATION
+
+
+
+INTRODUCTION
+The performance verification procedure provides a detailed check of the
+64K/128K memory characteristics. These checks are extensive and are achieved
+using system diagnostics. Refer to the system diagnostics through your
+development system's installation and service manuals. Section 5 of the
+64K/128K Static Program Memory Service Manual contains additional details on
+the diagnostics.
+
+
+
+
+                                                                         4-1
+                                      64K/128K Static Program Memory Installation
+
+
+
+
+                                      Section 5
+
+                               REFERENCE MATERIAL
+
+
+
+
+INTRODUCTION
+
+
+
+JUMPER STRAPPING
+Table 5-1 provides a jumper look-up reference for all memory base addresses
+between a and 800000 (8192K).       This number constitutes the first 256 32K
+blocks in a possible total of 511 contiguous blocks, or half the addressable
+memory.
+
+The highest strappable base address at FF8000 (16352K) as      also   listed~   To
+interpolate between 800000 and FF8000:
+
+        1.     Subtract 800000 (8192K) from the required base address.
+
+        2.     Use the result to find the jumper positions in the look-up table.
+
+        3.     Add a strap at A23 (i.e. add 256K of base memory).
+
+Let's say, for example, that a base address of AOOOOO (10240K) is required:
+
+        1.     AOOOOO - 800000 = 200000 (2048K).
+
+        2.     Find 200000 in the look-up table and implement this address.
+
+        3.     Add the strap at A23
+
+The result should look the same as Fig. 5-1.
+
+
+
+
+                                                                                 5-1
+Reference Material - 64K/128K Static Program Memory Installation
+
+
+
+                                             0
+
+                        A23(H)     0---0   o A23(L)
+                                   0   0---0
+                                   0---0   0
+                                   0   0---0
+                                   0   0--0
+                                   0   0---0
+                                   0   0---0
+                                   0   0---0
+                        A15(H)     0   0--0 A15(L)
+
+
+        Fig.   5-1 •    Jumper configuration for base address of AOOOOO.
+
+
+                                        Table 5-1
+                              Address Jumper Look-up Table
+      ----------------------------------------------------------------
+      Memory Base   I
+                    I                       Jumper Setting
+        Address     I
+                    I   A23   I
+                              I   A22   I
+                                        I   A21 : A20 II A19   I
+                                                               I   A18 : A17    I
+                                                                                I   A16   I
+                                                                                          I   A15
+      -----------------------------------------------------------------
+         00000       0     0     0     0     0     0     0     0     a
+         08000       a     a     a     a     a     a     a     a     1
+         10000       a     a     a     a     a     0     a     1     a
+         18000       a     a     a     a     a     0     a     1     1
+         20000       0     a     0     a     a     a     1     a     a
+         28000       a     a     a     a     a     0     1     a     1
+         30000       a     a     0     a     a     a     1     1     a
+         38000       0     a     a     a     a     a     1     1     1
+         40000       a     a     0     a     a     1     a     a     a
+         48000       0     0     a     a     a     1     a     a     1
+         50000       a     a     a     a     a     1     a     1     a
+         58000       a     a     0     a     a     1     a     1     1
+         60000       a     a     a     a     a     1     1     a     a
+         68000       a     a     a     a     a     1     1     a     1
+         70000       a     a     a     0     0     1     1     1     a
+         78000       a     0     0     a     a     1     1     1     1
+         80000       0     a     a     a     1     0     0     a     a
+         88000       a     0     0     a     1     a     a     a     1
+         90000       a     0     a     a     1     0     0     1     a
+         98000       a     a     0     a     1     0     0     1     1
+         AOOOO       a     a     0     0     1     0     1     a     a
+         A8000       a     a     a     a     1     0     1     0     1
+         BOOOO       a     a     0     0     1     0     1     1     a
+         B8000       a     0     0     a     1     a     1     1     1
+         COOOO       a     0     a     a     1     1     0     0     0
+         C8000       0     a     0     a     1     1     0     a     1
+         00000       0     0     0     0     1           v     1     "
+                                                                     u
+                                                                          ("t
+
+
+         08000       a     a     a     0     1           0     1     1
+         EOOOO       a     0     a     0     1           1     a     a
+         E8000       a     a     0     a     1           1     a
+
+5-2
+       Reference Material - 64K/128K Static Program Memory Installation
+
+
+                         Table 5-2 (Cont.)
+====~~~~-------------------------------------------~~~-~=~~~----
+Memory Base II             Jumper Setting
+  Address    : A23 I A22 : A21 I A20 : A19 : A18 : A17 : A16 : A15
+-------------------------------------------------~---------------
+   FOOOO       0     0      0      0     1   1     1      1     0
+   F8000       0     0      0      0     1   1     1      1     1
+  100000       0     0      0      1     0   0     0      0     0
+  108000       0     0      0      1     0   0     0      0     1
+  110000       0     0      0      1     0   0     0      1     0
+  118000       0     0      0      1     0   0     0      1     1
+  120000       0     0      0      1     0   0     1      0     0
+  128000       0     0      0      1     0   0     1      0     1
+  130000       0     0      1"\
+                            v
+                                         "
+                                         v   "
+                                             v                  0
+  138000       0     0      0            0   0     1      1     1
+  140000       0     0      0            0   1     0      0     0
+  148000       0     0      0            0         0      0     1
+  150000       0     0      0            0         0      1     0
+  158000       0     0      0            0         0      1     1
+  160000       0     0      0            0         1      0     0
+  168000       0     0      0            0          1     0     1
+  170000       0     0      0            0   1      1     1     0
+  178000       0     0      0            0   1     1      1     1
+  180000       0     0      0      1     1   0     0      0     0
+  188000       0     0      0      1     1   0     0      0     1
+  190000       0     0      0      1     1   0     0      1     0
+  198000       0     0      0      1     1   0     0      1     1
+  1AOOOO       0     0      0            1   0     1      0     0
+  1A8000       0     0      0            1   0     1      0     1
+  1BOOOO       0     0      0            1   0     1      1     0
+  1B8000       0     0      0            1   0     1      1     1
+  1COOOO       0     0      0            1   1     0      0     0
+  1C8000       0     0      0            1         0      0     1
+  1DOOOO       0     0      0      1     1   1     0      1     0
+  1D8000       0     0      0      1     1   1     0      1     1
+  1EOOOO       0     0      0      1     1   1     1      0     0
+  1E8000       0     0      0      1     1   1     1      0     1
+  1FOOOO       0     0      0      1     1   1     1      1     0
+  1F8000       0     0      0      1     1   1      1     1     1
+  200000       0     0       1     0     0   0     0      0     0
+  208000       0     0       1     0     0   0     0      0     1
+  210000       0     0       1     0     0   0     0      1     0
+  218000       0     0       1     0     0   0     0      1     1
+  220000       0     0       1     0     0   0     1      0     0
+  228000       0     0       1     0     0   0     1      0     1
+  230000       0     0       1     0     0   0     1      1     0
+  238000       0     0       1     0     0   0     1      1     1
+  240000       0     0             0     0   1     0      0     0
+  248000       0     0             0     0   1     0      0     1
+
+
+
+
+                                                                      5-3
+Reference Material - 64K/128K Static Program Memory Installation
+
+
+                                Table 5-2 (Cont.)
+      ---------------~-------------------------------------------------
+      Memory Base :             Jumper Setting
+        Address   : A23 : A22 : A21 : A20 : A19 : A18 : A17 : A16 : A15
+      -----------------------------------------------------------------
+        250000      0       0       1     0     0         0    1     0
+        258000      0       0       1     0     0         0    1     1
+        260000      0       0       1     0     0         1    0     0
+        268000      0       0       1     0     0   1     1    0     1
+        270000      0       0       1     0     0   1          1     0
+        278000      0       0       1     0     0   1     1    1     1
+        280000      0       0       1     0     1   0     0    0     0
+        288000      0       0       1     0     1   0     0    0     1
+        290000      0       0       1     0     1   0     0    1     0
+        298000      0       0       1     0     1   0     0    1     1
+        2AOOOO      0       0       1     0         0          0     0
+        2A8000      0       0       1     0     1   0          0
+        2BOOOO      0       0       1     0     1   0     1    1     0
+        2B8000      0       0       1     0     1   0     1    1     1
+        2COOOO      0       0       1     0     1   1     0    0     0
+        2C8000      0       0       1     0     1   1     0    0
+        2DOOOO      0       0       1     0     1   1     0    1     0
+        2D8000      0       0       1     0     1   1     0    1     1
+        2EOOOO      0       0       1     0     1   1     1    0     0
+        2E8000      0       0       1     0     1   1     1    0     1
+        2FOOOO      0       0       1     0     1   1     1    1     0
+        2F8000      0       0       1     0     1   1     1    1     1
+        300000      0       0       1     1     0   0     0    0     0
+        308000      0       0                   0   0     0    0     1
+        310000      0       0                   0   0     0    1     0
+        318000      0       0                   0   0     0    1     1
+        320000      0       0       1           0   0     1    0     0
+        328000      0       0       1     1     0   0     1    0     1
+        330000      0       0       1     1     0   0     1          0
+        338000      0       0       1     1     0   0     1    1     1
+        340000      0       0       1     1     0   1     0    0     0
+        348000      0       0       1     1     0   1     0    0     1
+        350000      0       0       1     1     0   1     0    1     0
+        358000      0       0       1     1     0   1     0    1     1
+        360000      0       0       1     1     0   1     1    0     0
+        368000      0       0       1     1     0   1     1    0     1
+        370000      0       0       1     1     0   1     1    1     0
+        378000      0       0       1     1     0   1     1    1     1
+        380000      0       0       1     1     1   0     0    0     0
+        388000      0       0       1     1     1   0     0    0     1
+        390000      0       0       1     1     1   0     0    1     0
+        398000      0       0       1     1     1   0     0    1     1
+        3AOOOO      0       0       1     1     1   0     1    0     0
+        3A8000      0       0       1     1     1   0     1    0     1
+        3BOOOO       1"'1
+                     v      0                       f'\
+                                                    U                a
+
+
+
+5-4
+              Reference Material - 64K/128K Static Program Memory Installation
+
+
+                                       Table 5-2 (Cont.)
+-----------------------------~-~~==~====~=~~~~~~-----------------
+Memory Base I
+                   I                    Jumper Setting
+  Address          I
+                   I   A23    I
+                              I   A22 l A21 II A20 : A19   I
+                                                           I   A18   I
+                                                                     I   A17 : A16   I
+                                                                                     I   A15
+-----------------------------------------------------------------
+  3B8000                0          0       1     1     1        0         1     1         1
+  3COOOO                0          0       1     1     1        1         0     0         0
+  3C8000                0          0       1     1     1        1         0     0         1
+  3DOOOO                0          0       1     1     1                  0               0
+  3D8000                0          0             1     1        1         0               1
+  3EOOOO                0          0       1     1     1        1               0         0
+  3E8000                0          0       1     1     1        1         1     0         1
+  3FOOOO                0          0       1     1     1        1         1     1         0
+  3F8000                0          0       1     1     1        1         1     1         1
+  400000                0          1      0      0     0        0         0     0         0
+  408000                0          1      0      0     0        0         0     0         1
+  410000                0          1      0      0     0        0         0     1         0
+  418000                0          1      0      0     0        0         0     1         1
+  420000                0          1      0      0     0        0         1     0         0
+  428000                0                 0      0     0        0         1     0         1
+  430000                0                 0      a     a        a         1               a
+  438000                0                 0      0     0        0         1     1         1
+  440000                a                 a      a     0        1         0     0         0
+  448000                a          1      0      a     0        1         0     0         1
+  450000                a          1      a      a     a        1         a     1         a
+  458000                a          1      a      a     a        1         0     1         1
+  460000                a          1      a      a     a        1         1     a         a
+  468000                a          1      a      a     a        1         1     a         1
+  470000                a          1      a      a     0        1         1     1         a
+  478000                0          1      0      a     0        1         1     1         1
+  480000                /"\
+                        V                 0      /"\
+                                                 V     1        a         1"\
+                                                                          v     0         0
+  488000                a                 0      0              0         0     0         1
+  490000                0                 0      0              0         a               0
+  498000                /"\
+                        V
+                                          /"\
+                                          V
+                                                 /"\
+                                                 V              0         /"\
+                                                                          v
+  4AOOOO                a          1      a      a              0               a         a
+  4A8000                a          1      0      a              a               0         1
+  480000                0          1      0      0              0               1         0
+  4B8000                0          1      0      a              0         1     1         1
+  4COOOO                0                 0      0                        0     0         0
+  4C8000                0          1      0      a     1        1         0     0         1
+  4DOOOO                a          1      0      a     1        1         0     1         a
+  4D8000                a          1      0      a     1        1         a     1
+  4EOOOO                a          1      0      0     1        1         1     0         a
+  4E8000                0          1      0      0     1        1         1     0         1
+  4FOOOO
+  """'~I"\I"\I"\
+                        0          1      0      0     1        1         1     1         a
+  "+rouuu               0                  0     0                        1               1
+  500000                0                 0            0        a         a     0         0
+  508000                0                 0            0        a         a     a
+  510000                a                 0            a        0         0     1         a
+
+
+
+
+                                                                                               5-5
+Reference Material - 64K/128K Static Program Memory Installation
+
+
+                               Table 5-2 (Cont.)
+      -----------------------------------------------------------------
+      Memory Base I             Jumper Setting
+        Address   : A23 : A22 : A21 : A20 : A19 : A18 : A17 : A16 : A15
+      -----------------------------------------------------------------
+       518000       0      1      0      1     0   0     0     1     1
+       520000       0      1      0      1     0   0     1     0     0
+       528000       0      1      0      1     0   0     1     0     1
+       530000       0      1      0      1     0   0     1     1     0
+       538000       0      1      0      1     0   0     1     1     1
+       540000       0      1      0      1     0   1     0     0     0
+       548000       0      1      0      1     0   1     0     0     1
+       550000       0      1      0      1     0   1     0     1     0
+       558000       0      1      0      1     0   1     0     1     1
+       560000       0      1      0      1     0   1     1     0     0
+       568000       0      1      0      1     0   1     1     0     1
+       570000       0      1      0      1     0   1     1     1     0
+       578000       0      1      0      1     0   1     1     1     1
+       580000       0      1      0      1     1   0     0     0     0
+       588000       0      1      0      1     1   0     0     0     1
+       590000       0      1      0      1     1   0     0     1     0
+       598000       0      1      0      1     1   0     0     1     1
+       5AOOOO       0      1      0      1     1   0     1     0     0
+       5A8000       0      1      0      1     1   0     1     0     1
+       5BOOOO       0      1      0      1     1   0     1     1     0
+       5B8000       0      1      0      1     1   0     1     1     1
+       5eOOOO       0             0            1   1     0     0     0
+       5C8000       0             0            1   1     0     0     1
+       5DOOOO       0             0                1     0     1     0
+       5D8000       0             0                1     0     1     1
+       5EOOOO       0             0            1   1     1     0     0
+       5E8000       0             0            1   1     1     0     1
+       5FOOOO       0      1      0      1     1   1     1     1     0
+       5F8000       0      1      0      1     1   1     1     1     1
+       600000       0      1      1      0     0   0     0     0     0
+       608000       0      1       1     0     0   0     0     0     1
+       610000       0      1       1     0     0   0     0     1     0
+       618000       0      1       1     0     0   0     0     1     1
+       620000       0      1       1     0     0   0     1     0     0
+       628000       0      1       1     0     0   0     1     0     1
+       630000       0      1       1     0     0   0     1     1     0
+       638000       0      1       1     0     0   0     1     1     1
+       640000       0      1       1     0     0   1     0     0     0
+       648000       0      1       1     0     0   1     0     0     1
+       650000       0      1       1     0     0   1     0     1     0
+       658000       0      1       1     0     0   1     0     1     1
+       660000       0              1     0     0   1           0     0
+       668000       0      1       1     0     0   1           0     1
+       670000        0     1             0     0               1     0
+
+
+
+
+5-6
+       Reference Material - 64K/128K Static Program Memory Installation
+
+
+                         Table 5-2 (Cont.)
+----------------~~=========~~~~~~--------------------------------
+Memory Base :             Jumper Setting
+  Address   : A23 : A22 I A21 : A20 : A19    I
+                                             !   A18   I
+                                                       I   A17 : A16   I
+                                                                       I   A15
+-----------------------------------------------------------------
+  678000       a                 a     a     1     1     1     1
+  680000       0                 0     1     0     0     a     0
+  688000       0                 a     1     0     a     a     1
+  690000       0                 0     1     0     a     1     a
+  698000       a                 0     1     a     a     1     1
+  6AOOOO       0     1           0     1     0     1     a     0
+  6A8000       0     1           0     1     0     1     a
+ 6BOOOO        0                   0              0                         0
+ 6B8000        a                   a              a         1     1         1
+ 6COOOO        0                   0                        0     a         a
+ 6C8000        a                   a                        a     0         1
+ 6DOOOO        a                   0                        a     1         a
+ 6D8000        0                   0                        0     1         1
+ 6EOOOO        0     1             0     1        1         1     0         0
+ 6E8000        0     1             a     1        1         1     a         1
+ 6FOOOO        0     1             0     1        1         1     1         0
+ 6F8000       0      1       1     0     1        1         1     1         1
+ 700000       0      1       1           a        0         0     a         0
+ 708000       0      1       1           0        0         a     a         1
+ 710000       a      1       1           0        0        0                a
+ 718000       a      1       1     1     0        0        0      1         1
+ 720000       a      1       1     1     a        0         1     a         a
+ 728000       0      1       1     1     0        0         1     0         1
+ 730000       0      1       1     1     a        a         1     1         0
+ 738000       0      1       1     1     0        0         1     1         1
+ 740000       0      1       1     1     a        1        0      a         0
+ 748000       0      1       1     1     0        1        0      0
+ 750000       0                    1     0        1        0      1         0
+ 758000       0      1       1     1     0        1        0      1         1
+ 760000       0      1       1     1     0        1        1      0         0
+ 768000        a     1       1     i     0        1               0         1
+ 770000        0     1       1     1     0        1               1         a
+ 778000        0     1                   0        1               1         1
+ 780000        0     1             1     1        0         a     0         a
+ 788000        0     1       1     1     1        0         0     0         1
+ 790000        0     1       1     1     1        0         0     1         0
+ 798000        0     1       1     1     1        0         0     1         1
+ 7AOOOO        0     1       1     1     1        0         1     0         0
+ 7A8000        0     1       1     1     1        0         1     0         1
+ 7BOOOO        0                   1              a               1         a
+ 7B8000        0                   1              0               1         1
+ 1COOOO        0     1             1                        0     0         0
+ 1C8000        0     1             1                        0     0         1
+ 1DOOOO        0     1             1                        0     1         0
+
+
+
+
+                                                                                 5-1
+Reference Material - 64K/128K Static Program Memory Installation
+
+
+                               Table 5-2 (Cont.)
+
+      Memory Base :             Jumper Setting
+        Address   : A23 : A22 : A21 : A20 : A19 : A18 : A17 : A16 : A15
+      -----------------------------------------------------------------
+        7D8000       0     1       1     1     1   1     0     1     1
+        7EOOOO       0     1       1     1     1   1     1     0     0
+        7E8000       a     1       1     1     1   1     1     a     1
+        7FOOOO       a     1       1     1     1   1     1     1     a
+        7F8000       a     1       1     1     1   1     1     1     1
+        800000             a       a     a     a   a     a     a     a
+
+        FF8000
+
+
+
+
+5-8
+

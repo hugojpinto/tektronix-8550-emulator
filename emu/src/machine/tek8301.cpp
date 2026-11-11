@@ -204,6 +204,7 @@ void tek8301::restart()
 	m_ec_pend = 0; m_f3 = 0x0f; m_f8 = 0x1f; m_f9 = 0x1f; m_lp_live = false; m_f4 = 0xff; m_fr_pending = m_fj_pending = m_fi_pending = false; m_svc_stop = false; m_f5 = 0xff;
 	lp_reset();
 	m_epz80.restart(); m_ep85.restart(); m_ep86.restart();
+	for (pm_board_t &B : m_pm) { B.ctl = 0x10; B.ctr = 0; }   // reset: relocation disabled (inferred: a 32 KB system boots)
 	cpu.reset();
 }
 
@@ -283,8 +284,8 @@ u8 tek8301::io_read(offs_t port)
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
-	case 0xb8: v = m_b8 & 0x5f; break;
-	case 0xb9: v = m_b9 & 0x5f; break;
+	case 0xb8: v = pm_read(0); break;
+	case 0xb9: v = pm_read(1); break;
 	case 0xca: case 0xcb: v = remote.read(port & 1); if (rem_trace && (port & 1)) fprintf(stderr, "[%.3f REM rx %02x '%c' pc=%04x]\n", m_cycles / CPU_HZ, v, v >= 0x20 && v < 0x7f ? v : '.', cpu.pc()); break;
 	case 0xcc: case 0xcd: v = aux.read(port & 1); break;
 	case 0xce: case 0xcf: v = term.read(port & 1); break;
@@ -325,8 +326,8 @@ void tek8301::io_write(offs_t port, u8 d)
 	if (m_ep86.decodes(u8(port))) { m_ep86.io_write(u8(port), d); update_irq(); return; }
 	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; tta_board.write(port & 7, d, now_cycles()); if (tta_board.take_irq()) tta_interrupt(); update_irq(); return; }
 	switch (port) {
-	case 0xb8: m_b8 = d; break;
-	case 0xb9: m_b9 = d; break;
+	case 0xb8: pm_write(0, d); break;
+	case 0xb9: pm_write(1, d); break;
 	case 0xca: case 0xcb: remote.write(port & 1, d); if (rem_trace) fprintf(stderr, "[%.3f REM %s %02x '%c']\n", m_cycles / CPU_HZ, (port & 1) ? "tx" : "cr", d, d >= 0x20 && d < 0x7f ? d : '.'); break;
 	case 0xcc: case 0xcd: aux.write(port & 1, d); break;
 	case 0xce: case 0xcf: term.write(port & 1, d); break;
@@ -552,4 +553,28 @@ void tek8301::run_slice(int cycles)
 		}
 		update_irq();
 	}
+}
+
+// --------------------------------------------------------------------------
+// Program memory boards' control ports B8 (low) / B9 (high), 070-2976 section 7: write D3-D0
+// the next relocation RAM entry (the counter advances), D4 relocation disable, D5 counter
+// reset, D6 extended-bank comparator disable; read D3-D0 the entry at the counter (which
+// advances: the static test writes 16 entries, then reads 16), D4 and D6 the latches.
+u8 tek8301::pm_read(int b)
+{
+	pm_board_t &B = m_pm[b];
+	if (!B.present) return 0x00;
+	const u8 v = u8((B.reloc[B.ctr] & 0x0f) | (B.ctl & 0x50));
+	B.ctr = u8((B.ctr + 1) & 15);
+	return v;
+}
+
+void tek8301::pm_write(int b, u8 d)
+{
+	pm_board_t &B = m_pm[b];
+	if (!B.present) return;
+	B.ctl = u8(d & 0x50);
+	if (d & 0x20) { B.ctr = 0; return; }
+	B.reloc[B.ctr] = u8(d & 0x0f);
+	B.ctr = u8((B.ctr + 1) & 15);
 }
