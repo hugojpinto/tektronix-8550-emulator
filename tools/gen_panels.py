@@ -186,25 +186,25 @@ def make_8501():
 # ---------------------------------------------------------------- 8301
 def make_8301():
     L = Lay()
-    FW, FH = 1000, 420
+    FW, FH = 1000, 560                # same box height as the 8501 (catalogue photo)
     box(L, FW, FH)
     # left: grille / plain name panel / grille with the name strip; rows match the right column
-    L.grille(36, 28, 532, 116)
-    L.item('recess', 36, 154, 532, 112)
-    L.grille(36, 276, 532, 116)
-    L.item('strip', 46, 362, 512, 20)
-    L.text_l('Tektronix', 46 + 0.03 * 512, 362 + 3.5, 13, BLUE)
-    L.text_r('8301 MICROPROCESSOR DEVELOPMENT UNIT', 46 + 0.97 * 512, 362 + 3.5, 13)
+    L.grille(36, 28, 532, 186)
+    L.item('recess', 36, 224, 532, 112)
+    L.grille(36, 346, 532, 186)
+    L.item('strip', 46, 502, 512, 20)
+    L.text_l('Tektronix', 46 + 0.03 * 512, 502 + 3.5, 13, BLUE)
+    L.text_r('8301 MICROPROCESSOR DEVELOPMENT UNIT', 46 + 0.97 * 512, 502 + 3.5, 13)
     # right column
-    L.grille(592, 28, 372, 116)
-    L.item('panel', 592, 154, 372, 112)
-    L.grille(592, 276, 372, 116)
-    P0, P1 = 154, 266
+    L.grille(592, 28, 372, 186)
+    L.item('panel', 592, 224, 372, 112)
+    L.grille(592, 346, 372, 186)
+    P0, P1 = 224, 336                 # the 8501's panel row
     d1, d2 = 730, 856
     divider(L, d1, P0, P1); divider(L, d2, P0, P1)
-    rows = [177, 199, 221, 243]   # lamp rows, pitch 22, centred on the panel
+    rows = [247, 269, 291, 313]   # lamp rows, pitch 22, centred on the panel
     ly = rows[0] - LBL / 2
-    dy = 195                      # devices 48 tall, centre 219
+    dy = 265                      # devices 48 tall, centre 289
     # section 1: POWER rocker
     RW, RH = 40, 68                                           # portrait rocker, as on the photo
     gw = RW + 8 + 6 * 3 * LBL / 8                             # rocker + ON/OFF marks: centred as a group
@@ -223,8 +223,8 @@ def make_8301():
     cx = (d2 + 964) / 2
     L.text_c('RESTART', cx, ly, LBL)
     L.item('toggle', cx - 20, dy, 40, 48, ' inputtag="8301:restart"')
-    diag(L, 450, 'SYSTEM CONTROLLER LEDS (INSIDE)', ['8301:led%d' % i for i in (4, 3, 2, 1, 0)])
-    L.write(OUT + '/8301.lay', HDR_8301, 'Tektronix 8301 Microprocessor Development Unit', 1000, 480)
+    diag(L, 590, 'SYSTEM CONTROLLER LEDS (INSIDE)', ['8301:led%d' % i for i in (4, 3, 2, 1, 0)])
+    L.write(OUT + '/8301.lay', HDR_8301, 'Tektronix 8301 Microprocessor Development Unit', 1000, 620)
 
 HDR_8501 = open(OUT + '/8501.lay').read().split('\n', 1)[1].split('<mamelayout')[0].strip()
 HDR_8301 = '''<!-- Tektronix 8301 Microprocessor Development Unit, front panel. After the 8550 catalogue photo
