@@ -147,6 +147,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 		for (int i = 0; i < 1024; i++) { b.prom[2 * i] = ev[i]; b.prom[2 * i + 1] = od[i]; }
 		b.prom_dumped = 2048;
 		b.present = true; b.is8088 = opt.ep88; b.is186 = k186;
+		b.wait_states = k186 ? 1 : 0;
 		b.trace = getenv("TEK_EP86TRACE") != nullptr;
 		b.restart();
 	}

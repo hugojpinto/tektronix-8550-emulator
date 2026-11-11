@@ -120,14 +120,42 @@ u32 ep8086_board::user_addr(u32 a) const
 	return u32((m_reloc[(a >> 12) & 0xff] << 12) | (a & 0xfff)) & 0xffff;
 }
 
-u8 ep8086_board::user_read(u32 a)
+u8 ep8086_board::user_read(u32 a, bool fetch)
 {
+	bus_wait(a, fetch);
 	return mdu.progmem(u16(user_addr(a)));
 }
 
 void ep8086_board::user_write(u32 a, u8 d)
 {
+	bus_wait(a, false);
 	mdu.progmem_w(u16(user_addr(a)), d);
+}
+
+// Wait states on the program's memory cycles: one per bus cycle on the 80186 board
+// (jumper P6102 in its default position: 186.TST module 60 times a PUSH/POP/LOOP delay with
+// timer 1 and needs 40 clocks per 36-clock iteration, its four bus cycles each one longer).
+// A bus cycle carries a word on the 80186 (an even address, or an odd byte alone), a byte
+// on the 80188. The 8086 board's tests pass without them (its jumper P3505 DYN: none unless
+// the memory is allocated slow).
+void ep8086_board::bus_wait(u32 a, bool fetch)
+{
+	// slow memory (mapping RAM bit 3, AL -S): the jumper-selected wait states (P7005, up to 7;
+	// the number is not known, 1 here) on every cycle, fetches included (186.TST module 61
+	// times a fetch-only loop on fast and on slow memory)
+	const int slow = (m_map[(a >> 12) & 0xff] & 0x08) ? slow_wait_states : 0;
+	if (fetch) {
+		u32 &lf = m_last_fetch;
+		const bool nc = is8088 || !(a & 1) || a != lf + 1;
+		lf = a;
+		if (nc && slow) m_cpu->adjust_icount(-slow);
+		return;                                      // otherwise the prefetcher's cycles overlap execution
+	}
+	if (!wait_states && !slow) return;
+	u32 &last = m_last_data;
+	const bool new_cycle = is8088 || !(a & 1) || a != last + 1;
+	last = a;
+	if (new_cycle) m_cpu->adjust_icount(-(wait_states + slow));
 }
 
 // Board I watches each bus cycle of the user's program. Breakpoints: three RAMs, one bit per
@@ -177,7 +205,9 @@ void ep8086_board::tta_cycle(u32 a, int kind, u8 d)
 	tta &t = mdu.tta_board;
 	if (!m_user || m_entering || !t.target_registers()) return;
 	static const u8 s20[] = { 0x08, 0x0a, 0x0c, 0x02, 0x04 };   // FETCH READ WRITE IOR IOW -> S2-S0 << 1
-	const int seg = kind == FETCH ? 1 : kind == IOR || kind == IOW ? 1 : m_cpu->bus_segment();   // ES 0 CS 1 SS 2 DS 3
+	// the 80186 drives no segment status (S4/S3 = 00, read as ES: 186.TST module 70 expects
+	// 29/28/2C and ignores bit 4)
+	const int seg = is186 ? 0 : kind == FETCH ? 1 : kind == IOR || kind == IOW ? 1 : m_cpu->bus_segment();   // ES 0 CS 1 SS 2 DS 3
 	static const u8 segbits[] = { 0x30, 0x10, 0x20, 0x00 };
 	tta::sample s;
 	s.addr = a & (kind == IOR || kind == IOW ? 0xffff : 0xfffff);
@@ -186,7 +216,9 @@ void ep8086_board::tta_cycle(u32 a, int kind, u8 d)
 	s.activity = u8(0x01 | (m_lock ? 0x00 : 0x40));
 	if (kind == FETCH) m_first_fetch = false;
 	t.target_cycle(mdu.now_cycles(), s);
-	if (t.take_target_break()) schedule_break(kind == FETCH ? 1 : 2, 0x00, 0x08);
+	// a TTA break reaches the 80186 one instruction later than the 8086 (186.TST module 70
+	// counts to 20 where the 8086 test counts to 22, and both expect the break after 0014)
+	if (t.take_target_break()) schedule_break((kind == FETCH ? 1 : 2) + (is186 ? 1 : 0), 0x00, 0x08);
 }
 
 // the reason latches are set when the condition occurs; the break itself follows
@@ -209,7 +241,7 @@ u8 ep8086_board::bus_t::read(int space, u32 a)
 	if (k.m_user) {
 		const int kind = space == i8086_cpu_device::SP_OPCODES ? FETCH : READ;
 		k.user_cycle(a, kind);
-		const u8 v = k.user_read(a);
+		const u8 v = k.user_read(a, kind == FETCH);
 		if (!k.m_entering) k.tta_cycle(a, kind, v);
 		return v;
 	}
@@ -363,6 +395,7 @@ void ep8086_board::run(int cycles2650)
 			// an instruction in non-existent memory is not executed: its fetch breaks first
 			if (m_map[(m_cpu->pc() >> 12) & 0xff] & 0x01) { request_break(0, 0x02); continue; }
 			if (!m_cpu->halted()) m_pc_last = m_cpu->pc();   // a HLT keeps its own address latched (80186 modules 41, 42)
+			if (m_pctrace && !m_cpu->halted()) fprintf(stderr, "[86 u %05x]\n", unsigned(m_cpu->pc()));
 			m_first_fetch = true;
 		}
 		// the 80186 kernel's upper half did not survive the dump: its entries are high level

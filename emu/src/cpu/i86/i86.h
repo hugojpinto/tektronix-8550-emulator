@@ -75,6 +75,8 @@ public:
 	bool mid_instruction() const { return m_seg_prefix_next || m_lock; }
 	// [tek8550] the segment of the data access in progress (ES 0, CS 1, SS 2, DS 3): S4/S3
 	int bus_segment() const { return m_easeg; }
+	// [tek8550] wait states from the bus: MAME's device_execute_interface::adjust_icount
+	void adjust_icount(int delta) { m_icount += delta; }
 	void set_ax(u16 v) { m_regs.w[AX] = v; }
 	void set_bx(u16 v) { m_regs.w[BX] = v; }
 	void set_cx(u16 v) { m_regs.w[CX] = v; }

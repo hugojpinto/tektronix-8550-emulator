@@ -16,7 +16,7 @@ Modified for tek8550 (marked [tek8550]), i86.h/i86.cpp/i86inline.h:
   data bus width, which in MAME only changes the address space configuration: same timing tables.
 - Public interface added: reset(), run(cycles) (returns cycles executed), set_input_line(),
   register getters/setters, flags()/set_flags(), pc(), halted(), locked(), mid_instruction()
-  (a prefix has run but not its instruction), bus_segment() (m_easeg: the S4/S3 segment), trace_hook,
+  (a prefix has run but not its instruction), bus_segment() (m_easeg: the S4/S3 segment), adjust_icount() (bus wait states, as MAME's), trace_hook,
   create_disassembler() made public. update_pc() moved to the common base for the setters.
 - Hooks for the 80186 (no effect on the 8086/8088): run() is virtual; the address_space adapter has
   data_width() (8 on the 8088/80188, 16 otherwise); standard_irq_callback() calls m_irq_ack_cb when set
@@ -77,3 +77,12 @@ FF00-FFFF) or memory (relocation register bit 12) accesses and never reach the b
 accesses are swapped, not split; ESC opcodes trap to INT 7 when relocation bit 15 (ET) is set and are
 otherwise skipped (no esc_opcode/esc_data hooks on the 186); BOUND's INT 5 returns past the BOUND;
 undefined opcodes take INT 6; external interrupts in iRMX mode (relocation bit 14) drive INTR directly.
+
+- i186 in-service register write: masked with 00FD instead of 00FF (bit 1 is reserved and reads 0,
+  as on the real chip; the Tektronix 80186 emulator diagnostic, 186.TST module 60, checks it).
+- i186 byte reads of the peripheral control block at an odd address return the register's low byte
+  ("swapped rather than split", as MAME already does for words) instead of the high byte; 186.TST
+  module 60 reads the interrupt priority mask at PCB+2B and expects its value.
+- i186 update_interrupt_state: when no request is left (masked by the priority mask, or none), POLLSTS's
+  INTREQ bit (8000) clears; MAME left it set from the last request. 186.TST module 60 checks INTREQ
+  against the priority mask.

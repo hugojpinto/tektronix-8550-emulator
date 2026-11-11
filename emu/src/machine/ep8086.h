@@ -19,6 +19,7 @@
 #include "machine/tta.h"
 #include <memory>
 #include <vector>
+#include <cstdlib>
 
 class tek8301;
 
@@ -29,10 +30,13 @@ public:
 	bool present = false;
 	bool is8088 = false;                       // MISC STATUS bit 0 (8088 / 80188)
 	bool is186 = false;                        // the 80186/80188 emulator
+	int wait_states = 0;                       // per program-memory data cycle (80186 board: 1)
+	int slow_wait_states = 1;                  // in memory allocated slow (mapping RAM bit 3)
 	bool mhz5 = true;                          // MISC STATUS bit 5: 5 MHz (else 8 MHz)
 	std::vector<u8> prom;                      // kernel, interleaved: 2 KB (8086), 4 KB (80186)
 	size_t prom_dumped = 0;                    // bytes of the kernel that survive (the 80186's upper half does not)
 	bool trace = false;
+	bool m_pctrace = getenv("TEK_EP86PC") != nullptr;   // every instruction of the user's program
 
 	// ---- the 2650's side
 	u8 master_port() const { return is186 ? 0x27 : 0xa7; }
@@ -108,7 +112,9 @@ private:
 	void kernel_reset();
 	void request_break(u8 reason1, u8 reason2);
 	void enter_kernel();
-	u8 user_read(u32 a);
+	u8 user_read(u32 a, bool fetch = false);
 	void user_write(u32 a, u8 d);
+	void bus_wait(u32 a, bool fetch);
+	u32 m_last_data = ~0u, m_last_fetch = ~0u;
 };
 #endif

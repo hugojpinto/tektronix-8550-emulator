@@ -843,8 +843,8 @@ uint8_t i80186_cpu_device::read_port_byte(uint16_t port)
 {
 	if (!(m_reloc & 0x1000) && (port >> 8) == (m_reloc & 0xff))
 	{
-		if (port & 1)
-			return internal_port_r((port >> 1) & 0x7f, 0xff00) >> 8;
+		if (port & 1)   // [tek8550] swapped, as the word path: the register's low byte (186.TST module 60 reads PRIMSK at 2B)
+			return internal_port_r((port >> 1) & 0x7f, 0x00ff) & 0xff;
 		else
 			return internal_port_r((port >> 1) & 0x7f, 0x00ff) & 0xff;
 	}
@@ -909,8 +909,10 @@ uint8_t i80186_cpu_device::read_byte(uint32_t addr)
 {
 	if ((m_reloc & 0x1000) && ((addr >> 8) & 0xfff) == (m_reloc & 0xfff))
 	{
-		uint16_t ret = internal_port_r((addr >> 1) & 0x7f, (addr & 1) ? 0xff00 : 0x00ff);
-		return (addr & 1) ? (ret >> 8) : (ret & 0xff);
+		// [tek8550] an odd byte gets the register's low byte, swapped as the word path does
+		// (the Tektronix 80186 diagnostic, 186.TST module 60, reads the priority mask at PCB+2B)
+		uint16_t ret = internal_port_r((addr >> 1) & 0x7f, 0x00ff);
+		return ret & 0xff;
 	}
 	return m_program->read_byte(addr);
 }
@@ -1178,6 +1180,7 @@ void i80186_cpu_device::update_interrupt_state()
 		}
 	}
 	m_intr.pending = 0;
+	m_intr.poll_status &= ~0x8000;   // [tek8550] nothing requested any more: POLLSTS INTREQ clears (186.TST module 60, priority mask)
 	if (!BIT(m_reloc, 14))
 		set_intr_line(CLEAR_LINE);   // [tek8550] was set_input_line(0, ...)
 	else
@@ -1932,7 +1935,7 @@ void i80186_cpu_device::internal_port_w(offs_t offset, uint16_t data)
 
 		case 0x16:
 			LOGMASKED(LOG_PORTS, "%05X:80186 interrupt in-service = %04X\n", m_pc, data);
-			m_intr.in_service = data & 0x00ff;
+			m_intr.in_service = data & 0x00fd;   // [tek8550] bit 1 is reserved (Intel 80186 data sheet: TMR, -, D0, D1, I0-I3); the 8550's 186.TST module 60 writes FFFF and expects FD
 			update_interrupt_state();
 			break;
 
