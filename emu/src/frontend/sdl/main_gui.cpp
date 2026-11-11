@@ -210,7 +210,8 @@ int main(int argc, char **argv)
 		t = std::min(t, (float(u.h) - bar - 2 * gap) / LH);
 		if (n) t = std::min(t, (float(u.h) - n * bar - (n + 1) * gap) / (r * ph));
 		float tw = LW * t, th = LH * t;
-		float x0 = float(u.x) + (n ? gap : (float(u.w) - tw) / 2);
+		float total = tw + (n ? gap + r * pw * t : 0);              // the whole set, centred
+		float x0 = float(u.x) + (float(u.w) - total) / 2;
 		SDL_SetWindowSize(win, int(tw), int(th));
 		SDL_SetWindowPosition(win, int(x0), int(float(u.y) + bar + gap));
 		float py = float(u.y) + bar + gap;
