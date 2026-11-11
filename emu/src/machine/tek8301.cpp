@@ -209,7 +209,7 @@ void tek8301::lp_run(int cycles2650)
 			// v3: RESET from the target (reset button, power-on) resets the emulator
 			// processor on its rising edge; this does not send 'Z' back to the target
 			bool rs = target->reset_line();
-			if (rs && !m_trst_prev) { z80 keep = z; z80_setup(z); z.read_byte = keep.read_byte; z.cyc = keep.cyc; }
+			if (rs && !m_trst_prev) { fprintf(stderr, "[%.3f target RESET: emulator Z80 reset, PC was %04x]\n", m_cycles / CPU_HZ, z.pc); z80 keep = z; z80_setup(z); z.read_byte = keep.read_byte; z.cyc = keep.cyc; }
 			m_trst_prev = rs;
 			bool n = target->nmi();
 			if (n && !m_nmi_prev) z80_gen_nmi(&z);
