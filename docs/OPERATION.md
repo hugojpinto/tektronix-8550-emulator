@@ -165,7 +165,7 @@ Then, on the 8550:
 
 The wire protocol (so you can write your own target, or use FUSE's Spectrum as one) is in `notes/prototype-link.md`.
 
-## 6¼. Talk to a host computer (COMM and HOST)
+## 7. Talk to a host computer (COMM and HOST)
 The 8301's REMOTE port connects to a host over RS-232. Here it is a socket.
 
 ```
@@ -191,7 +191,7 @@ $ save list.txt^@<HELLO.LST<CR>  DOS/50 file -> host; when RIOT: appears, type C
 
 Details and protocol findings: `notes/host-link.md`. Regression: `tools/test_host_link.sh`.
 
-## 6⅓. Real-time analysis (the RTPA option)
+## 8. Real-time analysis (the RTPA option)
 `-rtpa` fits the Real-Time Prototype Analyzer. It watches the emulated program's bus, can break on events, counts things, and records the last 128 bus transactions.
 
 ```
@@ -207,7 +207,7 @@ Details and protocol findings: `notes/host-link.md`. Regression: `tools/test_hos
 
 How the board works and how it was reverse-engineered: `notes/rtpa.md`. Its diagnostic is Select mode → 4.
 
-## 6½. Program PROMs (the 8550F30 PROM programmer)
+## 9. Program PROMs (the 8550F30 PROM programmer)
 
 The programmer is an option, so fit it with `-prom fix`. Then put a device in its socket with `-prom-dev FILE`: a raw image, created erased if it doesn't exist and saved at exit. The emulated characteristic module takes 2708, 2716 and 2732 EPROMs.
 
@@ -231,7 +231,7 @@ The programmer is an option, so fit it with `-prom fix`. Then put a device in it
 
 One known limitation: after a `WPROM`, a later `RPROM` or `CPROM` in the same session hangs. The device image is already correct, so just restart the emulator.
 
-## 7. Run the hardware diagnostics
+## 10. Run the hardware diagnostics
 
 Both diagnostic disks run the complete self-test of every board:
 ```
@@ -245,7 +245,7 @@ At the menus press **Return**, **1 Return**, **Return** (Automatic mode → Syst
 
 `-pm ext` emulates the newer program-memory boards these diagnostics expect. DOS/50 V1.0 needs the default, older boards, so don't use `-pm ext` for normal work. Screenshots of a passing run are in `docs/screenshots/diagnostics/`.
 
-## 8. Scripting, logging, screenshots
+## 11. Scripting, logging, screenshots
 
 When stdin is not a terminal, the emulator runs flat out, at roughly 100× real time:
 
@@ -267,7 +267,7 @@ build/tek8550 -term tty -0 ../disks/work.img -cycles $((90*2000000)) \
 
 `tools/make_screenshots.sh` is a complete worked example: it scripts an ACE → ASM → LINK → run session.
 
-## 9. Troubleshooting
+## 12. Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
