@@ -3,7 +3,7 @@
 // Standalone port of MAME's Intel 8086/8088 core (src/devices/cpu/i86) for the
 // Tektronix 8550 emulator. The MAME device framework is replaced by small adapters
 // with the same names, so the instruction code in i86.cpp and i86inline.h is used
-// verbatim. Only the 8086 and 8088 are ported (not the 80186/80286).
+// verbatim. The 8086 and 8088 are here; the 80186/80188 are in i186.h (not the 80286).
 // Local changes are marked [tek8550]; SOURCE.txt lists them.
 #ifndef MAME_CPU_I86_I86_H
 #define MAME_CPU_I86_I86_H
@@ -50,7 +50,7 @@ public:
 	// [tek8550] public interface of the standalone port
 	virtual ~i8086_common_cpu_device() = default;
 	void reset() { device_reset(); }
-	int  run(int cycles);               // returns the cycles executed (all of them while halted)
+	virtual int run(int cycles);        // returns the cycles executed (all of them while halted)
 	void set_input_line(int line, int state) { execute_set_input(line, state); }
 	std::unique_ptr<util::disasm_interface> create_disassembler();
 
@@ -95,7 +95,8 @@ protected:
 	// ---- [tek8550] adapters standing in for MAME address spaces, callbacks and the execute interface ----
 	enum { AS_PROGRAM = SP_PROGRAM, AS_OPCODES = SP_OPCODES, AS_IO = SP_EXTRA + 1 };
 	struct address_space {
-		bus_interface *b; int sp;
+		bus_interface *b; int sp; int width = 16;   // width: data bus bits (data_width(), used by the 80186 DMA)
+		int  data_width() const { return width; }
 		u8   read_byte(offs_t a) { return sp == AS_IO ? b->io_read(u16(a)) : b->read(sp, a & 0xfffff); }
 		void write_byte(offs_t a, u8 d) { if (sp == AS_IO) b->io_write(u16(a), d); else b->write(sp, a & 0xfffff, d); }
 		u16  read_word_unaligned(offs_t a) { u16 l = read_byte(a); return l | (read_byte(a + 1) << 8); }
@@ -108,7 +109,8 @@ protected:
 	address_space m_spaces[AS_IO + 1];
 	bool has_space(int) const { return true; }
 	address_space &space(int n) { return m_spaces[n]; }
-	int standard_irq_callback(int, offs_t) { return m_bus.inta(); }
+	std::function<int(int)> m_irq_ack_cb;   // set_irq_acknowledge_callback (the 80186's interrupt controller)
+	int standard_irq_callback(int line, offs_t) { return m_irq_ack_cb ? m_irq_ack_cb(line) : m_bus.inta(); }
 	void debugger_instruction_hook(offs_t pc) { if (trace_hook) trace_hook(pc & 0xfffff); }
 	void debugger_wait_hook() {}
 	void debugger_exception_hook(int) {}

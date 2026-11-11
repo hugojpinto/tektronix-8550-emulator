@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
-// dasm: disassemble a raw binary for pdp11 | s2650 | z80 | i86 (8086/8088, 16-bit x86).
+// dasm: disassemble a raw binary for pdp11 | s2650 | z80 | i86 (8086/8088, 16-bit x86) | i186 (80186/80188).
 // usage: dasm <cpu> <file> [base(hex, or 0o-prefixed octal)] [start] [count]
 #include "emu.h"
 #include "cpu/t11/t11dasm.h"
@@ -16,7 +16,7 @@ struct s2650cfg : s2650_disassembler::config { bool get_z80_mnemonics_mode() con
 struct i86cfg : i386_disassembler::config { int get_mode() const override { return 1; } };   // 16-bit, as the i86 core
 static u32 num(const char *s) { return !strncmp(s, "0o", 2) ? strtoul(s + 2, 0, 8) : strtoul(s, 0, 16); }
 int main(int argc, char **argv) {
-	if (argc < 3) { fprintf(stderr, "usage: dasm pdp11|s2650|z80|i86|i8088 file [base] [start] [count]\n"); return 1; }
+	if (argc < 3) { fprintf(stderr, "usage: dasm pdp11|s2650|z80|i86|i8088|i186|i80188 file [base] [start] [count]\n"); return 1; }
 	std::string cpu = argv[1];
 	FILE *f = fopen(argv[2], "rb"); if (!f) { perror(argv[2]); return 1; }
 	std::vector<u8> img; int c; while ((c = fgetc(f)) != EOF) img.push_back(u8(c)); fclose(f);
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 	static i86cfg x86cfg;
 	std::unique_ptr<util::disasm_interface> d;
 	bool octal = cpu == "pdp11";
-	bool x86 = cpu == "i86" || cpu == "i8086" || cpu == "i8088";
+	bool x86 = cpu == "i86" || cpu == "i8086" || cpu == "i8088" || cpu == "i186" || cpu == "i80186" || cpu == "i80188";   // one decoder: 16-bit mode covers the 186 opcodes
 	if (octal) d = std::make_unique<t11_disassembler>();
 	else if (cpu == "s2650") d = std::make_unique<s2650_disassembler>(&cfg);
 	else if (x86) d = std::make_unique<i386_disassembler>(&x86cfg);

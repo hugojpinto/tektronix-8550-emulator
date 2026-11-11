@@ -1,8 +1,9 @@
 MAME src/devices/cpu/i86 (BSD-3-Clause) -- https://github.com/mamedev/mame
 commit e0a5e1cad5d8dc72c15a609c6323651847f4fdcd (reference/mame/cpu/i86)
-Files: i86.h, i86.cpp, i86inline.h. Only the 8086 and 8088 (not the 80186/80286); i86.txt is not copied.
-Verified locally: emu/tests/i86_test.cpp (make test).
-Modified for tek8550 (marked [tek8550]):
+Files: i86.h, i86.cpp, i86inline.h (8086/8088); i186.h, i186.cpp (80186/80188). Not the 80286, the Am186EM/
+Am188EM or i86.txt.
+Verified locally: emu/tests/i86_test.cpp and emu/tests/i186_test.cpp (make test).
+Modified for tek8550 (marked [tek8550]), i86.h/i86.cpp/i86inline.h:
 - Framework glue: no device_t/cpu_device base, device types, address_space_config, memory caches,
   save states or debugger state table. Small adapters with MAME's names stand in for them
   (address_space, devcb_write_line/devcb_write32, has_space/space, standard_irq_callback,
@@ -17,6 +18,9 @@ Modified for tek8550 (marked [tek8550]):
   register getters/setters, flags()/set_flags(), pc(), halted(), locked(), mid_instruction()
   (a prefix has run but not its instruction), bus_segment() (m_easeg: the S4/S3 segment), trace_hook,
   create_disassembler() made public. update_pc() moved to the common base for the setters.
+- Hooks for the 80186 (no effect on the 8086/8088): run() is virtual; the address_space adapter has
+  data_width() (8 on the 8088/80188, 16 otherwise); standard_irq_callback() calls m_irq_ack_cb when set
+  (MAME's set_irq_acknowledge_callback), else bus.inta().
 - endianness.h: NATIVE_ENDIAN_VALUE_LE_BE and swapendian_int16 are in emu.h; INPUT_LINE_IRQ0 = 0,
   INPUT_LINE_NMI = 32 defined in i86.h.
 - Bug fix, calc_addr(): "m_easeg = m_seg_prefix" assigned the bool (1 = CS), so every segment
@@ -29,3 +33,47 @@ Modified for tek8550 (marked [tek8550]):
 Unchanged MAME behaviour worth knowing: no prefetch queue; a segment prefix placed before a LOCK
 prefix is dropped (each prefix is a separate step); a REP string op restarted after the cycle
 budget runs out resumes after the LOCK prefix, so only its first slice is locked.
+
+Modified for tek8550 (marked [tek8550]), i186.h/i186.cpp:
+- Framework glue as for the 8086: no device types, address space configs, save states or state
+  table; constructors take the bus (i80186_cpu_device(bus), i80188_cpu_device(bus)) and start and
+  reset the device. The 80186 has no S3/S4 segment spaces in MAME: data goes to SP_PROGRAM, opcode
+  fetches to SP_OPCODES, I/O to io_read/io_write; bus_segment() still reports the segment (m_easeg).
+  run(cycles) counts CPU cycles (MAME's device clock is twice that; execute_clocks_to_cycles removed).
+  logmacro.h: LOGMASKED compiled out; ACCESSING_BITS_0_7 defined locally.
+- devcb callbacks become optional setters: set_tmrout0_handler/set_tmrout1_handler (TMROUT0/1),
+  set_chip_select_handler(which 0 UMCS..4 MPCS, value), set_irqa_handler, set_irmx_irq_handler,
+  set_read_slave_ack_handler (cascade-mode vector), set_irmx_irq_ack (iRMX-mode vector). The last two
+  default to an INTA cycle on the bus (bus.inta()); MAME's defaults return 0.
+- Input lines: set_input_line(I80186_INT0..INT3 = 0..3, TMRIN0/1 = 4/5, DRQ0/1 = 6/7, TEST, NMI) goes
+  to MAME's int0_w..int3_w, tmrin0_w/tmrin1_w, drq0_w/drq1_w and the core's NMI/TEST. The core's own
+  INTR input, which MAME's interrupt controller drives with set_input_line(0, ...), is set_intr_line().
+  TMRIN keeps MAME's level behaviour: every assert counts (or retriggers); pulse it.
+- emu_timer/attotime are replaced by a cycle scheduler (same names, so the timer code is verbatim):
+  attotime holds a CPU cycle count (attotime::never = all ones), cycles_to_attotime/attotime_to_cycles
+  are identities, and each of the three timers has an emu_timer with adjust/enabled/remaining. Time is
+  total_cycles(). run() executes the CPU in slices that end at the next timer expiry and fires due
+  timers between slices, earliest first, with the time set to the expiry (so a timer re-armed from its
+  callback does not drift, and the timer count read by internal_timer_sync is exact). A timer armed
+  while the CPU runs that falls inside the current slice shortens it (MAME: abort_timeslice), so the
+  expiry is handled at the next instruction boundary. The timers therefore count at CPU clock/4 as
+  in MAME (cycles_to_attotime(4 * count)). DMA is MAME's: transfers are made from execute_run when a
+  DRQ is held, from the timer 2 callback for timer-synchronized channels, and all at once for
+  unsynchronized channels written with ST set; m_dma_latency counts instruction steps as in MAME.
+- Additions beyond glue:
+  - device_reset() stops the three timers (MAME left a running emu_timer armed across reset) and
+    clears the core's INTR request (MAME kept a pending INT_IRQ across reset, which after STI would
+    be acknowledged with the cleared poll status as vector 0).
+  - execute_run calls the instruction hook only when no segment prefix is active, as the 8086 core
+    (MAME's 186 calls it for prefixes too), and has the same generic LOCK pin handling as i86.cpp.
+  - Bug fix, ENTER with a nesting level > 0: MAME set BP and allocated the locals before copying the
+    display, so it copied from the new frame (new BP - 2i) and pushed the display and frame pointer
+    below the locals. It now follows Intel's definition: push BP; frame = SP; level-1 words copied
+    from the caller's frame (old BP - 2i); push frame; BP = frame; SP -= locals. Level is not masked.
+  - Public accessors: relocation(), timer_count(n) (synchronised), timer_control(n), is_80188().
+- Am186EM/Am188EM (clock = CPU cycles) not ported.
+Unchanged MAME behaviour worth knowing: the integrated peripherals are reached by I/O (default
+FF00-FFFF) or memory (relocation register bit 12) accesses and never reach the bus; unaligned PCB word
+accesses are swapped, not split; ESC opcodes trap to INT 7 when relocation bit 15 (ET) is set and are
+otherwise skipped (no esc_opcode/esc_data hooks on the 186); BOUND's INT 5 returns past the BOUND;
+undefined opcodes take INT 6; external interrupts in iRMX mode (relocation bit 14) drive INTR directly.

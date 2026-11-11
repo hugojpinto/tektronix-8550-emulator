@@ -130,6 +130,7 @@ i8086_cpu_device::i8086_cpu_device(bus_interface &bus, bool i8088)   // [tek8550
 	: i8086_common_cpu_device(bus)
 	, m_data_bus_size(i8088 ? 8 : 16)
 {
+	for (auto &sp : m_spaces) sp.width = m_data_bus_size;   // [tek8550] data_width() of the address spaces
 	memcpy(m_timing, m_i8086_timing, sizeof(m_i8086_timing));
 	memcpy(m_ea_timing, m_i8086_ea_timing, sizeof(m_i8086_ea_timing));
 	// [tek8550] the ESC hooks go to the bus; MAME starts and resets the device here
