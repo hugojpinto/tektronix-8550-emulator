@@ -77,7 +77,7 @@ void ct8500::feed(uint8_t v)
 	switch (v) {
 	case 0x1b: esc = 1; return;
 	case 0x00: case 0x7f: return;
-	case 0x07: bell = true; return;       // bell: emitted by render()
+	case 0x07: bell = true; return;       // bell: front ends take it
 	case 0x08: if (c > 0) c--; return;
 	case 0x09: { int i = c + 1; while (i < COLS && !tabs[i]) i++; c = i < COLS ? i : COLS - 1; return; }
 	case 0x0a: line_feed(); return;
@@ -169,79 +169,22 @@ void ct8500::command(uint8_t code)
 	}
 }
 
-void ct8500::key(const std::string &k)
+void ct8500::key(key_t k)
 {
-	if (kbd_locked || k.empty()) return;
-	auto esc_code = [&](uint8_t code) { reply_esc(code); };
-	// map the user's terminal keys to CT8500 keys
-	struct map_t { const char *seq; uint8_t code; bool cursor; } static const m[] = {
-		{ "\x1b[A", 0x52, true }, { "\x1b[B", 0x51, true }, { "\x1b[C", 0x53, true }, { "\x1b[D", 0x50, true },
-		{ "\x1bOA", 0x52, true }, { "\x1bOB", 0x51, true }, { "\x1bOC", 0x53, true }, { "\x1bOD", 0x50, true },
-		{ "\x1b[H", 0x54, true }, { "\x1bOH", 0x54, true }, { "\x1b[1~", 0x54, true },
-		{ "\x1bOP", 0x48 }, { "\x1bOQ", 0x49 }, { "\x1bOR", 0x4a }, { "\x1bOS", 0x4b },      // F1-F4
-		{ "\x1b[11~", 0x48 }, { "\x1b[12~", 0x49 }, { "\x1b[13~", 0x4a }, { "\x1b[14~", 0x4b },
-		{ "\x1b[15~", 0x4c }, { "\x1b[17~", 0x4d }, { "\x1b[18~", 0x4e }, { "\x1b[19~", 0x4f }, // F5-F8
-		{ "\x1b[6~", 0x4c }, { "\x1b[5~", 0x4d },              // PgDn = F5 (PAGE DOWN), PgUp = F6 (PAGE UP)
-		{ "\x1b[2~", 0x1c }, { "\x1b[3~", 0x1d },              // Insert/Delete = INSERT/DELETE CHAR
-		{ "\x1b[20~", 0x0c }, { "\x1b[21~", 0x0d },            // F9/F10 = INSERT/DELETE LINE
-		{ "\x1b[23~", 0x14 }, { "\x1b[24~", 0x15 },            // F11/F12 = ERASE EOL/EOP
-		{ "\x1b[Z", 0x09 },                                    // Shift-Tab = BACK TAB
-	};
-	for (const auto &e : m)
-		if (k == e.seq) {
-			if (m_mode != HOST && e.cursor) {               // power-up/local: cursor keys act locally
-				switch (e.code) {
-				case 0x50: if (c > 0) c--; break;
-				case 0x51: if (r < ROWS - 1) r++; follow(); break;
-				case 0x52: if (r > 0) r--; follow(); break;
-				case 0x53: if (c < COLS - 1) c++; break;
-				case 0x54: r = top; c = 0; break;
-				}
-				return;
-			}
-			esc_code(e.code);
-			return;
+	if (kbd_locked) return;
+	bool cursor = k == K_LEFT || k == K_DOWN || k == K_UP || k == K_RIGHT || k == K_HOME;
+	if (m_mode != HOST && cursor) {                    // power-up/local: cursor keys act locally
+		switch (k) {
+		case K_LEFT: if (c > 0) c--; break;
+		case K_DOWN: if (r < ROWS - 1) r++; follow(); break;
+		case K_UP: if (r > 0) r--; follow(); break;
+		case K_RIGHT: if (c < COLS - 1) c++; break;
+		case K_HOME: r = top; c = 0; break;
+		default: break;
 		}
-	if (k[0] == 0x1b && k.size() > 1) return;             // unknown escape sequence: drop
-	for (char ch1 : k) reply(uint8_t(ch1 == '\n' ? '\r' : ch1));
-}
-
-std::string ct8500::render(bool full)
-{
-	std::string o;
-	if (!sh_valid || full) { o += "\x1b[0m\x1b[2J"; memset(sh_ch, 0, sizeof sh_ch); memset(sh_at, 0xff, sizeof sh_at); sh_valid = true; }
-	uint8_t cur = 0xff;
-	auto sgr = [&](uint8_t a) {
-		if (a == cur) return;
-		o += "\x1b[0";
-		if (a & A_UL) o += ";4";
-		if (a & A_BLINK) o += ";5";
-		if (a & A_INV) o += ";7";
-		if (a & A_DIM) o += ";2";
-		o += "m"; cur = a;
-	};
-	bool moved = false;
-	for (int i = 0; i < VIEW; i++) {
-		const uint8_t *rc = ch[top + i], *ra = at[top + i];
-		if (!memcmp(rc, sh_ch[i], COLS) && !memcmp(ra, sh_at[i], COLS)) continue;
-		// repaint from the first differing column to the end of the row
-		int f = 0; while (f < COLS && rc[f] == sh_ch[i][f] && ra[f] == sh_at[i][f]) f++;
-		char buf[24]; snprintf(buf, sizeof buf, "\x1b[%d;%dH", i + 1, f + 1); o += buf;
-		for (int j = f; j < COLS; j++) {
-			sgr(ra[j] & ~A_BLANK);
-			o += (ra[j] & A_BLANK) ? ' ' : char(rc[j] >= 0x20 && rc[j] < 0x7f ? rc[j] : ' ');
-		}
-		memcpy(sh_ch[i], rc, COLS); memcpy(sh_at[i], ra, COLS);
-		moved = true;
+		return;
 	}
-	if (cur != 0xff) o += "\x1b[0m";
-	if (moved || r != sh_r || c != sh_c || top != sh_top) {
-		char buf[24]; snprintf(buf, sizeof buf, "\x1b[%d;%dH", r - top + 1, c + 1); o += buf;
-		sh_r = r; sh_c = c; sh_top = top;
-	}
-	if (bell) { o += '\a'; bell = false; }
-	if (cursor_on != sh_cur) { o += cursor_on ? "\x1b[?25h" : "\x1b[?25l"; sh_cur = cursor_on; }
-	return o;
+	reply_esc(uint8_t(k));
 }
 
 std::string ct8500::text() const

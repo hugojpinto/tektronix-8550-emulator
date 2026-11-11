@@ -61,6 +61,13 @@ build/tek8550 -prom fix -prom-dev my2716.bin -rw -0 ../disks/work.img
 
 tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (8501 AUX port), `-dump FILE` (memory images),
 `-type SECONDS TEXT` (type into the terminal at a machine time; `\r` Return, `\e` ESC, `\xHH`), `-trace8301 T FILE`, `-trace8501 T LEN FILE`.
+### Graphical terminal (optional, SDL3)
+`make gui` builds `build/tek8550-gui` when SDL3 is installed (`brew install sdl3`, `apt install libsdl3-dev`, MSYS2 `mingw-w64-x86_64-SDL3`); plain `make` never needs it. It takes every tek8550 option and shows the CT8500 in a window: the documented raster (6×8 characters in an 8×10 field, 640×250 dots, green phosphor), drawn with the screenshots' font (Tek 308 ROM upper case plus a matching lower case: the CT8500 character ROM was never dumped), as a CRT (`-style crt`, default) or sharp pixels (`-style sharp`); `-scale F` sizes the window.
+Type straight into it. Return, Backspace (BS), Tab/Shift-Tab, Esc, Ctrl-letters, the arrows and Home act as the CT8500's keys; F1–F8 are its function keys (PgDn/PgUp = F5/F6 page down/up), Insert/Delete insert/delete a character, F9/F10 insert/delete a line, F11/F12 erase to end of line/page.
+Hotkeys (Cmd on macOS, Ctrl+Alt elsewhere): **V** paste (typed at the terminal's 9600 baud, with a pause after each line), **C** copy the screen as text, **T** turbo, **F** full screen, **S** CRT/sharp, **R** restart both units, **Q** quit (discs are written back as with the tty front end).
+`-shot SECONDS FILE.bmp` saves the window at a machine time; with `-cycles` the run is flat out, and `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software` runs it with no display.
+Windows: the GUI itself is portable, but the prototype and REMOTE links (`host/ipc_target`, `host/serial_link`) still use POSIX sockets and need a Winsock shim first.
+
 `-fdc lle|hle` picks the floppy controller: `lle` (default) runs the real board's Z80 firmware against modelled drives, `hle` the old high-level shim.
 `-mount SECONDS N=FILE` inserts a disc at a machine time (the drive reports a disc change), `-eject SECONDS N` writes it back and removes it; the monitor has `m N FILE` and `e N`. Mount blank (empty) images after DOS/50 has booted: an unformatted disc at power-up delays the 8501 so much that the 8301 boot gives up, as on the real lab.
 `-outputs FILE` logs the front-panel lamps (`8301:led0..4`, `8301:selftest`, `8301:ramled0..4`, `8501:led0..4`; 1 = lit) with their machine times.

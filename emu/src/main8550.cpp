@@ -5,6 +5,7 @@
 // Ctrl-] enters the monitor ('h' for help).
 #include "system/tek8550.h"
 #include "host/tty.h"
+#include "host/ct8500_ansi.h"
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -32,10 +33,11 @@ int main(int argc, char **argv)
 	std::string err;
 	if (!sys.start(ct_mode, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
 	ct8500 &ct = sys.terminal();
+	ct8500_ansi ansi;
 
 	if (interactive) {
 		host::tty_raw(true);
-		if (ct_mode) { fputs(ct.enter_screen().c_str(), stdout); fflush(stdout); }
+		if (ct_mode) { fputs(ansi.enter_screen().c_str(), stdout); fflush(stdout); }
 		else fprintf(stderr, "[tek8550: Ctrl-] for monitor]\r\n");
 	}
 	std::string keybuf;
@@ -48,7 +50,7 @@ int main(int argc, char **argv)
 			u8 k0 = u8(keybuf[0]);
 			if (k0 == 035) {
 				keybuf.erase(0, 1);
-				if (ct_mode) { fputs(ct.leave_screen().c_str(), stdout); fflush(stdout); }
+				if (ct_mode) { fputs(ansi.leave_screen().c_str(), stdout); fflush(stdout); }
 				host::tty_raw(false);
 				printf("\n"); monitor_help(); sys.show(stdout);
 				char line[128]; bool quit = false;
@@ -74,7 +76,7 @@ int main(int argc, char **argv)
 				}
 				if (quit) goto done;
 				host::tty_raw(true);
-				if (ct_mode) { fputs(ct.enter_screen().c_str(), stdout); fputs(ct.render(true).c_str(), stdout); fflush(stdout); }
+				if (ct_mode) { fputs(ansi.enter_screen().c_str(), stdout); fputs(ansi.render(ct, true).c_str(), stdout); fflush(stdout); }
 				continue;
 			}
 			// split off one key: ESC [ ... final, ESC O x, lone ESC, or a plain byte
@@ -84,19 +86,19 @@ int main(int argc, char **argv)
 				else { n = 2; while (n < keybuf.size() && !(keybuf[n] >= 0x40 && keybuf[n] <= 0x7e)) n++; n = std::min(n + 1, keybuf.size()); }
 			}
 			std::string key = keybuf.substr(0, n); keybuf.erase(0, n);
-			if (ct_mode) ct.key(key);
+			if (ct_mode) ansi.key(ct, key);
 			else for (char ch1 : key) sys.term_rx(u8(ch1 == '\n' ? '\r' : ch1));
 		}
 		sys.tick();
 		u64 ticks = sys.ticks();
-		if (ct_mode && interactive && sys.terminal_dirty && ticks % 20 == 0) { fputs(ct.render().c_str(), stdout); fflush(stdout); sys.terminal_dirty = false; }
+		if (ct_mode && interactive && sys.terminal_dirty && ticks % 20 == 0) { fputs(ansi.render(ct).c_str(), stdout); fflush(stdout); sys.terminal_dirty = false; }
 		if (interactive && ticks % 10 == 0) {
 			auto want = t0 + std::chrono::microseconds(ticks * 100);
 			if (want > clk::now()) std::this_thread::sleep_until(want);
 		}
 	}
 done:
-	if (ct_mode && interactive) { fputs(ct.leave_screen().c_str(), stdout); fflush(stdout); }
+	if (ct_mode && interactive) { fputs(ansi.leave_screen().c_str(), stdout); fflush(stdout); }
 	host::tty_raw(false);
 	sys.shutdown(!interactive);
 	return 0;
