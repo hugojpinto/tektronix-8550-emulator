@@ -112,9 +112,8 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 - **Floppy controller:** the real board runs its firmware, but the drive is a byte-cell model (no flux, weak bits or speed variation; one density per track). IMD discs keep deleted-data marks, CRC errors and odd layouts through a save; raw `.img` discs cannot hold them. An unformatted disc mounted at power-up makes the 8301 boot time out (as it would on the real lab): mount blanks after booting. A few board details are inferred (`notes/8501-fdc.md`).
 
 **Unknown:**
-- Z80 board: E3 bits 4/1 and register-block byte 26;
-- 8085 register block: bytes 8 and 13;
-- DOS/50 label byte 0x1C.
+- Z80 board: E3 write bits 4 and 2 (bit 1 = 0 maps the firmware PROM, bits 6–5 the emulation mode);
+- 8085 register block: byte 8 (probably firmware scratch).
 
 **Other:**
 - Target-system interrupts are only lightly tested.

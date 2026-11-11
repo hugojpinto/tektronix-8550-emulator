@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Z80 emulator processor board (8300E04): a Z80A run by the Emulator Controller as its slave,
-// with control port E3 (80 firmware call / 92 run in mode 0, C0 / B2 in modes 1-2 as DOS/50
-// V1.0 drives it), a firmware PROM (not dumped; high level here) at F800-F9FF, an NMI as the
+// with control port E3 (bit 7 enable, bits 6-5 emulation mode, bit 1 = 0 maps the firmware
+// PROM: 80 firmware call / 92 run in mode 0, C0 / B2 / F2 in modes 1-2 as DOS/50 V1.0
+// drives it), a firmware PROM (not dumped; high level here) at F800-F9FF, an NMI as the
 // forced interrupt and the prototype's pins in modes 1/2. Reverse-engineered from the Z80
 // diagnostic and DOS/50 (notes/8301.md).
 #ifndef TEK_MACHINE_EPZ80_H
@@ -45,5 +46,6 @@ private:
 	bool m_trst_prev = false;                  // v3 target RESET edge
 	bool m_nmi_prev = false;
 	void firmware(u16 entry);
+	bool firmware_mapped() const;              // E3<7> = 1, E3<1> = 0: the PROM answers at F800-F9FF
 };
 #endif

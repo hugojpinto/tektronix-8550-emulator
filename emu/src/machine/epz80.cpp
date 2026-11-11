@@ -22,12 +22,16 @@ void epz80_board::io_write(u8, u8 d)
 	control = d;
 }
 
-// Firmware PROM: 512 bytes at F800-F9FF of program memory while the board is in firmware
-// mode (E3<7> = 1, E3<4> = 0). Not dumped: reads FF unless -ep-prom supplies an image
-// (Z80 diag 07/00D0 checksums it, expecting 0852).
+// Firmware PROM: 512 bytes at F800-F9FF of program memory while E3<7> = 1 and E3<1> = 0.
+// Every firmware run clears bit 1 (DOS/50 80/C0, Z80 diag E0/E1 94) and every user run sets
+// it (92/B2/F2, 96, 86), so bit 1 maps the PROM for the Z80; that the 2650's view (diag
+// D0 reads it with E3 = 80) uses the same bit is inferred. Not dumped: reads FF unless
+// -ep-prom supplies an image (Z80 diag 07/00D0 checksums it, expecting 0852).
+bool epz80_board::firmware_mapped() const { return present && (control & 0x82) == 0x80; }
+
 bool epz80_board::prom_window(u16 a, u8 &v) const
 {
-	if (!present || (control & 0x90) != 0x80 || (a & 0xfe00) != 0xf800) return false;
+	if (!firmware_mapped() || (a & 0xfe00) != 0xf800) return false;
 	v = prom.empty() ? 0xff : prom[(a - 0xf800) % prom.size()];
 	return true;
 }
@@ -35,10 +39,18 @@ bool epz80_board::prom_window(u16 a, u8 &v) const
 bool epz80_board::forced_jump(u16 target)
 {
 	tek8301 &m = mdu;
+	const bool fw = firmware_mapped() && (target & 0xfe00) == 0xf800;   // into the PROM
 	// the TTA starts a run; GO with a new address (not the stop address) resets its counters
-	if (target < 0xf800 && m.tta_board.target_watch()) { cpu.halted = false; m.tta_board.run_start(target != m.m_lp_pc_next, cpu.cyc); }
+	if (!fw && m.tta_board.target_watch()) { cpu.halted = false; m.tta_board.run_start(target != m.m_lp_pc_next, cpu.cyc); }
 	jump(target);
-	if (target >= 0xf800) { firmware(target); return true; }   // board firmware space
+	if (fw) {
+		// DOS/50 dumps a Z80 stopped by HALT with F9 = F9: the forced interrupt (NMI) wakes
+		// it so that it takes the jump, and block byte 26 = 02 tells the firmware so (DOS/50
+		// 6DF3-6E07). High level: the firmware absorbs that NMI.
+		m.m_fi_pending = false;
+		firmware(target);
+		return true;
+	}
 	return false;
 }
 
@@ -76,7 +88,9 @@ void epz80_board::post_step() { if (prototype_mode()) cpu.cyc += mdu.target->tak
 // Firmware (not dumped): high-level emulation of what DOS/50 expects. DOS/50 lends program
 // memory 0000-001A to the board as a register block
 //   0 IM  1 IFF1<7>/IFF2<6>  2 R  3 I  4..11 L' H' E' D' C' B' A' F'
-//   12-13 IY  14-15 IX  16..23 L H E D C B A F  24-25 SP  26 ?
+//   12-13 IY  14-15 IX  16..23 L H E D C B A F  24-25 SP
+//   26 written by DOS/50 before a dump: 02 when the processor stopped at a HALT (and the
+//      dump entry is then forced together with an NMI), else 00; not read back
 // and forces a jump to the entry (FB:FA/F5 written active low) with E3<7> set:
 //   F800 PUT byte to prototype memory   (4-byte block: 0 data, 1-2 address high first,
 //        3 status: firmware writes 0 after a good read-back -- DOS/50 MOV checks it)

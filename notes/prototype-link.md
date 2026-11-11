@@ -99,4 +99,4 @@ RESET was tested live with the same FUSE build, with the test loop at 0000 so th
 
 Also verified with `tools/proto_target.py --io-wait 8` (an `OUT`/`JR` loop runs at 23/31 of full speed, exactly as expected) and `--reset-at 100` (the Z80 restarts at 0000 100 ms into `GO`).
 
-**Not modelled:** bus timing beyond WAIT, DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running). A missing target power bit is only reported at connect time.
+**Not modelled:** bus timing beyond WAIT, DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bit 4 (DOS/50 sets it, with bit 1, while running; bit 1 unmaps the firmware PROM: `notes/8301.md`). A missing target power bit is only reported at connect time.

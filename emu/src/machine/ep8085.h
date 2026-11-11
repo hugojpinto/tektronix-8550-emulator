@@ -18,7 +18,10 @@ public:
 	bool present = false;
 	u8 control = 0;                            // E5 as written
 	bool decodes(u8 port) const override { return port == 0xe5; }
-	u8 io_read(u8) override { return present ? u8((control & 0x80) && cpu.halted() ? 0x10 : 0x00) : 0x00; }   // 10 halted
+	// E5 read: 10 halted; 01 the SOD pin (DOS/50's 8085 support stores E5 in block byte 13
+	// after each dump and DS shows its bit 0 as SOD, its bits 7/6 as I6.5/I5.5: the RST
+	// 6.5/5.5 inputs, which only a prototype drives)
+	u8 io_read(u8) override { return present ? u8(((control & 0x80) && cpu.halted() ? 0x10 : 0x00) | (m_sod & 1)) : 0x00; }
 	void io_write(u8 port, u8 d) override;
 	void restart() override { control = 0; }
 
@@ -47,12 +50,14 @@ private:
 		u8 io_read(u8 port) override;
 		void io_write(u8 port, u8 d) override;
 		u8 inta() override { return 0xff; }
+		void sod(int s) override { if (b) b->m_sod = u8(s); }   // b is set after the core's reset in its constructor
 	} m_bus;
 	i8085a_cpu_device cpu{m_bus};
 	std::unique_ptr<emulator_specifics> m_spec;
 	u64 m_t = 0;                               // 8085 clock states run
 	u16 m_resume = 0;                          // user PC the firmware returns to after a restore
 	bool m_trap = false;                       // TRAP asserted until an instruction has run
+	u8 m_sod = 0;                              // the 8085's SOD output, read back at E5 bit 0
 	unsigned m_steps = 0;                      // trace limiter
 	void firmware(u16 entry);
 };

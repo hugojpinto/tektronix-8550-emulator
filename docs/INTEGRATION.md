@@ -205,7 +205,7 @@ Events are reported in a fixed order, after the instruction completes: SVC immed
 | 8086 / 80186 | A7 ← 7F, `A7 ≠ 0` / 27 ← 7F, `27 ≠ 0` |
 | NSC800 | A8 ← 7F, `A8 ≠ 0` |
 
-- **Firmware PROM:** visible in program memory at F800 in firmware mode (control bit 7 = 1, bit 4 = 0). Its **entries** are reached by forced jump: restore, dump and, for the prototype, get/put. Each answers with a debug SVC (7 for dump/restore, 8 for get/put). Until the PROM is dumped, emulate the entries at high level, as `epz80_board::firmware` and `ep8085_board::firmware` do. The board's diagnostic checksums the PROM, so that one test keeps failing (as 07/00D0 and 06/00D0 do today); say so plainly.
+- **Firmware PROM:** visible in program memory at F800 in firmware mode (Z80 board: control bit 7 = 1, bit 1 = 0). Its **entries** are reached by forced jump: restore, dump and, for the prototype, get/put. Each answers with a debug SVC (7 for dump/restore, 8 for get/put). Until the PROM is dumped, emulate the entries at high level, as `epz80_board::firmware` and `ep8085_board::firmware` do. The board's diagnostic checksums the PROM, so that one test keeps failing (as 07/00D0 and 06/00D0 do today); say so plainly.
 - **Register block:** the board's saved CPU state, at program memory 0000 upwards, swapped by DOS/50 around each firmware call. Its layout is CPU-specific: 27 bytes for the Z80, 14 for the 8085. Find it by filling the block with marker bytes and reading the `DS` display.
 - **Forced interrupt:** what F9 D1 drives on this CPU (NMI on the Z80, TRAP on the 8085). The diagnostic tests it.
 

@@ -117,9 +117,11 @@ void ep8085_board::step()
 // Firmware (high level). Register block: 14 bytes at program memory 0000-000D (DOS/50 swaps
 // it with its saved context around each call). Entries (forced jump, FB:FA active low): FBEA
 // restore, FBED dump (DOS/50 V1.0 GO / break); FAEA / FAED are alternates DOS/50 picks by a
-// flag. Block layout (found by filling the dump with marker bytes and reading DS): 0 L 1 H
-// 2 E 3 D 4 C 5 B 6 A 7 F 8 ? 9-10 SP 11 RIM value (SID 80, I7.5 40, IE 08) 12 SIM masks
-// (bits 2-0: M7.5 M6.5 M5.5, 1 = masked) 13 ?; the PC comes from the PC latch. DOS/50's
+// flag: the IE bit of block byte 11 (set: FAEA, which ends with EI). Block layout (found by
+// filling the dump with marker bytes and reading DS): 0 L 1 H 2 E 3 D 4 C 5 B 6 A 7 F
+// 8 ? (never touched by DOS/50) 9-10 SP 11 RIM value (SID 80, I7.5 40, IE 08) 12 SIM masks
+// (bits 2-0: M7.5 M6.5 M5.5, 1 = masked) 13 written by DOS/50, not the firmware: the E5
+// status after each dump (SOD in bit 0); the PC comes from the PC latch. DOS/50's
 // initial context has 11 = 07, 12 = 0F.
 void ep8085_board::firmware(u16 entry)
 {
