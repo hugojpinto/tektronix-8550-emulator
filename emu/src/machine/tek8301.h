@@ -28,12 +28,11 @@ extern "C" {
 #include "machine/tta.h"
 #include "machine/emulator_specifics.h"
 #include "machine/ep8085.h"
+#include "machine/z80_slaves.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
 #include <functional>
-
-class z80_slave; class z80_board; class language_processor;
 
 class tek8301 : public s2650_device::bus_interface
 {
@@ -81,14 +80,14 @@ public:
 	int sense() override { return int((m_cycles / u64(CPU_HZ * 0.020)) & 1); }
 
 	// Language Processor / Emulator Controller
-	z80 lp;   // Language Processor (E7)
-	z80 ep;   // Z80 emulator processor board (E3) -- firmware high-level emulated
+	// the Language Processor (E7) and the Z80 emulator processor board (E3), and their processors
+	language_processor m_slave_lp{*this};
+	z80_board m_slave_ep{*this};
+	z80 &lp = m_slave_lp.cpu, &ep = m_slave_ep.cpu;
 	// the Emulator Controller's slaves: emulator processor boards and the Language Processor
 	// (machine/emulator_board.h); the Emulator Controller's behaviour around them is slave_run
 	friend class emulator_board; friend class ep8085_board; friend class z80_slave; friend class z80_board; friend class language_processor;
 	ep8085_board m_ep85{*this};               // 8085 board (8300E06, control port E5)
-	std::unique_ptr<z80_board> m_slave_ep;              // Z80 board (E3)
-	std::unique_ptr<language_processor> m_slave_lp;     // Language Processor (E7)
 	ep8085_board &board8085() { return m_ep85; }
 	emulator_board *active_slave() const;      // the one the Emulator Controller drives, if any
 	void slave_run(emulator_board &b, int cycles2650);
