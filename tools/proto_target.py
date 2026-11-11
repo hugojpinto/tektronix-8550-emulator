@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Reference prototype (target system) for the 8550 emulator's Z80 probe.
 
 Protocol v3 (see notes/prototype-link.md; v1/v2 clients work unchanged): the emulator connects and sends

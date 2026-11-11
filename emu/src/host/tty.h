@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Host terminal helpers: raw mode, non-blocking key polling, isatty.
 // POSIX: termios + select. Windows: the console in VT mode (ANSI output, as the
 // CT8500 renderer emits it) and _kbhit/_getch, with special keys translated into

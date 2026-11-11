@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // The "prototype" (user target system) side of the Z80 emulator's probe.
 // In emulation modes 1 and 2 the emulator processor's memory accesses to
 // blocks mapped U (user) and all of its I/O go to the target; see

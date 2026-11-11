@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // MAME .lay subset -- see layout.h
 #include "frontend/sdl/layout.h"
 #include "host/ct8500_raster.h"

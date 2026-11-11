@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Compose tek8550-gui window captures (-shot X.bmp writes X.bmp, X_8301.bmp, X_8501.bmp)
 into one picture on a dark backdrop with soft shadows.
 usage: compose_gui.py SHOT.bmp OUT.png [--width W]   (W: scale the result to this width)"""

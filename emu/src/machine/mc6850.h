@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Motorola MC6850 ACIA (programmer's model), host side as byte queues.
 #ifndef TEK_MC6850_H
 #define TEK_MC6850_H

@@ -10,3 +10,6 @@ emu/build-win/
 *.jpeg
 *.zip
 sources/raw/
+emu/.clangd
+__pycache__/
+sources/photos/

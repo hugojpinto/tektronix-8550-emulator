@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8301: run the Tektronix 8301 MDU stand-alone; system terminal port on this terminal.
 //   tek8301 [-roms DIR] [-sw HEX] [-cycles N] [-trace FILE] [-io] [-log FILE]
 // Ctrl-] enters the monitor.

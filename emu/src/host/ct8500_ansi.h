@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // CT8500 on a host terminal: ANSI rendering of the model and the host keyboard's
 // escape sequences mapped to CT8500 keys (tty front end).
 #ifndef TEK_HOST_CT8500_ANSI_H

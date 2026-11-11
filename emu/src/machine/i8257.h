@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Intel 8257 DMA controller -- register model. Transfers are driven by the
 // owning machine (which knows how DRQ lines and memory are wired).
 #ifndef TEK_I8257_H

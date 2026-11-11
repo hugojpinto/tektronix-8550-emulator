@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Reference host computer for the 8550's REMOTE port (DOS/50 COMM).
 
 The 8550 reaches it through tek8550 -remote (see notes/host-link.md):

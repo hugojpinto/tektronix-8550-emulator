@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // 8550 Trigger Trace Analyzer (TTA) option on the 8301: ports 70-77 and a RAM
 // window on the system bus (E800-F9FF). Reverse-engineered from TTA.TST V1.3A
 // (8550_DIAG.IMD, Select mode 6); see notes/tta.md. Counters: an AMD Am9513

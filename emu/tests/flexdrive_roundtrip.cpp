@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Flexible disc media: building tracks from a linear image and decoding them back must be
 // byte-exact for all four 8501 geometries. Run with "make test".
 #include "machine/flexdrive.h"

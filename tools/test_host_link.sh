@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Host-link regression: DOS/50 COMM against tools/host_link.py over the 8301 REMOTE port.
 # Formatted download and upload (Tekhex), ASCII download into a file, ASCII upload of a file.
 # usage: tools/test_host_link.sh   (needs emu/build/tek8550 and python3; ~10 s)

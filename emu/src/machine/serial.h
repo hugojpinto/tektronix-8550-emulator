@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // DL11-style serial line unit as found on the 8501 Utility board
 // (RCSR/RBUF/XCSR/XBUF at base+0/2/4/6, receive vector V, transmit vector V+4).
 #ifndef TEK_SERIAL_H

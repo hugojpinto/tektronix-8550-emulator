@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later
+     Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com> -->
 <!-- Tektronix 8301 Microprocessor Development Unit, front panel. After the 8550 catalogue photo
      (sources/tekwiki/8550/8550_1.jpg; sharper: sources/photos/8550/8550_catalogue_hires.png): on the
      left a grille, a plain name panel and a grille with the name strip along its bottom; POWER is a

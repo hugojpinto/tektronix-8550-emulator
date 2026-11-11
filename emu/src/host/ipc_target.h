@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Prototype (target system) reached over IPC -- protocol in notes/prototype-link.md.
 #ifndef TEK_HOST_IPC_TARGET_H
 #define TEK_HOST_IPC_TARGET_H

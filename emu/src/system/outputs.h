@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Named outputs (lamps, LEDs, drive activity), after MAME's output manager.
 // Machines' lamps are published under stable names ("8501:led3"); 1 = lit.
 // Front ends read them (panels) or subscribe; headless runs may log them.

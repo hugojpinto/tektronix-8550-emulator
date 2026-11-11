@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 #include "system/tek8550.h"
 #include "cpu/s2650/2650dasm.h"
 #include "cpu/t11/t11dasm.h"

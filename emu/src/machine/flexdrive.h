@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // 8" flexible disc drive (Qume DataTrak 8, as fitted to the 8501) and its media,
 // modelled at the level the 8501 Flexible Disc Controller sees: a rotating track of
 // byte cells. The controller's TTL serialises bytes, generates clocks and detects

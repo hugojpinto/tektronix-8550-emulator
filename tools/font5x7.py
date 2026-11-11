@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Classic public-domain 5x7 dot-matrix font (ASCII 20h-7Eh), column bytes, bit 0 = top row.
 Used as a period-typical stand-in for the CT8500 character generator (6x8 matrix in an 8x10
 field per the operator's manual); the CT8500's own character ROM has not been dumped."""

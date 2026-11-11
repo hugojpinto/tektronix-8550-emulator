@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8501: run the Tektronix 8501 DMU stand-alone, AUX port on this terminal.
 //
 //   tek8501 [-roms DIR] [-0 disk.imd] [-1 disk.imd] [-trace FILE] [-cycles N] [-log FILE]

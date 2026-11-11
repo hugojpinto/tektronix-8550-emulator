@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // A serial line to the outside world over a socket: the 8301's REMOTE port
 // (J102: DOS/50 COMM and HOST commands). Plain bytes in both directions,
 // as on the RS-232 cable; see notes/host-link.md.

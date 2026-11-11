@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Minimal ImageDisk (.IMD) reader: prints geometry summary and writes a raw sector dump (cyl/head/sector order)."""
 import sys, collections
 MODES={0:'500k FM',1:'300k FM',2:'250k FM',3:'500k MFM',4:'300k MFM',5:'250k MFM'}

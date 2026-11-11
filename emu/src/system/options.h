@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8550 command-line options, shared by every front end (tty, SDL).
 #ifndef TEK_SYSTEM_OPTIONS_H
 #define TEK_SYSTEM_OPTIONS_H

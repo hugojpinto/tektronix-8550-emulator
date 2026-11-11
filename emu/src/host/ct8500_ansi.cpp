@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // CT8500 on a host terminal -- see ct8500_ansi.h
 #include "host/ct8500_ansi.h"
 #include <cstring>

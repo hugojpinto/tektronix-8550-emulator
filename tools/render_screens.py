@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Render CT8500 screen snapshots (tek8550 -snap) or plain text to PNG.
 
 --style ct8500 (default): the CT8500's documented raster -- characters on a 6x8 dot

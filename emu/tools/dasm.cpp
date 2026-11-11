@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // dasm: disassemble a raw binary for pdp11 | s2650 | z80.
 // usage: dasm <cpu> <file> [base(hex, or 0o-prefixed octal)] [start] [count]
 #include "emu.h"

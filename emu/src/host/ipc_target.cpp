@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Prototype over IPC: synchronous 4-byte request / 2-byte response protocol.
 #include "host/ipc_target.h"
 #include <cstring>

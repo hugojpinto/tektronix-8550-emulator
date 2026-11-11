@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // The CT8500's raster: characters on a 6x8 dot matrix in an 8x10 dot field
 // (CT8500 Operators Manual 070-3737-00), 80x25 -> 640 dots x 250 scan lines.
 // Front ends scale and colour it; nothing here depends on a graphics library.

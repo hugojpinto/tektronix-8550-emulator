@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Render docs/screenshots/tutorials/*.png: progress pictures for docs/TUTORIALS.md.
 # Tutorials 1 and 3 are captures of the graphical lab (terminal + front panels); tutorial 2 is
 # the CT8500 screen rendered by render_screens.py. Batch runs are deterministic, so the pictures

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // ImageDisk (.IMD) -> linear sector image, in physical order:
 // cylinder, head, sector id ascending (8501 records are laid out this way).
 #ifndef TEK_IMD_H

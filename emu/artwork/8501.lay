@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later
+     Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com> -->
 <!-- Tektronix 8501 Data Management Unit, front panel. Drawn after photos of a real unit (the owner's,
      from the VCFed thread "Tektronix 85xx MDL system", and sources/tekwiki/8550/8550_1.jpg): two Qume
      8" drives stacked on the left (slot band with DRIVE 0/1, latch bar, red activity lamp), grilles and

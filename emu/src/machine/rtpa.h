@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // 8550 Real-Time Prototype Analyzer (RTPA) option on the 8301: ports C0-C7.
 // Reverse-engineered from the diagnostic RTPA.TST V1.2 (8550_DIAG.IMD) and DOS/50;
 // see notes/rtpa.md for the evidence. The board watches the emulator processor's

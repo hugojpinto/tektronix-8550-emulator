@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8301 MDU -- see tek8301.h and notes/8301.md
 #include "machine/tek8301.h"
 #include <cstdio>

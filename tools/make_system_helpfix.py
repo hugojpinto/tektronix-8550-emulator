@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Rebuild disks/System_helpfix.img from the original sources/bitsavers/disks/System.imd:
 the IMD as a raw linear image (record N at N*256), with HELP records 3854-3855
 restored from the identical older copy at 1474-1475 (see disks/README.md).

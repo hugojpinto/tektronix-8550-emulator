@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8301 Microprocessor Development Unit (2650 system processor),
 // part of the 8550 MDL. Boards modelled:
 //   System Controller : 2650, boot/diag ROM overlay (EA), bank switch (EE),

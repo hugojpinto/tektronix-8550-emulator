@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8550: the complete 8550 MDL as one system -- 8301 MDU + 8501 DMU joined by the
 // HSI cable, the CT8500 on the system terminal port, the optional prototype and
 // REMOTE links, and the scripted events (-type, -snap, -poke).

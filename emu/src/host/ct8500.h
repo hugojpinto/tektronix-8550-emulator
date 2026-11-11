@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix CT8500 Video Display Terminal -- behavioural model. Front ends draw it:
 // host/ct8500_ansi.* (a host terminal, ANSI) and host/ct8500_raster.* (dots, for the GUI).
 // Source: CT8500 Operators Manual 070-3737-00 (remote commands, Table 2-4 addressing).

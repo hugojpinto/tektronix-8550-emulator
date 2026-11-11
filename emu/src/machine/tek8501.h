@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8501 Data Management Unit (LSI-11/2 based), part of the 8550 MDL.
 // Board structure follows the real unit so it can later become MAME devices:
 //   Utility board  : PROMs 160-0399/0400, LTC/LED register, AUX + PRINTER serial ports

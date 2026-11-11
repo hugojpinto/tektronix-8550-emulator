@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8501 Data Management Unit -- see tek8501.h and notes/8501.md
 #include "machine/tek8501.h"
 #include "machine/imd.h"

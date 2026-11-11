@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Portable stream sockets for the host links (prototype target, REMOTE port):
 // BSD sockets on POSIX, Winsock on Windows. Only what the links need.
 //   tcp:HOST:PORT   connect          unix:PATH   connect to a Unix-domain socket

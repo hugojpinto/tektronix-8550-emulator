@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 """Generate emu/src/machine/am9513.{h,cpp} from MAME's am9513 device
 (reference/mame/machine/am9513.*). The device code stays verbatim; the MAME
 framework is replaced by small adapters: plain class, std::function outputs,

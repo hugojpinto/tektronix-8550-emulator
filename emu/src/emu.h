@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Minimal stand-in for MAME's emu.h, so BSD-3-Clause MAME CPU/disassembler sources
 // can be compiled unchanged (or nearly) outside the MAME framework.
 #ifndef TEK_EMU_SHIM_H

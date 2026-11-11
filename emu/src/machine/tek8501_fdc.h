@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8501 Flexible Disc Controller (board A50, 670-6228-00): a Z80A at 4 MHz
 // running the 4 KB ROM 160-0412-00, 1 KB of RAM, TTL drive interface (FM/MFM
 // serialiser, mark detection, CRC) and a Q-bus DMA interface. The LSI-11 sees one

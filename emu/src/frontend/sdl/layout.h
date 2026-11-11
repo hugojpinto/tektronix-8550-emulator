@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Front-panel artwork in a subset of MAME's .lay format (version 2), so the panels
 // can go to MAME's layout/ directory when the machines are upstreamed:
 //   <element name="..."> with <rect>/<disk>/<text string="..."> components, each with

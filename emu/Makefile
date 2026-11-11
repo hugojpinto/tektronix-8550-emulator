@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Tektronix 8550 emulator.
 #   make                       native build in build/ (macOS, Linux, or Windows under MSYS2/MinGW)
 #   make gui                   + build/tek8550-gui (SDL3, found with pkg-config)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8550-gui: the complete 8550 MDL with a graphical CT8500 (SDL3).
 // The same system and options as the tty front end (system/tek8550.*); this file only
 // draws the terminal, takes the keyboard and paces the emulation to real time.

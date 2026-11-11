@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix 8550F30 PROM Programmer Controller -- high-level emulation.
 //
 // The real controller is an 8085A microcomputer with its own firmware (not dumped),

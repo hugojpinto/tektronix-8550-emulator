@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Non-blocking socket line for the 8301 REMOTE port.
 #include "host/serial_link.h"
 #include <cstring>

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Tektronix CT8500 model -- see ct8500.h
 #include "host/ct8500.h"
 #include <cstring>

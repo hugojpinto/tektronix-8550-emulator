@@ -83,7 +83,8 @@ reference/   the MAME source files the CPU cores and devices were ported from
 ```
 
 ## Credits and licences
-- **CPU cores and devices:** the 2650, LSI-11 and 8085 cores, the Am9513 and the disassemblers are ported from [MAME](https://www.mamedev.org/) (BSD-3-Clause; see `reference/mame/SOURCE.txt`). The Z80 core is [superzazu/z80](https://github.com/superzazu/z80) (MIT). Local changes are marked `[tek8550]`.
+- **Author:** Hugo José Pinto (hugo.pinto@gmail.com).
+- **Licence:** the emulator and tools are free software under the **GPL-2.0-or-later** ([LICENSE](LICENSE)): use them for anything, and if you distribute a derived work, publish its source under the same terms. Details, third-party licences and the status of the Tektronix material are in [NOTICE.md](NOTICE.md).
+- **CPU cores and devices:** the 2650, LSI-11 and 8085 cores, the Am9513 and the disassemblers are ported from [MAME](https://www.mamedev.org/) (BSD-3-Clause; see `reference/mame/SOURCE.txt`). The Z80 core is [superzazu/z80](https://github.com/superzazu/z80) (MIT). Local changes are marked `[tek8550]`. The optional GUI uses [SDL3](https://www.libsdl.org/) (zlib).
 - **Sources:** ROM dumps, disk images and manuals come from [bitsavers](https://bitsavers.org/pdf/tektronix/85xx/) and [TekWiki](https://w140.com/tekwiki/wiki/8550), and are © Tektronix. They are included for preservation and research. Front-panel artwork is drawn after period catalogue photos and photos of surviving units.
-- **Graphics:** [SDL3](https://www.libsdl.org/) (zlib licence) for the optional graphical front end.
-- **Emulator code:** the code in `emu/` and `tools/` is new work, structured so it can be upstreamed into MAME.
+- **Upstreaming:** the machine code is structured as MAME devices so it can be offered to MAME, which accepts GPL-2.0-or-later contributions.

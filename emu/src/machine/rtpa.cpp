@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // 8550 Real-Time Prototype Analyzer -- see rtpa.h and notes/rtpa.md.
 #include "machine/rtpa.h"
 

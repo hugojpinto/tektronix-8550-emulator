@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Generates emu/artwork/8301.lay and 8501.lay. Design grid (view units, window shows them at 0.75):
 #   face 10..990; content margins 26 left/right, 18 top/bottom; left area x 36..568, right column x 592..964.
 #   Right column = grille / control panel (112 tall) / grille, gaps 10, on both units.
@@ -101,7 +103,7 @@ class Lay:
 
     def write(self, path, header, vname, vw, vh):
         with open(path, 'w') as fh:
-            fh.write('<?xml version="1.0"?>\n' + header + '\n<mamelayout version="2">\n')
+            fh.write('<?xml version="1.0"?>\n<!-- SPDX-License-Identifier: GPL-2.0-or-later\n     Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com> -->\n' + header + '\n<mamelayout version="2">\n')
             for e in self.elements:
                 fh.write(e + '\n')
             fh.write('<view name="%s">%s\n' % (vname, bnd(0, 0, vw, vh)))
@@ -227,6 +229,7 @@ def make_8301():
     L.write(OUT + '/8301.lay', HDR_8301, 'Tektronix 8301 Microprocessor Development Unit', 1000, 620)
 
 HDR_8501 = open(OUT + '/8501.lay').read().split('\n', 1)[1].split('<mamelayout')[0].strip()
+if HDR_8501.startswith('<!-- SPDX'): HDR_8501 = HDR_8501.split('-->', 1)[1].strip()
 HDR_8301 = '''<!-- Tektronix 8301 Microprocessor Development Unit, front panel. After the 8550 catalogue photo
      (sources/tekwiki/8550/8550_1.jpg; sharper: sources/photos/8550/8550_catalogue_hires.png): on the
      left a grille, a plain name panel and a grille with the name strip along its bottom; POWER is a

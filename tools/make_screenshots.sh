@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Regenerate docs/screenshots: a scripted 8550 session (edit with ACE, assemble,
 # list, link, run in emulation mode 1 against the reference target) captured
 # from the emulated CT8500 at its native 80x25 grid.

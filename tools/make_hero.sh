@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 # Render docs/screenshots/hero.png: the graphical front end (CT8500 + 8301/8501 panels)
 # during a DOS/50 session, composed on a backdrop.
 # usage: tools/make_hero.sh [WORKDIR]   (needs emu/build/tek8550-gui and python3 + Pillow)

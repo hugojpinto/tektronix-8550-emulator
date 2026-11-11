@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // tek8550: the complete 8550 MDL -- tty front end.
 // Your terminal is the 8301 system terminal port (where DOS/50 talks): either the
 // CT8500 model rendered with ANSI (default when interactive) or raw pass-through.
