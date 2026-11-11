@@ -217,14 +217,21 @@ Events are reported in a fixed order, after the instruction completes: SVC immed
    - `ep85_run` drives the CPU while the 2650 is halted, and raises Emulator Controller events through `ec_interrupt`.
 3. **Firmware.** Write `<name>_firmware(entry)`, decoding the entries by address and answering with the debug SVC.
 4. **Modes 1 and 2.** Route the board's prototype cycles to `prototype_bus` (`emu/src/machine/prototype.h`). The prototype link carries Z80 pin semantics; a board with other pins (the 8085's RST 5.5–7.5, SID/SOD) needs a new protocol version first. This is why the 8085 board's modes 1 and 2 are still open.
-5. **Option.** Extend `-ep` in `emu/src/system/options.cpp` and `tek8550.cpp` (`-ep z80|8085|none` today).
-6. **Validate**, the way the existing boards were:
+5. **Emulator Specifics.** Implement `emulator_specifics` (`emu/src/machine/emulator_specifics.*`) for the processor:
+   - its name and clock;
+   - its MAME disassembler;
+   - DOS/50's trace line for it (copy the columns from what DOS/50 prints with the board's support installed);
+   - whether that support names TTA breaks.
+
+   Return it from `tek8301::emulator()` while the board is enabled. The TTA's commands (trace lines, `disp`'s mnemonics) then work with the new processor without changes. To let the TTA watch the board, call `tta_board.instr_begin`/`target_bus`/`instr_end` around its instructions and bus cycles, as `ep85_run` and the 8085 bus interface do.
+6. **Option.** Extend `-ep` in `emu/src/system/options.cpp` and `tek8550.cpp` (`-ep z80|8085|none` today).
+7. **Validate**, the way the existing boards were:
    - the board's diagnostic from the diagnostic disc (Select mode, with the test number in the table above);
    - Automatic System Verification detecting it;
    - DOS/50 with the board's support disc installed: `ASM`, `LINK`, `LOAD`, `GO`, `BK`, `DS`, `TRACE`.
 
    To read a diagnostic's expectations, dump it from memory (`-dump F`, then `emu/build/dasm s2650 F.8301 …`) and follow its table-driven tests.
-7. **Record** the established facts in `notes/8301.md`, each with how it was established (manual section, ROM address, diagnostic test). Add a `CHANGELOG.md` entry and update `ROADMAP.md` and the README.
+8. **Record** the established facts in `notes/8301.md`, each with how it was established (manual section, ROM address, diagnostic test). Add a `CHANGELOG.md` entry and update `ROADMAP.md` and the README.
 
 ---
 

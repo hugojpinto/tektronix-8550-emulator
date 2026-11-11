@@ -5,8 +5,6 @@
 // summary of the same commands where the TTA manual is silent).
 #include "system/tta_console.h"
 #include "system/tek8550.h"
-#include "cpu/z80/z80dasm.h"
-#include "cpu/i8085/8085dasm.h"
 #include <cctype>
 #include <cstdio>
 #include <sstream>
@@ -103,27 +101,6 @@ std::string bus_text(u8 b)
 	return s;
 }
 
-// the opcode byte of a fetch, decoded alone as the TTA software did (Display 1-2: operands
-// that come from later bytes are not shown)
-std::string mnemonic(u8 op, bool i8085)
-{
-	static z80_disassembler dz;
-	static i8085_disassembler d85;
-	data_buffer b; b.rd = [op](offs_t a) -> u8 { return a == 0 ? op : 0; };
-	std::ostringstream o;
-	if (i8085) d85.disassemble(o, 0, b, b); else dz.disassemble(o, 0, b, b);
-	std::string s = upper(o.str());
-	size_t sp = s.find(' ');
-	std::string m = s.substr(0, sp), ops = sp == std::string::npos ? "" : s.substr(s.find_first_not_of(' ', sp));
-	std::string kept;
-	std::stringstream ss(ops); std::string part;
-	while (std::getline(ss, part, ',')) {
-		if (part.find('$') != std::string::npos) break;
-		if (!kept.empty()) kept += ',';
-		kept += part;
-	}
-	return kept.empty() ? m : fmt("%-6s%s", m.c_str(), kept.c_str());
-}
 }
 
 tta_console::tta_console(tek8550_system &s) : sys(s)
@@ -132,11 +109,12 @@ tta_console::tta_console(tek8550_system &s) : sys(s)
 	b.run.clear_all();
 	b.port_write(0, 0x05);                 // run mode: comparators on, clock running
 	// cont: a trace line per trigger, as the TTA software printed (§1-11). stop: DOS/50 prints
-	// the trace line and <BREAK ...>. Its 8085 support names TRIG1/TRIG2 itself; the Z80
-	// support cannot name a TTA trigger, nor can either name 3 or 4, so the cause comes first
+	// the trace line and <BREAK ...>; where its support for the processor cannot name a TTA
+	// trigger (or the trigger is 3 or 4, which no DOS/50 status shows), the cause comes first
 	b.run.on_break = [this](u8 trig, u16, bool stop) {
 		if (!stop) { trace_line(); return; }
-		if (sys.mdu_unit().ep85_enabled() && !(trig & 0x0c)) return;
+		const emulator_specifics *e = sys.mdu_unit().emulator();
+		if (e && e->names_tta_breaks() && !(trig & 0x0c)) return;
 		std::string t;
 		for (int k = 0; k < 4; k++) if ((trig >> k) & 1) t += fmt("%sTRIG%d", t.empty() ? "" : ", ", k + 1);
 		sys.tta_print("\r\nTTA break: " + t + "\r\n");
@@ -147,36 +125,11 @@ tta_console::tta_console(tek8550_system &s) : sys(s)
 void tta_console::trace_line()
 {
 	tek8301 &m = sys.mdu_unit();
-	const z80 &z = m.ep;
-	const u16 pc = m.tta_board.run.last_pc();
-	const bool i8085 = m.ep85_enabled();
-	static z80_disassembler dz;
-	static i8085_disassembler d85;
-	data_buffer b; b.rd = [&m](offs_t a) -> u8 { return m.progmem(u16(a)); };
-	std::ostringstream o;
-	u32 len = (i8085 ? d85.disassemble(o, pc, b, b) : dz.disassemble(o, pc, b, b)) & util::disasm_interface::LENGTHMASK;
-	std::string inst;
-	for (u32 i = 0; i < len; i++) inst += fmt("%02X", m.progmem(u16(pc + i)));
-	std::string s = upper(o.str()), mn, op;
-	size_t sp = s.find(' ');
-	mn = s.substr(0, sp);
-	if (sp != std::string::npos) op = s.substr(s.find_first_not_of(' ', sp));
-	for (size_t i; (i = op.find('$')) != std::string::npos;) op.erase(i, 1);
-	if (i8085) {        // the 8085 trace line, as the users manual prints it (§1-8)
-		const i8085a_cpu_device &p = m.ep85;
-		std::string out;
-		if (!m_header) { out += "LOC  INST   MNEM  OPER      SP     F   A  B  C  D  E  H  L IM SOD\r\n"; m_header = true; }
-		out += fmt("%04X %-7s%-6s%-10s%04X  %02X  %02X %02X %02X %02X %02X %02X %02X %02X  0\r\n",
-			pc, inst.c_str(), mn.c_str(), op.c_str(), p.sp(), p.af() & 0xff, p.af() >> 8, p.bc() >> 8, p.bc() & 0xff,
-			p.de() >> 8, p.de() & 0xff, p.hl() >> 8, p.hl() & 0xff, p.im() & 0xff);
-		sys.tta_print(out);
-		return;
-	}
-	const u8 f = u8((z.sf << 7) | (z.zf << 6) | (z.yf << 5) | (z.hf << 4) | (z.xf << 3) | (z.pf << 2) | (z.nf << 1) | z.cf);
+	const emulator_specifics *e = m.emulator();
+	if (!e) return;
 	std::string out;
-	if (!m_header) { out += "LOC  INST     MNEM OPER        SP   F  A  B  C  D  E  H  L  IX  IY\r\n"; m_header = true; }
-	out += fmt("%04X %-9s%-5s%-11s%04X %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X\r\n",
-		pc, inst.c_str(), mn.c_str(), op.c_str(), z.sp, f, z.a, z.b, z.c, z.d, z.e, z.h, z.l, z.ix, z.iy);
+	if (!m_header) { out += e->trace_header() + "\r\n"; m_header = true; }
+	out += e->trace_line(m.tta_board.run.last_pc(), [&m](u16 a) { return m.progmem(a); }) + "\r\n";
 	sys.tta_print(out);
 }
 
@@ -532,6 +485,7 @@ std::string tta_console::status(u8 which, bool events, bool counters) const
 std::string tta_console::display(const std::vector<tta_run::sample> &v) const
 {
 	const char *hdr = " ADDR   DATA  MNEMONIC        7-PROBE-0    BUS\r\n";
+	const emulator_specifics *e = sys.mdu_unit().emulator();
 	std::string o = hdr;
 	int lines = 0;
 	for (size_t i = 0; i < v.size(); i++) {
@@ -540,7 +494,7 @@ std::string tta_console::display(const std::vector<tta_run::sample> &v) const
 		if (lines == 30) { o += std::string("\r\n") + hdr; lines = 0; }
 		std::string pr;
 		for (int b = 7; b >= 0; b--) { pr += ((s.probe >> b) & 1) ? '1' : '0'; if (b == 4) pr += ' '; }
-		o += fmt("%06X  %02X   %-16s%s   %s\r\n", s.addr, s.data, s.type == tta_run::FETCH ? mnemonic(s.data, sys.mdu_unit().ep85_enabled()).c_str() : "", pr.c_str(), tta_run::bus_symbols(s.type).c_str());
+		o += fmt("%06X  %02X   %-16s%s   %s\r\n", s.addr, s.data, s.type == tta_run::FETCH && e ? e->opcode(s.data).c_str() : "", pr.c_str(), tta_run::bus_symbols(s.type).c_str());
 		lines++;
 	}
 	return o;

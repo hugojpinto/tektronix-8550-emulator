@@ -26,6 +26,7 @@ extern "C" {
 #include "machine/prom_programmer.h"
 #include "machine/rtpa.h"
 #include "machine/tta.h"
+#include "machine/emulator_specifics.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
@@ -93,6 +94,7 @@ public:
 	unsigned m_ep85_steps = 0;   // trace limiter
 	u16 m_ep85_resume = 0;       // user PC the firmware returns to after a restore
 	u64 m_ep85_t = 0;            // 8085 clock states run (the TTA's time base in run mode)
+	std::unique_ptr<emulator_specifics> m_spec_z80 = make_z80_specifics(ep), m_spec_8085 = make_i8085_specifics(ep85);
 	prototype_bus *target = &m_no_target;   // probe side (modes 1/2)
 	// E3 (emulator board control), as DOS/50 V1.0 drives it: 80 firmware call / 92 run in mode 0,
 	// C0 firmware call / B2 run in modes 1-2 -> bit 6 or bit 5 selects the prototype
@@ -112,6 +114,8 @@ public:
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
+	// the active emulator processor's specifics (disassembler, DOS/50 trace line, clock); none without a board
+	const emulator_specifics *emulator() const { return ep85_enabled() ? m_spec_8085.get() : ep_enabled() ? m_spec_z80.get() : nullptr; }
 	bool slave_enabled() const { return ep_enabled() || ep85_enabled() || (m_e7 & 0x80); }
 	bool slave_halted() const { return ep85_enabled() ? ep85.halted() : slave().halted; }
 	z80 &slave() { return ep_enabled() ? ep : lp; }

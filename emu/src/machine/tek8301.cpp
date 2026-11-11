@@ -250,7 +250,7 @@ void tek8301::lp_run(int cycles2650)
 		const bool watch = rtpa_board.present;   // the RTPA watches the slave bus: emulator processor or Language Processor
 		const bool twatch = &z == &ep && tta_board.target_watch();   // the TTA in run mode: the program under test
 		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(z.pc); m_rtpa_watch = true; }
-		if (twatch) { tta_board.run.hz = 4e6; tta_board.instr_begin(z.cyc, z.pc); m_tta_watch = true; }
+		if (twatch) { tta_board.run.hz = m_spec_z80->clock_hz(); tta_board.instr_begin(z.cyc, z.pc); m_tta_watch = true; }
 		z80_step(&z);
 		if (watch) {
 			m_rtpa_watch = false;
@@ -361,7 +361,7 @@ void tek8301::ep85_run(int cycles2650)
 			ep85_firmware(target);
 			return;
 		}
-		if (tta_board.target_watch()) { tta_board.run.hz = 3e6; tta_board.run_start(target != m_lp_pc_next, m_ep85_t); }
+		if (tta_board.target_watch()) { tta_board.run.hz = m_spec_8085->clock_hz(); tta_board.run_start(target != m_lp_pc_next, m_ep85_t); }
 		ep85.set_pc(target);
 	}
 	// forced interrupt: the 8085's TRAP (also wakes it from HLT). The line stays asserted
@@ -388,7 +388,7 @@ void tek8301::ep85_run(int cycles2650)
 		u32 before = m_pending;
 		m_bp_hit = 0;
 		const bool twatch = tta_board.target_watch();   // the TTA in run mode
-		if (twatch) { tta_board.run.hz = 3e6; tta_board.instr_begin(m_ep85_t, ep85.pc()); m_tta_watch = true; }
+		if (twatch) { tta_board.run.hz = m_spec_8085->clock_hz(); tta_board.instr_begin(m_ep85_t, ep85.pc()); m_tta_watch = true; }
 		int c = ep85.run(1);                         // one instruction
 		m_ep85_t += u64(c);
 		if (twatch) {
