@@ -243,6 +243,7 @@ done:
 	if (ct_mode && interactive) { fputs(ct.leave_screen().c_str(), stdout); fflush(stdout); }
 	host::tty_raw(false);
 	if (!screenfile.empty()) { FILE *f = fopen(screenfile.c_str(), "w"); if (f) { fputs(ct.text().c_str(), f); fclose(f); } }
+	if (!targetspec.empty()) fprintf(stderr, "[prototype link: %lu requests, %lu WAIT states]\n", proto.requests(), proto.wait_total());
 	{ std::string e; if (!dmu->flush(e, true)) fprintf(stderr, "disk save failed: %s\n", e.c_str()); }
 	{ std::string e; if (!mdu->prom.save_socket(e)) fprintf(stderr, "PROM image save failed: %s\n", e.c_str()); }
 	if (!interactive) { fprintf(stderr, "\n"); show(*mdu, *dmu); }

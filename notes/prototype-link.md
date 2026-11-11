@@ -93,6 +93,8 @@ Any language works. Answer every 4-byte request with 2 bytes. Keep the INT level
 
 **v3 (2026-11-11), agreed with the FUSE target:** WAIT, RESET and target power are real probe pins, so they follow the "1980 probe" rule. Not done: a shared-memory RAM window (proposed for mode 2 speed and dropped: FUSE's paging, screen tracking, contention and watchpoints would all bypass it, and it isn't a probe capability). WAIT accuracy depends on how often `T` arrives (about every 256 instructions): a target whose waits depend on its own time, like the ULA's contention, gets them right on average rather than cycle by cycle. A target that stops answering (FUSE paused) just stalls the link: that is the stopped target clock.
 
-Verified with `tools/proto_target.py --io-wait 8` (an `OUT`/`JR` loop runs at 23/31 of full speed, exactly as expected) and `--reset-at 100` (the Z80 restarts at 0000 100 ms into `GO`).
+Joint check with FUSE (EMUL 99e3d72, `fuse --machine 48 --tek-probe`): a mode-1 loop `LD A,(nnnn) / JR` reading the Spectrum's RAM. At 4000h (contended) it gets 1.08 WAIT states per read and runs 1 536 812 iterations. At 8000h it gets 0 WAIT states and 1 603 730 iterations in the same emulated time: a ratio of 0.958, against 0.959 predicted (25 vs 26.08 T per iteration). `tek8550` prints `[prototype link: N requests, W WAIT states]` at exit.
+
+Also verified with `tools/proto_target.py --io-wait 8` (an `OUT`/`JR` loop runs at 23/31 of full speed, exactly as expected) and `--reset-at 100` (the Z80 restarts at 0000 100 ms into `GO`).
 
 **Not modelled:** bus timing beyond WAIT, DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running). A missing target power bit is only reported at connect time.
