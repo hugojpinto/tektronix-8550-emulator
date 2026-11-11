@@ -178,13 +178,25 @@ void tek8301::ec_interrupt(int n, bool latch_pc)
 	update_irq();
 }
 
+// TTA interrupt: INT 29 like the RTPA's, but F2 bit 2 shows the TTA's own request
+// flip-flop (cleared by a write to TTA port 72), not an Emulator Controller latch
+void tek8301::tta_interrupt()
+{
+	if (m_f9 & 0x08) m_pending |= 1u << INT_RTPA;
+	update_irq();
+}
+
 void tek8301::lp_run(int cycles2650)
 {
 	// Master halted but no slave able to run: the Emulator Controller reports the
 	// slave as halted at once ("Processor Inactive Test", 070-2976 §4).
 	// (Only when no slave is enabled at all -- not when an enabled slave is merely
 	// blocked by an outstanding SVC/debug interrupt.)
-	if (cpu.halted() && !slave_enabled() && !(m_ec_pend & 0x10)) { ec_interrupt(INT_SLV_HALT); return; }
+	// Each new HALT of the master raises it again, even with the last one still pending
+	// (TTA.TST module 50 halts three times without an F9 write in between).
+	bool new_halt = cpu.halted() && !m_master_was_halted;
+	m_master_was_halted = cpu.halted();
+	if (cpu.halted() && !slave_enabled() && (!(m_ec_pend & 0x10) || new_halt)) { ec_interrupt(INT_SLV_HALT); return; }
 	if (!slave_enabled() || !cpu.halted()) return;
 	if (ep85_enabled()) { ep85_run(cycles2650); return; }
 	z80 &z = slave();
@@ -419,7 +431,7 @@ u8 tek8301::mem_rd(busaddr b, bool ovl)
 	const u8 ext = b.dma ? PROG_BANK : m_f4;   // 16-bit bus masters (DMA) don't use F4
 	if (b.sys) {
 		u16 a = u16(b.a);
-		if (!b.dma && tta_board.ram_decodes(a)) return tta_board.ram_read(a);   // TTA RAM inhibits system RAM
+		if (!b.dma && tta_board.ram_decodes(a)) { tta_board.ram_access(now_cycles(), a); if (tta_board.take_irq()) tta_interrupt(); return tta_board.ram_read(a); }   // TTA RAM inhibits system RAM
 		if (!b.dma && (m_ee & 0x08) && a >= 0xfe00)                        // memory map / WP RAM
 			return u8(m_map[((a & 0xff) << 1) | ((a >> 8) & 1)] | 0xfa);   // only D0/D2 exist
 		// System RAM parity: a byte written under one complement setting and read
@@ -440,7 +452,7 @@ void tek8301::mem_wr(busaddr b, u8 d)
 		m_map[((b.a & 0xff) << 1) | ((b.a >> 8) & 1)] = d & 0x05;
 		return;
 	}
-	if (b.sys && !b.dma && tta_board.ram_decodes(u16(b.a))) { tta_board.ram_write(u16(b.a), d); return; }
+	if (b.sys && !b.dma && tta_board.ram_decodes(u16(b.a))) { tta_board.ram_access(now_cycles(), u16(b.a)); if (tta_board.take_irq()) tta_interrupt(); tta_board.ram_write(u16(b.a), d); return; }
 	if (b.sys) { m_sysram[b.a & 0xffff] = d; m_par[b.a & 0xffff] = (m_d2 >> 2) & 1; }
 	else prog_wr(b.dma ? PROG_BANK : m_f4, u16(b.a), d);
 }
@@ -466,7 +478,7 @@ u8 tek8301::io_read(offs_t port)
 	u8 v = 0xff;
 	if (port >= 0x90 && port <= 0x9f) v = m_dma.read(port & 0x0f);
 	else if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; v = rtpa_board.read(port & 7); }
-	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = m_cycles / CPU_HZ; v = tta_board.read(port & 7); }
+	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; v = tta_board.read(port & 7, now_cycles()); }
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
@@ -487,7 +499,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xec: restart(); return 0;            // programmed reset
 	case 0xed: v = u8((mode_switch & 0xfc) | 0x03); break;
 	case 0xef: v = 0xff; break;
-	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
+	case 0xf2: v = u8(~(m_ec_pend | (tta_board.requesting() ? 0x04 : 0))); break;   // pending, active low (bit 2 also the TTA's request)
 	case 0xe5: v = ep85_present ? u8((m_e5 & 0x80) && ep85.halted() ? 0x10 : 0x00) : 0x00; break;
 	// E3 bit 4: processor inactive (HALT, or held by an RTPA break)
 	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && (ep.halted || rtpa_board.stopped()) ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
@@ -510,7 +522,7 @@ void tek8301::io_write(offs_t port, u8 d)
 	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
 	if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; rtpa_board.write(port & 7, d); update_irq(); return; }
-	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = m_cycles / CPU_HZ; tta_board.write(port & 7, d); update_irq(); return; }
+	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; tta_board.write(port & 7, d, now_cycles()); if (tta_board.take_irq()) tta_interrupt(); update_irq(); return; }
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
 	case 0xb9: m_b9 = d; break;
@@ -725,10 +737,13 @@ void tek8301::run_slice(int cycles)
 	int used = 0;
 	while (used < cycles) {
 		int chunk = std::min(cycles - used, 100);
+		m_chunk = chunk; m_in_cpu = true;
 		int c = cpu.run(chunk);
+		m_in_cpu = false;
 		if (c <= 0) c = chunk;
 		lp_run(c);
 		used += c; m_cycles += c;
+		if (tta_board.present) tta_board.sync(m_cycles);
 		remote.tick(c); aux.tick(c); term.tick(c);
 		hsi_tick(c);
 		prom.tick(c);

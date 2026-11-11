@@ -3,7 +3,7 @@
 What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELOG.md); register-level findings are in [notes/](notes/).
 
 ## Hardware not yet emulated
-- **Trigger Trace Analyzer (TTA):** stage 1 is in (ports, RAM window, Am9513; TTA.TST modules 00–23 and 40–43 pass). Next are the event comparators (modules 30/31), counting from live sources (44–46), interrupt (50), acquisition (60) and the probe. Start from `notes/tta.md`. No software on hand uses it on the 8550, so the diagnostic is the only consumer.
+- **Trigger Trace Analyzer (TTA):** test mode is in, and TTA.TST option 0 passes. Open: run mode (which input group addresses which comparator page; the range codes), which needs software that uses the TTA (a later DOS/50 or OS/40), and the probe interface test, which needs the service manual's fixture. See `notes/tta.md`. 
 - **The 6800, 8080 and 8086 emulator processor boards.** An EMU.8086 disc survives; the boards' firmware does not.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 

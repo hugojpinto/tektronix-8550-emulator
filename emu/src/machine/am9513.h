@@ -49,7 +49,7 @@ class am9513_device
 public:
 	// [tek8550] construction: clock = X1 frequency (only scales F1-F5); is_am9513a selects the A variant
 	explicit am9513_device(u32 clock = 0, bool is_am9513a = false);
-	void start() { device_start(); }
+	void start() { device_start(); device_clock_changed(); }   // as the MAME framework does at start-up
 	void tick(u32 clocks);                    // [tek8550] advance F1-F5 by X1 clocks
 
 	// static configuration
@@ -89,6 +89,9 @@ public:
 	void gate4a_w(int state) { write_gate_alt(3, state); }
 	void gate5a_w(int state) { write_gate_alt(4, state); }
 
+	// [tek8550] counter mode register, read only
+	u16 counter_mode(int c) const { return m_counter_mode[c]; }
+
 	// diagnostic helper
 	std::string describe_register() const;
 
@@ -96,6 +99,7 @@ protected:
 
 	// device-level overrides
 	void device_start();
+	void device_clock_changed();
 	u32 clock() const { return m_clock; }
 
 private:

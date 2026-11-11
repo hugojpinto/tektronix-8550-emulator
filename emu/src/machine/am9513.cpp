@@ -62,13 +62,13 @@ am9513_device::am9513_device(u32 clock, bool is_am9513a)
 	for (int f = 0; f < 5; f++) m_freq_timer[f] = &m_freq_timer_obj[f];
 }
 
-// [tek8550] advance the F1-F5 frequency timers by X1 clocks
+// [tek8550] advance the F1-F5 frequency timers by X1 clocks (timers count half clocks)
 void am9513_device::tick(u32 clocks)
 {
 	for (int f = 0; f < 5; f++) {
 		freq_timer &t = m_freq_timer_obj[f];
 		if (!t.enabled || t.period == 0) continue;
-		t.acc += clocks;
+		t.acc += 2 * clocks;                // periods are in half X1 clocks
 		while (t.acc >= t.period) { t.acc -= t.period; timer_tick(t.param); }
 	}
 }
@@ -176,7 +176,7 @@ void am9513_device::init_freq_timer(int f)
 	for (int n = 0; n < f; n++)
 		scale *= BIT(m_mmr, 15) ? 10 : 16;
 
-	u32 freq = u32(scale);
+	u32 freq = u32(scale) * 2;   // [tek8550] in half X1 clocks: full-cycle F1 needs half periods
 	if (m_freq_timer_cycle[f] == 0)
 		m_freq_timer[f]->adjust(freq, f, freq);
 	else
@@ -193,6 +193,11 @@ void am9513_device::init_freq_timer(int f)
 //  device clock is altered in any way
 //-------------------------------------------------
 
+void am9513_device::device_clock_changed()
+{
+	for (int f = 0; f < 5; f++)
+		init_freq_timer(f);
+}
 
 
 //-------------------------------------------------
@@ -475,6 +480,17 @@ void am9513_device::set_counter_mode(int c, u16 data)
 	}
 
 	m_counter_mode[c] = data;
+
+	// [tek8550] level-gated modes take the current GATE level at once (see tools/port_am9513.py)
+	switch ((data >> 13) & 7)
+	{
+	case 1: m_gate_active[c] = m_tc[(c + 4) % 5] && (bus_is_16_bit() || m_gate_alt[c]); break;
+	case 2: m_gate_active[c] = m_gate[(c + 1) % 5] && (bus_is_16_bit() || m_gate_alt[c]); break;
+	case 3: m_gate_active[c] = m_gate[(c + 4) % 5] && (bus_is_16_bit() || m_gate_alt[c]); break;
+	case 4: m_gate_active[c] = m_gate[c] && (bus_is_16_bit() || m_gate_alt[c]); break;
+	case 5: m_gate_active[c] = !(m_gate[c] && (bus_is_16_bit() || m_gate_alt[c])); break;
+	default: break;
+	}
 }
 
 

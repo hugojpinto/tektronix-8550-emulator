@@ -37,6 +37,7 @@ public:
 	u8  psu() const { return m_psu; }
 	bool halted() const { return m_halt; }
 	u64 insn_count() const { return m_insns; }
+	int icount() const { return m_icount; }   // [tek8550] clocks left in run(): exact device timing
 	std::function<void(u16)> trace_hook;
 	// [tek8550] machine hook before each instruction (software compatibility fixes),
 	// with access to the current register bank (MAME swaps banks on RS changes, so

@@ -102,6 +102,11 @@ public:
 	rtpa rtpa_board;           // Real-Time Prototype Analyzer option (ports C0-C7)
 	tta tta_board;             // Trigger Trace Analyzer option (ports 70-77, RAM at E800-F9FF)
 	double m_seconds = 0;      // for traces
+	int m_chunk = 0; bool m_in_cpu = false;
+	bool m_master_was_halted = false;
+	// 2650 clocks so far, exact to the instruction while the CPU runs (the current
+	// instruction's cycles are already counted: MAME charges them before executing)
+	u64 now_cycles() const { return m_in_cpu ? m_cycles + u64(m_chunk - cpu.icount()) : m_cycles; }
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
@@ -181,6 +186,7 @@ private:
 	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
 	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
+	void tta_interrupt();
 	static u8 lp_read(void *u, u16 a) {
 		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false);
 		bool m1 = m->lp.m1 || m->ep.m1;

@@ -57,7 +57,7 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 ## What's emulated
 | Unit | Boards and status |
 |---|---|
-| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80** and **8085** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), TTA (in progress) |
+| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80** and **8085** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), **TTA** (test mode: its diagnostic passes) |
 | **8501 DMU** | LSI-11/2 with utility PROMs and LTC, HSI link to the 8301, **Flexible Disc Controller at chip level** (Z80 + ROM 160-0412-00), Qume DataTrak 8 drives in all four disc formats |
 | **CT8500** | the terminal's command set and host-control mode (ACE works), drawn as text or as its dot raster |
 

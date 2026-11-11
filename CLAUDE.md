@@ -31,10 +31,7 @@ Most recent first:
 1. **GUI front end (SDL3): done** (`make gui`, `emu/README.md`): CT8500 window and the 8301/8501 front panels (`emu/artwork/*.lay`). All panel switches operate (POWER, DC, HALT/RUN, RESTART; `-input`/`-press` script them). The CT8500 keyboard is mapped from the Operators Manual 070-3737 (`make test` checks it). Open: a run on real Windows.
 2. **Floppy controller: done, low level** (`notes/8501-fdc.md`). The real board's Z80 runs ROM 160-0412-00; `flexdrive.*` models the Qume drives and byte-cell tracks. `-fdc hle` keeps the old shim (byte-identical to before). Runtime discs: `-mount T N=FILE`, `-eject T N`, monitor `m`/`e`.
 3. **System layer: done** (`emu/src/system/`): `tek8550_system` drives both units with no wall-clock notion; `main8550.cpp` is just the tty front end.
-4. **TTA (Trigger Trace Analyzer), in progress.**
-   - **State:** `-tta` fits it; TTA.TST (Select mode 6) modules 00, 10, 20–23 and 40–43 pass.
-   - **Next:** decode the event comparator RAM wiring (modules 30/31), then counting from live sources (44–46), interrupt (50), acquisition (60) and probe. Start from `notes/tta.md`, which has the established facts, the RAM-initialisation analysis and the next steps.
-   - **Caveat:** no software we have uses the TTA on the 8550 (DOS/50 V1.0 predates it), so the diagnostic is the only consumer.
+4. **TTA (Trigger Trace Analyzer): test mode done** (`notes/tta.md`). `-tta`; TTA.TST option 0 (all modules 00–60: events, consecutive events, counters on 5 MHz and on events, gating, INT 29, acquisition) passes. Open: run mode (which input group feeds which comparator page; nothing we have uses it, DOS/50 V1.0 predates the TTA) and module 70, the probe interface (option 7), which needs the service manual's fixture.
 5. **RTPA: done** (`notes/rtpa.md`). RTPA.TST options 0–7 pass (7 needs `-rtpa probe`), and DOS/50 EVT/BIF/CNT/RTT/DRT work. FRZ semantics are inferred, and INT 30/31 are unused.
 6. **Host link: done** (`notes/host-link.md`, `-remote`, `tools/host_link.py`).
 7. **Disc geometries and FORMAT: done** (all four 8501 formats, `notes/8501.md`; FORMAT re-verified on the real controller firmware). The sibling tool `../tekmato` handles them too.
@@ -55,7 +52,7 @@ Windows builds: `make CROSS=x86_64-w64-mingw32-` (cross, verified to compile and
 | `TEK_PCTRACE=lo-hi@sec` | 2650 instructions in a range, after a time |
 | `TEK_INTTRACE` | interrupts taken |
 | `TEK_RTPATRACE` | RTPA ports, matches and breaks |
-| `TEK_TTATRACE` | TTA ports |
+| `TEK_TTATRACE` | TTA ports, event changes and acquisitions (2650-clock-exact times) |
 | `TEK_REMTRACE` | REMOTE port |
 | `TEK_SERTRACE` | 8501 AUXILIARY and PRINTER port registers |
 | `TEK_SLAVEIO` | LP/EP port I/O that goes nowhere |
@@ -77,7 +74,7 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 2. **Diagnostics:** `build/tek8550 -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((2400*2000000)) -type 31 '\r' -type 41 '1\r' -type 51 '\r'` must end in `SYSTEM VERIFICATION COMPLETE`, with no `DIAGNOSTIC FAILURE`. Repeat with `062-5412-08_8501_1err_DOS50.imd` (version 2.4). With the Z80 emulator board fitted (the default), the only allowed failure is **07/00D0**: its firmware PROM was never dumped. The board's own test is Select mode → 9 (Z80 emulator test).
 3. **RTPA:** `build/tek8550 -rtpa -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((200*2000000)) -type 31 '2\r' -type 41 '4\r' -type 51 '0\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (RTPA.TST option 0, all event and counter tests; option 6 for the trace buffer; option 7 with `-rtpa probe` and an extra `-type 66 '\r'`). ASV with `-rtpa` must complete.
 4. **Host link:** `tools/test_host_link.sh` must report 7 passed: DOS/50 COMM transfers against `tools/host_link.py`.
-5. **TTA (while in progress):** the same diagnostic command with `-tta` and `-type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'` (Select mode 6, all modules). Error codes 11/0000–11/0023 and 11/0040–11/0043 must not appear. Without `-tta`, nothing may change.
+5. **TTA:** the same diagnostic command with `-tta` and `-type 31 '2\r' -type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'` (Select mode 6, option 0) and `-cycles $((200*2000000))` must show no `Error Code` (about 30 iterations of modules 00–60). ASV with `-tta` must complete. Without `-tta`, nothing may change.
 6. **GUI (if SDL3 is installed):** `make gui`, then `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -0 ../disks/System_Fixed.img -cycles $((45*2000000)) -type 32 'LDIR\r' -shot 44 x.bmp` must show the LDIR listing.
 7. **Floppy:** `make test` (track build/decode round trip, all four geometries). After controller changes, also FORMAT a blank in drive 1 after boot (`-mount 30 1=blank.img -type 34 'FORMAT /DEV/FLX1\r' -type 40 'Y\r'`) and check it with `../tekmato/tekmato -open blank.img -check`; `-fdc hle` must stay byte-identical to the shim.
 8. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
@@ -98,7 +95,7 @@ build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -ty
 
 ## Known gaps
 **Not emulated:**
-- most of the TTA (Trigger Trace Analyzer, `-tta`): ports, RAM window and the Am9513 work, and TTA.TST modules 00–23 and 40–43 pass; events, triggers, counting, interrupt and acquisition are being reverse-engineered (`notes/tta.md`). RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
+- the TTA's run mode (`-tta` emulates the test mode TTA.TST exercises, `notes/tta.md`) and its probe interface. RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
 - the 6800, 8080 and 8086 emulator boards (an EMU.8086 disc exists);
 - target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
 
