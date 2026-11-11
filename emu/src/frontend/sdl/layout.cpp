@@ -210,7 +210,9 @@ void draw(SDL_Renderer *r, const layout &l, const view &v,
 		const element &e = l.elements.at(it.ref);
 		float lv = level(it);
 		for (const component &c : e.comps) {
-			float alpha = c.state < 0 ? 1.f : c.state == 0 ? 1.f : lv;   // state 1 fades in over state 0
+			// state 1 fades in over state 0; at full level state 0 is not drawn (a switch's other
+			// lever position; a lamp's lit disc covers its dark one anyway)
+			float alpha = c.state < 0 ? 1.f : c.state == 0 ? (lv >= 0.999f ? 0.f : 1.f) : lv;
 			if (alpha <= 0.003f) continue;
 			// component bounds are in the element's own units, scaled into the item
 			rect b = it.b;

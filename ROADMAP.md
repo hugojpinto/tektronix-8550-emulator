@@ -16,8 +16,12 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 
 ## Front ends and platforms
 - **Windows:** the builds compile and link; they still need a run on a real Windows machine.
-- **Front panels:** the POWER/DC rockers and the 8501 HALT/RUN switch are drawn but not operable.
 - **Target-system interrupts** are only lightly tested, and mode 2 makes one socket round trip per access.
+
+## Project
+- **CI:** a GitHub Actions build (Linux, macOS, MinGW cross) running `make test` and the quick regressions (screenshots, host link).
+- **Release builds:** tagged binaries for macOS, Linux and Windows, with the GUI.
+- **Disc catalogue:** a list of the surviving DOS/50 and diagnostic disc images, what is on each, and which work in the emulator.
 
 ## Upstreaming
 - Offer the machines to **MAME**: they are structured as MAME devices, and MAME accepts GPL-2.0-or-later contributions. The front panels are already MAME `.lay` artwork.

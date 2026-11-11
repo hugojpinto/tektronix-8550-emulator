@@ -45,13 +45,15 @@ COMMON = [
            col((0.55, 0.55, 0.57)), col((0.55, 0.55, 0.57))),
     '<element name="rocker_v"><rect>%s<bounds x="0" y="0" width="10" height="17"/></rect>'
         '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="14.6"/></rect>'
-        '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="6"/></rect></element>'
-        % (col((0.05, 0.05, 0.06)), col((0.16, 0.16, 0.17)), col((0.24, 0.24, 0.25))),
+        '<rect state="1">%s<bounds x="1.2" y="1.2" width="7.6" height="6"/></rect>'
+        '<rect state="0">%s<bounds x="1.2" y="9.8" width="7.6" height="6"/></rect></element>'
+        % (col((0.05, 0.05, 0.06)), col((0.16, 0.16, 0.17)), col((0.24, 0.24, 0.25)), col((0.24, 0.24, 0.25))),
     '<element name="inset"><rect>%s</rect></element>' % col((0.72, 0.72, 0.70)),
     '<element name="rocker"><rect>%s<bounds x="0" y="0" width="10" height="10"/></rect>'
         '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="7.6"/></rect>'
-        '<rect>%s<bounds x="1.2" y="1.2" width="7.6" height="3"/></rect></element>'
-        % (col((0.05, 0.05, 0.06)), col((0.16, 0.16, 0.17)), col((0.24, 0.24, 0.25))),
+        '<rect state="1">%s<bounds x="1.2" y="1.2" width="7.6" height="3"/></rect>'
+        '<rect state="0">%s<bounds x="1.2" y="5.8" width="7.6" height="3"/></rect></element>'
+        % (col((0.05, 0.05, 0.06)), col((0.16, 0.16, 0.17)), col((0.24, 0.24, 0.25)), col((0.24, 0.24, 0.25))),
 ]
 
 class Lay:
@@ -166,7 +168,7 @@ def make_8501():
     # section 1: ON lamp | DC rocker
     L.item('inset', 606, 262, 24, 36)
     L.text_c('ON', 618, ly, LBL); L.item('led_green', 618 - LAMP / 2, 280 - LAMP / 2, LAMP, LAMP, ' name="8501:on"')
-    L.text_c('DC', 670, ly, LBL); L.item('rocker', 646, dy, 48, 48)
+    L.text_c('DC', 670, ly, LBL); L.item('rocker', 646, dy, 48, 48, ' name="8501:dc" inputtag="8501:dc"')
     # section 2: AC ON, PROCESSOR BUSY (stacked)
     cx = (d1 + d2) / 2
     L.text_c('AC ON', cx, ly, LBL); L.item('led_red', cx - LAMP / 2, 254, LAMP, LAMP, ' name="8501:acon"')
@@ -174,14 +176,17 @@ def make_8501():
     L.item('led_red', cx - LAMP / 2, 309, LAMP, LAMP, ' name="8501:busy"')
     # section 3: RESTART | HALT/RUN
     c1, c2 = 840, 922
-    L.text_c('RESTART', c1, ly, LBL); L.item('toggle', c1 - 20, dy, 40, 48, ' inputtag="8501:restart"')
-    L.text_c('HALT', c2, ly, LBL); L.item('toggle_run', c2 - 20, dy, 40, 48)
+    L.text_c('RESTART', c1, ly, LBL); L.item('toggle', c1 - 20, dy, 40, 48, ' name="8501:restart" inputtag="8501:restart"')
+    L.text_c('HALT', c2, ly, LBL); L.item('toggle_halt', c2 - 20, dy, 40, 48, ' name="8501:halt" inputtag="8501:halt"')
     L.text_c('RUN', c2, 310, LBL)
     L.elements.append(
-        '<element name="toggle_run"><rect>%s<bounds x="0" y="0" width="10" height="12"/></rect>'
-        '<rect>%s<bounds x="2" y="6" width="6" height="4.5"/></rect>'
-        '<rect>%s<bounds x="3" y="9" width="4" height="1.2"/></rect></element>'
-        % (col((0.08, 0.08, 0.09)), col((0.30, 0.30, 0.32)), col((0.55, 0.55, 0.57))))
+        '<element name="toggle_halt"><rect>%s<bounds x="0" y="0" width="10" height="12"/></rect>'
+        '<rect state="0">%s<bounds x="2" y="6" width="6" height="4.5"/></rect>'
+        '<rect state="0">%s<bounds x="3" y="9" width="4" height="1.2"/></rect>'
+        '<rect state="1">%s<bounds x="2" y="1.5" width="6" height="4.5"/></rect>'
+        '<rect state="1">%s<bounds x="3" y="2" width="4" height="1.2"/></rect></element>'
+        % (col((0.08, 0.08, 0.09)), col((0.30, 0.30, 0.32)), col((0.55, 0.55, 0.57)),
+           col((0.30, 0.30, 0.32)), col((0.55, 0.55, 0.57))))
     diag(L, 590, 'UTILITY BOARD LEDS (INSIDE)', ['8501:led%d' % i for i in (4, 3, 2, 1, 0)])
     L.write(OUT + '/8501.lay', HDR_8501, 'Tektronix 8501 Data Management Unit', 1000, 620)
 
@@ -213,7 +218,7 @@ def make_8301():
     cx = (592 + d1) / 2 - gw / 2 + RW / 2
     ry = P1 - 10 - RH
     L.text_c('POWER', cx, ry - 8 - LBL, LBL)
-    L.item('rocker_v', cx - RW / 2, ry, RW, RH)
+    L.item('rocker_v', cx - RW / 2, ry, RW, RH, ' name="8301:power" inputtag="8301:power"')
     L.text_l('ON', cx + RW / 2 + 8, ry + 2, LBL)
     L.text_l('OFF', cx + RW / 2 + 8, ry + RH - 2 - LBL, LBL)
     # section 2: four lamps in a column, labels to the right
@@ -224,7 +229,7 @@ def make_8301():
     # section 3: RESTART toggle
     cx = (d2 + 964) / 2
     L.text_c('RESTART', cx, ly, LBL)
-    L.item('toggle', cx - 20, dy, 40, 48, ' inputtag="8301:restart"')
+    L.item('toggle', cx - 20, dy, 40, 48, ' name="8301:restart" inputtag="8301:restart"')
     diag(L, 590, 'SYSTEM CONTROLLER LEDS (INSIDE)', ['8301:led%d' % i for i in (4, 3, 2, 1, 0)])
     L.write(OUT + '/8301.lay', HDR_8301, 'Tektronix 8301 Microprocessor Development Unit', 1000, 620)
 

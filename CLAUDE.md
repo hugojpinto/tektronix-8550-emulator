@@ -28,7 +28,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 
 ## Resuming work (state on 2026-11-11)
 Most recent first:
-1. **GUI front end (SDL3): done** (`make gui`, `emu/README.md`): CT8500 window and the 8301/8501 front panels (`emu/artwork/*.lay`). Open: Winsock shim for the socket links on Windows; operable POWER/HALT switches; the CT8500 keyboard's own keys (photo: OFF LINE, f-keys, ERASE, BREAK, keypad IC/DC/IL/DL) are mapped only approximately.
+1. **GUI front end (SDL3): done** (`make gui`, `emu/README.md`): CT8500 window and the 8301/8501 front panels (`emu/artwork/*.lay`). All panel switches operate (POWER, DC, HALT/RUN, RESTART; `-input`/`-press` script them). The CT8500 keyboard is mapped from the Operators Manual 070-3737 (`make test` checks it). Open: a run on real Windows.
 2. **Floppy controller: done, low level** (`notes/8501-fdc.md`). The real board's Z80 runs ROM 160-0412-00; `flexdrive.*` models the Qume drives and byte-cell tracks. `-fdc hle` keeps the old shim (byte-identical to before). Runtime discs: `-mount T N=FILE`, `-eject T N`, monitor `m`/`e`.
 3. **System layer: done** (`emu/src/system/`): `tek8550_system` drives both units with no wall-clock notion; `main8550.cpp` is just the tty front end.
 4. **TTA (Trigger Trace Analyzer), in progress.**

@@ -79,10 +79,10 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 
 	// the HSI cable
 	mdu->hsi_connected = true;
-	mdu->hsi_tx = [this](u8 c) { hlog(1, c); dmu->hsi_rx(c); };
-	dmu->hsi_tx = [this](u8 c) { hlog(2, c); mdu->hsi_rx(c); };
-	mdu->hsi_cts = [this]() { return !dmu->hsi_ncts(); };
-	dmu->hsi_peer_ready = [this]() { return !mdu->hsi_rx_busy(); };
+	mdu->hsi_tx = [this](u8 c) { hlog(1, c); if (m_power8501) dmu->hsi_rx(c); };
+	dmu->hsi_tx = [this](u8 c) { hlog(2, c); if (m_power8301) mdu->hsi_rx(c); };
+	mdu->hsi_cts = [this]() { return m_power8501 && !dmu->hsi_ncts(); };
+	dmu->hsi_peer_ready = [this]() { return m_power8301 && !mdu->hsi_rx_busy(); };
 
 	if (!opt.targetspec.empty()) {
 		if (!proto.open(opt.targetspec, err)) return false;
@@ -136,6 +136,8 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	dmu->power_on();
 	out.set("8501:acon", 1);                      // AC ON lamp (rear mains switch)
 	out.set("8501:on", 1);                       // DC on
+	for (const char *n : { "8301:power", "8501:dc" }) out.set(n, 1);
+	for (const char *n : { "8501:halt", "8301:restart", "8501:restart" }) out.set(n, 0);
 	update_outputs();
 	return true;
 }
@@ -143,7 +145,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 void tek8550_system::scripted_events()
 {
 	for (auto &t : opt.typed)
-		if (!t.text.empty() && mdu->cycles() >= t.at * tek8301::CPU_HZ) {
+		if (!t.text.empty() && clock() >= t.at * tek8301::CPU_HZ) {
 			for (size_t i = 0; i < t.text.size(); i++) {
 				char ch = t.text[i];
 				if (ch == '\\' && i + 1 < t.text.size()) {
@@ -157,15 +159,22 @@ void tek8550_system::scripted_events()
 			t.text.clear();
 		}
 	for (auto &pk : opt.pokes)
-		if (!pk.text.empty() && mdu->cycles() >= pk.at * tek8301::CPU_HZ) {
+		if (!pk.text.empty() && clock() >= pk.at * tek8301::CPU_HZ) {
 			size_t eq = pk.text.find('=');
 			unsigned addr = unsigned(strtoul(pk.text.substr(0, eq).c_str(), nullptr, 16));
 			for (size_t i = eq + 1; i + 1 < pk.text.size() + 1 && i + 2 <= pk.text.size(); i += 2)
 				mdu->poke(addr++, u8(strtoul(pk.text.substr(i, 2).c_str(), nullptr, 16)));
 			pk.text.clear();
 		}
+	for (auto &sw : opt.switches)
+		if (!sw.text.empty() && clock() >= sw.at * tek8301::CPU_HZ) {
+			size_t eq = sw.text.find('=');
+			bool ok = eq == std::string::npos ? press(sw.text) : input(sw.text.substr(0, eq), atoi(sw.text.c_str() + eq + 1));
+			if (!ok) fprintf(stderr, "[unknown switch: %s]\r\n", sw.text.c_str());
+			sw.text.clear();
+		}
 	for (auto &dc : opt.discs)
-		if (!dc.text.empty() && mdu->cycles() >= dc.at * tek8301::CPU_HZ) {
+		if (!dc.text.empty() && clock() >= dc.at * tek8301::CPU_HZ) {
 			size_t eq = dc.text.find('=');
 			int drive = atoi(dc.text.c_str()) & 3;
 			std::string e;
@@ -174,7 +183,7 @@ void tek8550_system::scripted_events()
 			dc.text.clear();
 		}
 	for (auto &sn : opt.snaps)
-		if (!sn.text.empty() && mdu->cycles() >= sn.at * tek8301::CPU_HZ) {
+		if (!sn.text.empty() && clock() >= sn.at * tek8301::CPU_HZ) {
 			FILE *f = fopen(sn.text.c_str(), "w"); if (f) { fputs(ct.state().c_str(), f); fclose(f); }
 			sn.text.clear();
 		}
@@ -183,20 +192,21 @@ void tek8550_system::scripted_events()
 void tek8550_system::update_outputs()
 {
 	// 8301 port ED: D0-4 LEDs (1 = on), D5 front panel SELF TEST (0 = lit; notes/8301.md)
-	int a = mdu->leds();
+	// a unit switched off shows nothing
+	int a = m_power8301 ? mdu->leds() : 0x20;
 	if (a != m_out_8301) {
 		m_out_8301 = a;
 		for (int i = 0; i < 5; i++) out.set("8301:led" + std::to_string(i), (a >> i) & 1);
 		out.set("8301:selftest", !((a >> 5) & 1));         // active low: lit from RESET until the tests pass
 	}
 	// 8301 system RAM board, port D2 D3-7 (1 = off)
-	int r = mdu->ram_leds();
+	int r = m_power8301 ? mdu->ram_leds() : 0xf8;
 	if (r != m_out_8301_ram) {
 		m_out_8301_ram = r;
 		for (int i = 0; i < 5; i++) out.set("8301:ramled" + std::to_string(i), !((r >> (i + 3)) & 1));
 	}
 	// 8501 utility board, LTC<15:11> (1 = off)
-	int b = dmu->leds();
+	int b = m_power8501 ? dmu->leds() : 0x1f;
 	if (b != m_out_8501) {
 		m_out_8501 = b;
 		for (int i = 0; i < 5; i++) out.set("8501:led" + std::to_string(i), !((b >> i) & 1));
@@ -204,7 +214,8 @@ void tek8550_system::update_outputs()
 	// front panels: 8301 SYSTEM (2650 running), PROGRAM (emulator processor running),
 	// DMA (a transfer this slice) -- 070-2976 Fig. 1-3; 8501 PROCESSOR BUSY (LSI-11 running)
 	bool dma = mdu->dma_transfers != m_dma_seen; m_dma_seen = mdu->dma_transfers;
-	int p = (!mdu->cpu.halted() ? 1 : 0) | (mdu->lp_running() ? 2 : 0) | (dma ? 4 : 0) | (!dmu->cpu.halted() ? 8 : 0);
+	int p = m_power8301 ? (!mdu->cpu.halted() ? 1 : 0) | (mdu->lp_running() ? 2 : 0) | (dma ? 4 : 0) : 0;
+	if (m_power8501 && !m_held8501 && !dmu->cpu.halted()) p |= 8;
 	if (p != m_out_panel) {
 		int ch = m_out_panel < 0 ? 15 : p ^ m_out_panel;
 		m_out_panel = p;
@@ -215,7 +226,7 @@ void tek8550_system::update_outputs()
 	}
 	// drive activity lamps: selected with the head loaded (low-level controller only)
 	int m = 0;
-	if (dmu->fdc_lle) for (int d = 0; d < 4; d++) if (dmu->fdc.drive_lamp(d)) m |= 1 << d;
+	if (dmu->fdc_lle && m_power8501) for (int d = 0; d < 4; d++) if (dmu->fdc.drive_lamp(d)) m |= 1 << d;
 	if (m != m_out_drives) {
 		if (m_out_drives < 0) for (int d = 0; d < 4; d++) out.set("drive" + std::to_string(d) + ":disc", dmu->mounted(d));
 		m_out_drives = m;
@@ -226,10 +237,16 @@ void tek8550_system::update_outputs()
 void tek8550_system::tick()
 {
 	scripted_events();
-	mdu->run_slice(int(tek8301::CPU_HZ * SLICE_S));
-	dmu->run_slice(int(tek8501::CPU_HZ * SLICE_S));
-	if (remote.active()) remote.poll([this](u8 c) { mdu->remote.host_rx(c); });
-	if (dmu->cpu.halted()) dmu->cpu.set_halted(false);   // no ODT console here: resume (logged)
+	for (size_t i = 0; i < m_releases.size();)                // momentary switches let go
+		if (now() >= m_releases[i].at) { std::string n = m_releases[i].name; m_releases.erase(m_releases.begin() + long(i)); input(n, 0); }
+		else i++;
+	if (m_power8301 && !m_held8301) mdu->run_slice(int(tek8301::CPU_HZ * SLICE_S));
+	else m_held_cycles += u64(tek8301::CPU_HZ * SLICE_S);   // switched off or held in reset
+	if (m_power8501 && !m_held8501) dmu->run_slice(int(tek8501::CPU_HZ * SLICE_S));
+	if (remote.active()) remote.poll([this](u8 c) { if (m_power8301) mdu->remote.host_rx(c); });
+	// a HALT instruction: with no ODT console attached, resume (logged). The HALT/RUN
+	// switch at HALT keeps the processor halted instead.
+	if (dmu->cpu.halted() && !m_halt8501) dmu->cpu.set_halted(false);
 	m_ticks++;
 	update_outputs();
 	if (m_ticks % 1000 == 0) { std::string e; if (!dmu->flush(e)) fprintf(stderr, "[disk save failed: %s]\r\n", e.c_str()); }
@@ -253,14 +270,64 @@ bool tek8550_system::eject(int drive, std::string &err)
 	return ok;
 }
 
+void tek8550_system::power(int unit, bool on)
+{
+	if (unit == 8301) {
+		if (on == m_power8301) return;
+		m_power8301 = on;
+		if (on) { m_held8301 = false; mdu->power_on(); }           // system RAM comes up cleared
+		out.set("8301:power", on);
+	} else {
+		if (on == m_power8501) return;
+		m_power8501 = on;
+		if (on) { m_held8501 = false; dmu->power_on(); if (m_halt8501) dmu->cpu.set_halted(true); }
+		out.set("8501:dc", on);
+		out.set("8501:on", on);
+	}
+	update_outputs();
+}
+
 bool tek8550_system::input(const std::string &name, int value)
 {
-	if (name == "8301:restart") { if (value) mdu->restart(); }
-	else if (name == "8501:restart") { if (value) dmu->restart(); }
-	else if (name == "restart") { if (value) { mdu->restart(); dmu->restart(); } }
+	if (name == "8301:power") power(8301, value != 0);
+	else if (name == "8501:dc") power(8501, value != 0);
+	else if (name == "8501:halt") {
+		m_halt8501 = value != 0;
+		if (m_power8501) dmu->cpu.set_halted(m_halt8501);            // HALT: into ODT; RUN: proceed
+		out.set("8501:halt", m_halt8501);
+	}
+	else if (name == "8301:restart") {
+		// held: the unit is held in reset; released: the 2650 starts from its boot PROM
+		if (value && m_power8301) mdu->restart();
+		m_held8301 = value != 0 && m_power8301;
+		out.set("8301:restart", value != 0);
+	}
+	else if (name == "8501:restart") {
+		// held: the unit is held in reset; released: the LSI-11 starts from its boot PROM
+		if (!value && m_held8501 && m_power8501) { dmu->restart(); if (m_halt8501) dmu->cpu.set_halted(true); }
+		m_held8501 = value != 0 && m_power8501;
+		out.set("8501:restart", value != 0);
+	}
+	else if (name == "restart") { input("8301:restart", value); input("8501:restart", value); }
 	else if (name == "8301:modesw") mdu->mode_switch = u8(value);
 	else return false;
 	return true;
+}
+
+bool tek8550_system::press(const std::string &name, double seconds)
+{
+	if (name == "restart") return press("8301:restart", seconds) && press("8501:restart", seconds);
+	if (name != "8301:restart" && name != "8501:restart") return false;
+	input(name, 1);
+	release_at(name, now() + seconds);
+	return true;
+}
+
+void tek8550_system::release_at(const std::string &name, double at)
+{
+	if (name == "restart") { release_at("8301:restart", at); release_at("8501:restart", at); return; }
+	for (auto &r : m_releases) if (r.name == name) { r.at = std::max(r.at, at); return; }
+	m_releases.push_back({ at, name });
 }
 
 void tek8550_system::shutdown(bool show_state)

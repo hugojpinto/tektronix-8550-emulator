@@ -26,6 +26,9 @@
 #include <algorithm>
 
 namespace {
+// front-panel switches (tek8550_system::input): toggles flip on a click, momentary ones are held
+bool is_toggle(const std::string &n) { return n == "8301:power" || n == "8501:dc" || n == "8501:halt"; }
+bool is_momentary(const std::string &n) { return n == "8301:restart" || n == "8501:restart"; }
 
 constexpr int RW = ct8500_raster::W, RH = ct8500_raster::H;   // 640 x 250 dots
 constexpr int TW = RW, TH = RH * 2;                            // each scan line doubled: 640 x 500
@@ -110,7 +113,7 @@ struct panel {
 	std::string tag;
 	SDL_Window *win = nullptr; SDL_Renderer *ren = nullptr;
 	lay::layout l; const lay::view *v = nullptr;
-	const lay::item *pressed = nullptr;
+	const lay::item *pressed = nullptr; double pressed_at = 0;
 	bool shown = true;
 };
 
@@ -265,14 +268,19 @@ int main(int argc, char **argv)
 				panel *p = panel_of(e.button.windowID);
 				if (!p) break;
 				SDL_ConvertEventToRenderCoordinates(p->ren, &e);
-				if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) { p->pressed = nullptr; break; }
+				if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+					// a click on RESTART holds it for at least a human-like 150 ms of machine time
+					if (p->pressed && is_momentary(p->pressed->input)) sys.release_at(p->pressed->input, p->pressed_at + 0.15);
+					p->pressed = nullptr; break;
+				}
 				const lay::item *it = lay::hit(*p->v, e.button.x, e.button.y, [](const lay::item &i) { return !i.input.empty(); });
 				if (!it) break;
-				p->pressed = it;
+				p->pressed = it; p->pressed_at = sys.now();
 				if (it->input.compare(0, 5, "drive") == 0 && it->input.find(":eject") != std::string::npos) {
 					int d = it->input[5] - '0'; std::string er;
 					if (!sys.disc(d).empty() && !sys.eject(d, er)) fprintf(stderr, "[drive %d: %s]\n", d, er.c_str());
-				} else sys.input(it->input, 1);
+				} else if (is_toggle(it->input)) sys.input(it->input, !sys.out.get(it->input));
+				else sys.input(it->input, 1);
 				break;
 			}
 			case SDL_EVENT_DROP_FILE: {
@@ -315,7 +323,7 @@ int main(int argc, char **argv)
 					else if (k == SDLK_F) { fullscreen = !fullscreen; SDL_SetWindowFullscreen(win, fullscreen); }
 					else if (k == SDLK_S) { view.crt = !view.crt; SDL_SetTextureScaleMode(tex, view.crt ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST); redraw = true; }
 					else if (k == SDLK_B) { ct.key(ct8500::K_BREAK, m & SDL_KMOD_SHIFT, m & SDL_KMOD_ALT); }      // BREAK / SEND
-					else if (k == SDLK_R) sys.input("restart");
+					else if (k == SDLK_R) sys.press("restart");
 					else if (k == SDLK_P) for (panel &p : panels) { p.shown = true; SDL_ShowWindow(p.win); }
 					else if (k == SDLK_L) { if (fullscreen) { fullscreen = false; SDL_SetWindowFullscreen(win, false); } fit_layout(); }
 					break;
@@ -415,6 +423,7 @@ int main(int argc, char **argv)
 		SDL_FRect dst = { float(OVER_X), float(OVER_Y), float(TW), float(TH) };
 		SDL_RenderTexture(ren, tex, nullptr, &dst);
 		auto level = [&](const lay::item &it) -> float {
+			if (is_toggle(it.output) || is_momentary(it.output)) return float(sys.out.get(it.output));   // levers: no afterglow
 			if (!it.output.empty()) return float(lamp_level[lamp_index[it.output]]);
 			for (panel &p : panels) if (p.pressed == &it) return 1.f;
 			return 0.f;

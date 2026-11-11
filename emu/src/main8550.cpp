@@ -16,7 +16,7 @@
 
 static void monitor_help()
 {
-	printf("[monitor] c continue | q quit | r regs | R restart both | o outputs | p NAME [VALUE] input (8301:restart, 8501:restart, 8301:modesw) | m N FILE mount | e N eject\n");
+	printf("[monitor] c continue | q quit | r regs | R restart both | o outputs | p NAME [VALUE] switch (8301:power, 8501:dc, 8501:halt, 8301:restart, 8501:restart, 8301:modesw; a RESTART with no value is a 0.2 s press) | m N FILE mount | e N eject\n");
 }
 
 int main(int argc, char **argv)
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 					if (line[0] == 'c' || line[0] == '\n') break;
 					if (line[0] == 'h') monitor_help();
 					if (line[0] == 'r') sys.show(stdout);
-					if (line[0] == 'R') sys.input("restart");
+					if (line[0] == 'R') sys.press("restart");
 					if (line[0] == 'o') for (auto &kv : sys.out.all()) printf("  %-16s %d\n", kv.first.c_str(), kv.second);
 					if (line[0] == 'm' || line[0] == 'e') {
 						char path[1024] = ""; int n = -1; std::string e;
@@ -73,7 +73,10 @@ int main(int argc, char **argv)
 					}
 					if (line[0] == 'p') {
 						char name[64]; int v = 1;
-						if (sscanf(line + 1, "%63s %i", name, &v) >= 1 && !sys.input(name, v)) printf("unknown input %s\n", name);
+						int got = sscanf(line + 1, "%63s %i", name, &v);
+						std::string n = got >= 1 ? name : "";
+						bool ok = got == 1 && n.find("restart") != std::string::npos ? sys.press(n) : got >= 1 && sys.input(n, v);
+						if (!ok) printf("unknown input %s\n", name);
 					}
 				}
 				if (quit) goto done;

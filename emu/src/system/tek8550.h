@@ -32,8 +32,11 @@ public:
 	// feed_terminal: run the CT8500 model on the system port (its replies reach the 8301).
 	bool start(bool feed_terminal, std::string &err);
 	void tick();                                   // one 100 us slice
-	bool finished() const { return opt.max_cycles >= 0 && (long long)mdu->cycles() >= opt.max_cycles; }
-	double now() const { return mdu->cycles() / tek8301::CPU_HZ; }
+	bool finished() const { return opt.max_cycles >= 0 && (long long)clock() >= opt.max_cycles; }
+	double now() const { return clock() / tek8301::CPU_HZ; }
+	// the system clock in 2650 cycles: the 8301's own count, plus the time it spent
+	// switched off or held in RESTART (so time keeps flowing for scripts and front ends)
+	u64 clock() const { return mdu->cycles() + m_held_cycles; }
 	u64 ticks() const { return m_ticks; }
 	// end of run: screen file, link stats, disc and PROM write-back, memory dumps.
 	// show_state prints both CPUs' registers (batch runs).
@@ -47,9 +50,18 @@ public:
 
 	// named outputs ("8301:led0", "8501:led3", ...; 1 = lit) and inputs
 	outputs out;
-	// "8301:restart", "8501:restart", "restart" (both), "8301:modesw" (value = DIP byte).
-	// Returns false for an unknown name.
+	// Front-panel switches, as the hardware has them:
+	//   "8301:power", "8501:dc"   rockers: 1 on, 0 off (a unit switched on runs its power-up)
+	//   "8501:halt"               HALT/RUN toggle: 1 HALT (the LSI-11 halts into ODT), 0 RUN
+	//   "8301:restart", "8501:restart"  momentary: 1 held (the unit is held in reset), 0 released
+	//   "8301:modesw"             the mode DIP switch (value = the switch byte)
+	// Returns false for an unknown name. Switch positions are also outputs of the same name.
 	bool input(const std::string &name, int value = 1);
+	// a momentary switch pressed for a human-like time (default 0.2 s of machine time);
+	// "restart" presses both units' RESTART
+	bool press(const std::string &name, double seconds = 0.2);
+	// release a held momentary switch, but no earlier than the given machine time
+	void release_at(const std::string &name, double at);
 
 	// discs: insert at run time (the drive reports a disc change) / write back and remove
 	bool mount(int drive, const std::string &path, std::string &err);
@@ -75,6 +87,11 @@ private:
 	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1, m_out_drives = -1, m_out_panel = -1;
 	u64 m_dma_seen = 0;
 	std::string m_disc[4];
+	bool m_power8301 = true, m_power8501 = true, m_halt8501 = false, m_held8301 = false, m_held8501 = false;
+	u64 m_held_cycles = 0;
+	struct release_t { double at; std::string name; };
+	std::vector<release_t> m_releases;
+	void power(int unit, bool on);
 
 	void scripted_events();
 	void update_outputs();

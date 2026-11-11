@@ -28,6 +28,7 @@ struct tek8550_options
 	std::vector<timed_t> typed;        // -type SECONDS TEXT (\r = Return)
 	std::vector<timed_t> snaps;        // -snap SECONDS FILE
 	std::vector<timed_t> pokes;        // -poke SECONDS ADDR=HEXBYTES
+	std::vector<timed_t> switches;     // -input SECONDS NAME=VALUE, -press SECONDS NAME (text without '=')
 	std::vector<timed_t> discs;        // -mount SECONDS N=FILE, -eject SECONDS N (text "N" alone)
 	double trace_at = -1; std::string tracefile;                          // -trace8301 SECONDS FILE
 	double trace11_at = -1, trace11_len = 0; std::string trace11file;    // -trace8501 START SECONDS FILE
