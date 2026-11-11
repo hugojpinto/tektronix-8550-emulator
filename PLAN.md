@@ -17,7 +17,7 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - [x] P0.1 Hardware notes for the 8501: memory map, Tek Q-bus CSRs (console/AUX 177560, printer 177510, HSI 176510, floppy 177160, LTC 177546, PROM 173000–174776), interrupt vectors, utility-board LEDs/switches.
 - [x] P0.2 Disassemble the 8501 utility ROM (PDP-11, 160-0399/0400 interleaved) and list every device register it touches.
 - [x] P0.3 Floppy-controller command protocol (LSI-11 ↔ Z80 command block via 177160), from the manual + the ROM + `8501.SAV`. Decides HLE.
-- [ ] P0.4 DOS/50 (8501) filesystem: directory format, file lister/extractor, then extract `8501.SAV`, `8301/RESIDENT`, `KERNL` etc.
+- [x] P0.4 DOS/50 (8501) filesystem: decoded and implemented in the sibling tool `../tekmato` (format with evidence in `../tekmato/FORMAT.md`): list, extract, write, link, check; verified by DOS/50 itself in the emulator.
 - [x] P0.5 8301 notes: port map (Tables 7-2, 9-3, 12-2), interrupt vectors, bank switching, memory map. Disassemble the 2650 boot ROM.
 
 ### P1 — Toolchain
@@ -42,6 +42,11 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - CT8500 terminal behaviour (for ACE), emulator-processor boards (8085/Z80), PROM programmer, upstreaming to MAME.
 
 ## Status log
+- 2026-11-11: **DOS/50 file system + tekmato.** Decoded the 8501 file system from the disc collection and from image diffs around DOS/50 commands in the emulator. The new sibling tool `../tekmato` (tomato-style CLI) reads and writes it, and DOS/50 reads, writes, creates and deletes on volumes it makes. Findings:
+  - DOS/50's calendar has twelve 31-day months;
+  - "Error 12 Device I/O error on write" is V1.0's protection violation (no PW on a directory you don't own);
+  - the SYSTEM disc carries 88 orphaned descriptors.
+  Prototype link v3 (WAIT, RESET, target power) was agreed with the FUSE target session and implemented.
 - 2026-11-11: **Memory map + target link.** 8301 map/write-protect RAM (MAP PRW/PRO/URW/URO; write violation → `<BREAK MEMWR>`). Board firmware GET/PUT (F803/F800) for prototype memory. Emulation modes 1 and 2 route to an external target over a socket protocol (`notes/prototype-link.md`); the reference target `tools/proto_target.py` prints the output of a program assembled on the 8550 (mode 1: code in program memory; mode 2: code in target RAM).
 - 2026-11-11: Both diagnostic disks (2.4 and 3.0) pass Automatic System Verification with zero errors (`-pm ext`). Screenshots are in docs/screenshots/diagnostics.
 - 2026-11-11: Z80 emulator processor board (mode 0) and CT8500 terminal/ACE done; full diagnostic suite passes.

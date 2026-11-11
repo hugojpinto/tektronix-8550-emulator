@@ -304,6 +304,7 @@ void tek8501::fd_execute()
 			er |= 0104000;                           // invalid command
 		}
 		if (er & 0077777) er |= (er & 0157777) ? 0100000 : 0;
+		if (g_iotrace && er) fprintf(stderr, "[8501 fd cmd %02o drv %d -> FDER %06o]\n", cmd, drv, er);
 		mem_wr(blk + 8, er);
 		mem_wr(blk + 10, sr);
 		mem_wr(blk + 12, 0);

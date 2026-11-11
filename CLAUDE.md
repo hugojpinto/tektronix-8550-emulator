@@ -21,6 +21,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `tools/` | `imd.py` (IMD reader), `proto_target.py` (reference target system), `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
 | `docs/screenshots/` | rendered session and diagnostics screenshots |
 | `PLAN.md`, `FEASIBILITY.md` | milestones and status log; the original feasibility study |
+| `../tekmato` | sibling tool for DOS/50 disc images (list/extract/write/check); the file-system format is in `../tekmato/FORMAT.md`. Use it to put files on a disc instead of typing them in through EDIT |
 
 ## Build and smoke test
 ```
