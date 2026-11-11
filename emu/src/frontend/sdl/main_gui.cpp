@@ -1,11 +1,12 @@
 // tek8550-gui: the complete 8550 MDL with a graphical CT8500 (SDL3).
 // The same system and options as the tty front end (system/tek8550.*); this file only
 // draws the terminal, takes the keyboard and paces the emulation to real time.
-//   tek8550-gui [tek8550 options] [-style crt|sharp] [-scale F] [-panels on|off] [-artwork DIR] [-shot SECONDS FILE.bmp]
+//   tek8550-gui [tek8550 options] [-style crt|sharp] [-scale F (default: fit the screen)] [-panels on|off] [-artwork DIR] [-shot SECONDS FILE.bmp]
 // With -cycles the run is flat out (batch); -shot saves the window at a machine time
 // (SDL_VIDEODRIVER=offscreen runs it with no display).
 // Hotkeys (Cmd on macOS, Ctrl+Alt elsewhere): V paste, C copy the screen, T turbo,
-// F full screen, S sharp/CRT, P front panels, R restart both units, Q quit.
+// F full screen, S sharp/CRT, P front panels, L fit the windows to the screen, R restart both
+// units, Q quit.
 // Front panels: artwork/8301.lay and 8501.lay (MAME .lay subset, frontend/sdl/layout.h);
 // click RESTART, drop a disc image on a drive bay to insert it, click the bay to eject.
 #include "system/tek8550.h"
@@ -137,7 +138,7 @@ std::string screen_text(const ct8500 &t)
 int main(int argc, char **argv)
 {
 	// front-end options first; the rest are the system's
-	std::string style = "crt", artwork = "artwork"; double scale = 1.25; bool panels_on = true;
+	std::string style = "crt", artwork = "artwork"; double scale = 0; bool panels_on = true;   // scale 0: fit the screen
 	struct shot_t { double at; std::string file; };
 	std::vector<shot_t> shots;
 	std::vector<char *> rest = { argv[0] };
@@ -163,7 +164,7 @@ int main(int argc, char **argv)
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	SDL_Window *win = nullptr; SDL_Renderer *ren = nullptr;
-	if (!SDL_CreateWindowAndRenderer("Tektronix CT8500 \xe2\x80\x94 8550 MDL", int(LW * scale), int(LH * scale),
+	if (!SDL_CreateWindowAndRenderer("Tektronix CT8500 \xe2\x80\x94 8550 MDL", int(LW * (scale > 0 ? scale : 1.25)), int(LH * (scale > 0 ? scale : 1.25)),
 		SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY, &win, &ren)) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	SDL_SetRenderLogicalPresentation(ren, LW, LH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 	SDL_SetRenderVSync(ren, 1);
@@ -189,7 +190,7 @@ int main(int argc, char **argv)
 		}
 		for (panel &p : panels) {
 			p.v = &p.l.views[0];
-			const float ps = 0.75f;
+			const float ps = scale > 0 ? float(scale) * 0.6f : 0.75f;
 			if (!SDL_CreateWindowAndRenderer(p.v->name.c_str(), int(p.v->b.w * ps), int(p.v->b.h * ps), SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY, &p.win, &p.ren)) continue;
 			SDL_SetRenderLogicalPresentation(p.ren, int(p.v->b.w), int(p.v->b.h), SDL_LOGICAL_PRESENTATION_LETTERBOX);
 			SDL_SetWindowPosition(p.win, tx + tw + 12, py);
@@ -197,6 +198,32 @@ int main(int argc, char **argv)
 		}
 		SDL_RaiseWindow(win);
 	}
+	// fit layout: one scale for the terminal and the stacked panels (panels at 0.62 of the
+	// terminal's scale) so that side by side they fill the usable width of the screen
+	auto fit_layout = [&]() {
+		SDL_Rect u;
+		if (!SDL_GetDisplayUsableBounds(SDL_GetDisplayForWindow(win), &u)) return;
+		const float gap = 8, bar = 30, r = 0.62f;                 // bar: title bar allowance
+		float pw = 0, ph = 0; int n = 0;
+		for (panel &p : panels) if (p.win && p.shown) { pw = std::max(pw, p.v->b.w); ph += p.v->b.h; n++; }
+		float t = (float(u.w) - (n ? 3 : 2) * gap) / (LW + r * pw);
+		t = std::min(t, (float(u.h) - bar - 2 * gap) / LH);
+		if (n) t = std::min(t, (float(u.h) - n * bar - (n + 1) * gap) / (r * ph));
+		float tw = LW * t, th = LH * t;
+		float x0 = float(u.x) + (n ? gap : (float(u.w) - tw) / 2);
+		SDL_SetWindowSize(win, int(tw), int(th));
+		SDL_SetWindowPosition(win, int(x0), int(float(u.y) + bar + gap));
+		float py = float(u.y) + bar + gap;
+		for (panel &p : panels) {
+			if (!p.win || !p.shown) continue;
+			SDL_SetWindowSize(p.win, int(p.v->b.w * r * t), int(p.v->b.h * r * t));
+			SDL_SetWindowPosition(p.win, int(x0 + tw + gap), int(py));
+			py += p.v->b.h * r * t + bar + gap;
+		}
+		SDL_RaiseWindow(win);
+	};
+	if (scale <= 0) fit_layout();
+
 	// lamps: the fraction of the frame each output was on, with a short afterglow
 	std::vector<std::string> lamp_names;
 	for (panel &p : panels) for (auto &it : p.v->items) if (!it.output.empty()) lamp_names.push_back(it.output);
@@ -278,6 +305,7 @@ int main(int argc, char **argv)
 					else if (k == SDLK_S) { view.crt = !view.crt; SDL_SetTextureScaleMode(tex, view.crt ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST); redraw = true; }
 					else if (k == SDLK_R) sys.input("restart");
 					else if (k == SDLK_P) for (panel &p : panels) { p.shown = true; SDL_ShowWindow(p.win); }
+					else if (k == SDLK_L) { if (fullscreen) { fullscreen = false; SDL_SetWindowFullscreen(win, false); } fit_layout(); }
 					break;
 				}
 				// keys the CT8500 sends as control codes or escape sequences
