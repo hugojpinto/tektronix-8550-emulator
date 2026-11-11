@@ -95,6 +95,8 @@ Any language works. Answer every 4-byte request with 2 bytes. Keep the INT level
 
 Joint check with FUSE (EMUL 99e3d72, `fuse --machine 48 --tek-probe`): a mode-1 loop `LD A,(nnnn) / JR` reading the Spectrum's RAM. At 4000h (contended) it gets 1.08 WAIT states per read and runs 1 536 812 iterations. At 8000h it gets 0 WAIT states and 1 603 730 iterations in the same emulated time: a ratio of 0.958, against 0.959 predicted (25 vs 26.08 T per iteration). `tek8550` prints `[prototype link: N requests, W WAIT states]` at exit.
 
+RESET was tested live with the same FUSE build, with the test loop at 0000 so that each reset restarts it. FUSE's Machine > Reset (twice) and Hard reset each reached the 8550 as exactly one `[t target RESET: …]`, and nothing was echoed back. A reset only takes effect while the emulator processor runs: the link is polled by the 8550, so a pulse sent while DOS/50 sits at its prompt is not seen. A real probe behaves the same, since RESET acts on the emulating CPU. In the first attempt the loop sat at 0100, so a reset sent the Z80 off to 0000, it hit a HALT, and DOS/50 stopped emulation. Later resets therefore had nothing to act on.
+
 Also verified with `tools/proto_target.py --io-wait 8` (an `OUT`/`JR` loop runs at 23/31 of full speed, exactly as expected) and `--reset-at 100` (the Z80 restarts at 0000 100 ms into `GO`).
 
 **Not modelled:** bus timing beyond WAIT, DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running). A missing target power bit is only reported at connect time.
