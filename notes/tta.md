@@ -65,8 +65,18 @@
 - Level-gated modes take the current GATE level as soon as a counter's mode is written. On the chip gating is combinational, while MAME re-evaluates it only on pin changes, so a counter reprogrammed from active-high to active-low gating kept counting (module 46).
 - `counter_mode(c)`: a read-only accessor, so the board can model the pull-ups on high-impedance outputs.
 
+## Run mode in the emulator (functional)
+How run mode works on the real board, and how the emulator models it, is in `docs/ARCHITECTURE.md` §8; the user's guide is `docs/TTA.md`. Facts found while building it:
+- **The users manual's timebases are the Am9513's F1–F5** at 5 MHz with decade (BCD) scaling: 200 ns, 2 µs, 20 µs, 200 µs and 2 ms. This confirms the X1 clock found from module 44.
+- **`cons` is port 71's arming.** Module 31's "trigger N arms N+1" on successive accesses is the users manual's consecutive-event function: an event in a linked sequence counts only if the previous one fired on the immediately preceding cycle.
+- **An undefined event is always true** (users manual 3-4, 3-9). With an unprogrammed counter (output high), a trigger then fires on every cycle; that is how a counter alone can stop a program.
+- **DOS/50 V1.0 and INT 29.** Its GO handler at overlay address 681E reads F2, then the RTPA status C2, then E3. It handles the break only if C2 shows "present and stopped"; with C2 = 00 it dismisses the interrupt and keeps waiting. It names the trigger only when its own `BIF` settings agree. The emulator therefore shows a TTA break at C2 when no RTPA is fitted (a bridge, documented as such) and sets E3 bit 4 while the TTA holds the processor (hardware: the hold is SLV OPREQ, as for the RTPA).
+- **The manual's 8085 sample program is valid Z80 code**, byte for byte (LXI H = LD HL, ADD M = ADD A,(HL), JNZ = JP NZ…). The tutorial runs it on the Z80 board. Its exit SVC (function 1A through the block at 0040) hangs DOS/50 V1.0 even with `SVC ON`; the tutorial ends the program with `JR $` and `BK` instead.
+- **A Z80 `HALT` ending a `GO 100` run works once.** A second `GO 100` after it came back at PC 0089 with A = 00 (not investigated; the tutorial avoids it).
+
 ## Open
-- **Run mode.** Which input group addresses which comparator page; the meaning of the 2-bit codes (range cascade?), of pages 70–73, 78, 79 and of port 74; the event qualifier and the bus control signals. Nothing we have exercises them; a later DOS/50 or OS/40 with the TTA commands would.
+- **Run mode at register level.** Which input group addresses which comparator page, the meaning of the 2-bit codes (range cascade?), of pages 70–72, 78, 79 and of port 74, and the TTA software's Am9513 programming. Nothing we have exercises them; a later DOS/50 or OS/40 with the TTA commands would. Run mode is modelled functionally meanwhile.
+- **Z80 bus symbols.** The users manual gives only the 8085's (`f nf m i rd wt`); the emulator uses them for the Z80 too.
 - **SRC5, GATE1 and F1 as count sources**, which TTA.TST skips.
 - **The probe fixture's polarity.** Module 70 (option 7, code at 30A3–3194) asks for "the set-up procedure described in the Probe Interface Test section of the TTA service manual", which our 070-3761-00 lacks. What the code shows:
   - Set-up: it programs the counters hi-Z, sets 72 = 90, 71 = 02 (acquire every access) and 70 = 02, clears pages 68–73, fills pages 76–79 with 80 and page 70 with FF, and writes 50 at page 73 row 55 and A0 at row AA. Then 70 = 03.

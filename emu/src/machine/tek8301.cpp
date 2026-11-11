@@ -130,6 +130,11 @@ static const bool slave_io_trace = getenv("TEK_SLAVEIO") != nullptr;   // trace 
 u8 tek8301::lp_in(z80 *z, u16 port)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
+	if (m->m_tta_watch) {   // the TTA sees the I/O cycle; the data is what the port answers
+		u8 v = (z == &m->ep && m->proto_mode()) ? m->target->io_read(port) : 0xff;
+		m->tta_board.target_bus(m->ep.cyc, port, v, tta::IOREAD);
+		return v;
+	}
 	if (z == &m->ep && m->proto_mode()) return m->target->io_read(port);
 	if (slave_io_trace) fprintf(stderr, "[%.3f %s in  %04x @%04x]\n", m->m_cycles / CPU_HZ, z == &m->ep ? "EP" : "LP", port, z->pc);
 	return 0xff;
@@ -138,6 +143,7 @@ u8 tek8301::lp_in(z80 *z, u16 port)
 void tek8301::lp_out(z80 *z, u16 port, u8 d)
 {
 	tek8301 *m = static_cast<tek8301 *>(z->userdata);
+	if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, port, d, tta::IOWRITE);
 	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
 	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
 	// (SVC decode uses A0-A7 only; A8-A15 = A are ignored)
@@ -210,6 +216,8 @@ void tek8301::lp_run(int cycles2650)
 		u8 ext = u8(~m_f5);
 		if (ep_trace) fprintf(stderr, "[%.3f forced jump %02x:%04x -> %s]\n", m_cycles / CPU_HZ, ext, target, &z == &ep ? "EP" : "LP");
 		z.halted = false;
+		// the TTA starts a run; GO with a new address (not the stop address) resets its counters
+		if (&z == &ep && target < 0xf800 && tta_board.target_watch()) tta_board.run_start(target != m_lp_pc_next, z.cyc);
 		z.pc = target;
 		if (&z == &ep && target >= 0xf800) { ep_firmware(target); return; }   // board firmware space
 	}
@@ -240,16 +248,24 @@ void tek8301::lp_run(int cycles2650)
 			if (target->irq() && z.iff1) z80_gen_int(&z, target->irq_vector());
 		}
 		const bool watch = rtpa_board.present;   // the RTPA watches the slave bus: emulator processor or Language Processor
+		const bool twatch = &z == &ep && tta_board.target_watch();   // the TTA in run mode: the program under test
 		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(z.pc); m_rtpa_watch = true; }
+		if (twatch) { tta_board.instr_begin(z.cyc, z.pc); m_tta_watch = true; }
 		z80_step(&z);
 		if (watch) {
 			m_rtpa_watch = false;
 			rtpa_board.instr_end(z.pc, int(z.cyc - c0), (&z == &lp && (m_e7 & 0x04)) ? 2.5e6 : 4e6);
 			if (rtpa_board.take_irq()) ec_interrupt(INT_RTPA);   // latches PC-next like a breakpoint (DS resumes there)
 		}
+		if (twatch) {
+			m_tta_watch = false;
+			tta_board.instr_end(z.pc, z.cyc);
+			if (tta_board.take_break()) ec_interrupt(INT_RTPA);   // a TTA break: INT 29, PC-next latched
+			if (tta_board.take_irq()) tta_interrupt();
+		}
 		if (&z == &ep && proto_mode()) z.cyc += target->take_wait();   // v3: target WAIT states
 		m_lp_frac -= double(z.cyc - c0);
-		if (rtpa_board.stopped()) break;          // RTPA break (INT 29): the board holds the processor
+		if (rtpa_board.stopped() || tta_board.stopped()) break;   // RTPA/TTA break (INT 29): the board holds the processor
 		if (m_pending != before) {              // SVC / write-protect violation (immediate): master takes over
 			// a breakpoint matched by the same instruction is pending as well (diag 07/0070-0075)
 			if (m_bp_hit & 1) ec_interrupt(INT_BP1);
@@ -478,6 +494,11 @@ u8 tek8301::io_read(offs_t port)
 	u8 v = 0xff;
 	if (port >= 0x90 && port <= 0x9f) v = m_dma.read(port & 0x0f);
 	else if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; v = rtpa_board.read(port & 7); }
+	// DOS/50 V1.0 predates the TTA: its GO handler attributes an INT 29 break only through the
+	// RTPA status register (C2: 10 present, 08 stopped, 01/02 TRIG1/TRIG2). With no RTPA fitted,
+	// the emulator's TTA command software (system/tta_console, standing in for the later DOS/50)
+	// shows the TTA's break there, so DOS/50 prints <BREAK TRIGn>. An emulator bridge, not hardware.
+	else if (port == 0xc2 && tta_board.present && tta_board.break_status()) v = tta_board.break_status();
 	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = double(now_cycles()) / CPU_HZ; v = tta_board.read(port & 7, now_cycles()); }
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
@@ -502,7 +523,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xf2: v = u8(~(m_ec_pend | (tta_board.requesting() ? 0x04 : 0))); break;   // pending, active low (bit 2 also the TTA's request)
 	case 0xe5: v = ep85_present ? u8((m_e5 & 0x80) && ep85.halted() ? 0x10 : 0x00) : 0x00; break;
 	// E3 bit 4: processor inactive (HALT, or held by an RTPA break)
-	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && (ep.halted || rtpa_board.stopped()) ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
+	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && (ep.halted || rtpa_board.stopped() || tta_board.stopped()) ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
 	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
@@ -553,6 +574,7 @@ void tek8301::io_write(offs_t port, u8 d)
 		m_ec_pend = 0;                      // a new command releases the latched debug state
 		m_svc_stop = false;                 // ... and a slave stopped by an SVC
 		rtpa_board.release();               // ... or held by an RTPA break
+		tta_board.release();                // ... or a TTA break
 		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_e3);
 		if (!(d & 0x01)) { m_fr_pending = true; m_fj_pending = false; m_lp_live = true; }   // FR: forced reset (taken by the slave)
 		if (!(d & 0x04) && (d & 0x01)) { m_fj_pending = true; m_lp_live = true; }          // FJ: forced jump (FB:FA, F5); reset wins

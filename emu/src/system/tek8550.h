@@ -10,6 +10,7 @@
 #ifndef TEK_SYSTEM_TEK8550_H
 #define TEK_SYSTEM_TEK8550_H
 #include "machine/tek8301.h"
+#include "system/tta_console.h"
 #include "machine/tek8501.h"
 #include "host/ct8500.h"
 #include "host/ipc_target.h"
@@ -17,6 +18,7 @@
 #include "system/options.h"
 #include "system/outputs.h"
 #include <memory>
+#include <deque>
 #include <string>
 #include <cstdio>
 
@@ -44,9 +46,15 @@ public:
 
 	// the system terminal port
 	ct8500 &terminal() { return ct; }
+	// TTA commands (docs/TTA.md): the command set of the TTA users manual, which the emulator
+	// runs in place of the later DOS/50 that had it. A line typed at the DOS/50 prompt whose
+	// first word is a TTA command goes to it; everything else reaches DOS/50 unchanged.
+	void key_in(u8 c);                                   // a key from the terminal (or a script)
+	std::string tta_command(const std::string &line);   // runs one; returns (and prints) its output
+	void tta_print(const std::string &s);                // text on the CT8500 (and stdout without one)
 	bool terminal_dirty = false;                   // set when the 8301 sent the CT8500 something
 	std::function<void(u8)> on_term_tx;            // every byte the 8301 sends (7-bit)
-	void term_rx(u8 c) { mdu->term.host_rx(c); }   // a byte to the 8301 (bypassing the CT8500)
+	void term_rx(u8 c) { key_in(c); }   // a byte to the 8301 (bypassing the CT8500)
 
 	// named outputs ("8301:led0", "8501:led3", ...; 1 = lit) and inputs
 	outputs out;
@@ -78,6 +86,8 @@ private:
 	std::unique_ptr<tek8301> mdu;
 	std::unique_ptr<tek8501> dmu;
 	ct8500 ct;
+	std::string m_kb_line; bool m_kb_hold = false, m_kb_start = true; std::deque<u8> m_echo_skip;
+	std::unique_ptr<tta_console> m_tta_con;
 	bool m_feed_ct = false;
 	ipc_target proto;
 	serial_link remote;

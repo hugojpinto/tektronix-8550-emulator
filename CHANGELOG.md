@@ -2,6 +2,11 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **TTA in use.** The TTA now watches the program under test.
+  - **Run mode** (`machine/tta_run.*`, functional): events, consecutive events, the four counters with their output modes, sources, gates and restart, breaks (stop/continue) and acquisition.
+  - **Commands:** the users manual's command set (`system/tta_console.*`) is typed at the DOS/50 prompt, as on the later DOS/50 that had it.
+  - **Tutorial:** `docs/TTA.md` follows the manual's learning guide with its own sample program, which is valid Z80 code. The board internals moved to `docs/ARCHITECTURE.md` §8 and the diagnostic walkthrough to `docs/OPERATION.md` §10.
+  - **Checked:** the manual's results reproduce: the break at 0106 with A = 01, five continue lines, and the operand-only recording that exposes the bad table entry. A code-timing measurement gives 39.4 µs against 39.0 µs computed.
 - 2026-11-11: **TTA guide and probe test.** `docs/TTA.md` explains the TTA with pictures from `tools/make_tta_shots.sh`: what it does, running TTA.TST, reading its reports, and the board at register level. The probe test's code showed that page 73's high nibble, not pages 76/77, enables the events (page 73 is the probe byte's RAM). With `-tta probe`, the probe clipped onto the extended address lines (inferred), option 7 passes too.
 - 2026-11-11: **TTA, test mode.** TTA.TST option 0 now passes in full (modules 00–60, 30 iterations without an error). Found from the diagnostic's code, in `notes/tta.md`:
   - **Events:** in test mode the comparator RAMs are addressed by the 2650's A7–0 and latch four events per access; port 74's 2-bit codes (00 = match) select them, gated by pages 76/77.

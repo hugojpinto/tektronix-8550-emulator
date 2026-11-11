@@ -3,7 +3,8 @@
 What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELOG.md); register-level findings are in [notes/](notes/).
 
 ## Hardware not yet emulated
-- **Trigger Trace Analyzer (TTA):** test mode is in, and TTA.TST option 0 passes. Open: run mode (which input group addresses which comparator page; the range codes), which needs software that uses the TTA (a later DOS/50 or OS/40), and the polarity of the probe test's fixture (`-tta probe` is inferred). See `notes/tta.md` and `docs/TTA.md`. 
+- **Trigger Trace Analyzer (TTA):** usable (`docs/TTA.md`): run mode is functional, and the command set is the emulator's stand-in for the lost later DOS/50. Open: run mode at register level (which input group addresses which comparator page, the range codes) and the probe fixture's polarity, which need the original software or its manual sections (`notes/tta.md`).
+- **Extended Tekhex** (070-4478-00, Extended Hex Interface Users Manual, on bitsavers): symbol-carrying transfers for the host link (`tools/host_link.py`). 
 - **The 6800, 8080 and 8086 emulator processor boards.** An EMU.8086 disc survives; the boards' firmware does not.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 

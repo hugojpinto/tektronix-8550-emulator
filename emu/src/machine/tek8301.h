@@ -116,7 +116,7 @@ public:
 	z80 &slave() { return ep_enabled() ? ep : lp; }
 	const z80 &slave() const { return ep_enabled() ? ep : lp; }
 	// slave runs while the master is halted and no debug interrupt is outstanding
-	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped(); }
+	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped() && !tta_board.stopped(); }
 	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
@@ -193,14 +193,17 @@ private:
 		bool m1 = m->lp.m1 || m->ep.m1;
 		u8 v = m->slave_rd(a, m1);
 		if (m->m_rtpa_watch) m->rtpa_board.bus(a, v, m1, false, false);
+		if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, a, v, m1 ? tta::FETCH : tta::MREAD);
 		return v;
 	}
 	static void lp_write(void *u, u16 a, u8 d) {
 		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true);
 		if (m->m_rtpa_watch) m->rtpa_board.bus(a, d, false, true, false);
+		if (m->m_tta_watch) m->tta_board.target_bus(m->ep.cyc, a, d, tta::MWRITE);
 		m->slave_wr(a, d);
 	}
 	bool m_rtpa_watch = false;     // the emulator processor is stepping: the RTPA sees its cycles
+	bool m_tta_watch = false;      // ... and the TTA, in run mode (emulator processor only)
 	u8   slave_rd(u16 a, bool m1 = false);   // m1: opcode fetch
 	void slave_wr(u16 a, u8 d);
 	// Memory map / write-protect RAM: 512 blocks x 128 bytes, D0 = U (prototype), D2 = write

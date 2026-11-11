@@ -118,6 +118,12 @@ void tta::ram_access(u64 now, u16 a)
 		if (trace) fprintf(stderr, "[%.7f TTA acquire %02x at %02x]\n", double(m_last) / 2e6, test ? row : pr, m_acq_ptr);
 		m_acq_ptr++;
 	}
+	triggers(ev, row);
+}
+
+// trigger k = event k AND counter k's output, armed by trigger k-1 when port 71 asks
+void tta::triggers(u8 ev, int)
+{
 	if (!ev) return;
 	u8 tr = 0;
 	for (int k = 0; k < 4; k++) {

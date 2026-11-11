@@ -245,6 +245,99 @@ At the menus press **Return**, **1 Return**, **Return** (Automatic mode → Syst
 
 `-pm ext` emulates the newer program-memory boards these diagnostics expect. DOS/50 V1.0 needs the default, older boards, so don't use `-pm ext` for normal work. Screenshots of a passing run are in `docs/screenshots/diagnostics/`.
 
+### The Trigger Trace Analyzer's diagnostic
+
+TTA.TST V1.3A checks the TTA option (`-tta`); see [TTA.md](TTA.md) for using the board.
+
+
+TTA.TST lives in the **Select** mode of Diagnostic System 3.0. Interactively, after the disc boots (about 30 s), answer the prompts as below. For batch runs, the same answers go in as `-type` timings (see the end of this section).
+
+**1. Choose Select mode (2), then program 6, TRIGGER TRACE ANALYZER TEST.**
+
+![The diagnostic's program list](screenshots/tta/01_programs.png)
+
+**2. TTA.TST's option menu.** Option 0 runs everything except the probe test; 1–7 run one group; `T` runs one module; `H` lists the modules.
+
+![TTA.TST option menu](screenshots/tta/02_options.png)
+
+**3. The module list** (`H`). Each test module has a two-digit number: the tens digit is its group.
+
+![TTA.TST module list](screenshots/tta/03_modules.png)
+
+| Module | Test | What it proves on the board |
+|---|---|---|
+| 00 | TTA Detection | Port 70 reads with bits 7–6 high: the board is fitted |
+| 10 | I/O Port | Ports 70–74 hold a walking bit (73 holds four bits) |
+| 20–23 | RAM inhibit, select, data, address lines | The TTA RAM appears in the window when selected, inhibits system RAM there, and every bit and address line works; page F5 is absent |
+| 30 | Event & Trigger | Each event fires on its own, and triggers need the counter outputs |
+| 31 | Consecutive Events | "Trigger N arms N+1", for every starting trigger |
+| 40–43 | Counter chip, register select, register bits, step | The Am9513 is there and its registers work |
+| 44 | Dynamic Counter | The counter clock is 5 MHz: the count over a timed 2650 loop must be exact to ±1 |
+| 45 | Count Source Selection | Each event drives the right counter input (SRC1–4, GATE2–5), and F2–F5 divide correctly |
+| 46 | Counter Gating | Counting only while an event condition holds, for each Am9513 gating mode |
+| 50 | TTA Interrupt | A trigger interrupts the 8301 only when enabled, and only once |
+| 60 | Acquisition | Transactions are stored and the pointer advances, for "selected" and "all" |
+| 70 | Probe Interface | The eight probe lines reach the event comparators (option 7 only, needs a set-up) |
+
+**4. Run option 0.** The next two menus are the same for every option:
+- **Error loop control:** `3` = do not loop on error, just continue.
+- **Display:** `RETURN` = on the terminal. `2` also prints on a printer at the 8301's J103 AUX port: with `-aux8301 file:log.txt` the whole report lands in that file.
+
+TTA.TST then loops over modules 00–60 forever, updating the status line at the bottom (iteration and error counts are hex). Here it is in its 72nd pass (iteration 0047):
+
+![Option 0, iteration 0047, no errors](screenshots/tta/04_option0_pass.png)
+
+**5. One module.** Option `T`, then the module number, runs that module over and over. Here is module 44, the clock-exact counter test, at iteration 00D7 (215 passes):
+
+![Module 44 alone](screenshots/tta/05_module44.png)
+
+**Batch.** The same session with no terminal, as the regression check runs it:
+
+```
+build/tek8550 -tta -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD \
+    -cycles $((200*2000000)) -type 31 '2\r' -type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'
+```
+
+`-type T TEXT` types at emulated second T, and `-cycles` sets the run's length (2,000,000 per emulated second). Batch runs go at about 100× real time, so 200 emulated seconds (about 30 passes) take a few seconds. Use `-snap T FILE` to save the screen, or grep the output for `Error Code`.
+
+#### Reading the results
+
+The status line reads `OPTION nn  MODULE RUNNING = mm  ITERATION # iiii  ERRORS = eeee`, with the iteration and error counts in hex. On a failure, TTA.TST prints a report:
+- `DIAGNOSTIC FAILURE` and an error code `11/00mm`, where 11 is the TTA and mm the module;
+- what it read against what it expected;
+- the suspect board.
+
+The same diagnostic **without `-tta`**: every module fails, starting with the detection test.
+
+![Without the board: TRIGGER TRACE ANALYZER BOARD NOT DETECTED](screenshots/tta/06_board_absent.png)
+
+Typical reports, and what they mean in board terms:
+
+| Report | Meaning |
+|---|---|
+| `TRIGGERS ARE INCORRECT BECAUSE COUNTER OUTPUTS ARE STUCK` | The Am9513's status did not read FF with its outputs at high impedance, so the triggers (event AND counter output) cannot be judged |
+| `EVENTS/TRIGGERS 4321  ACTUAL xxxx  EXPECTED xxxx` | The trigger latches (port 73) after a test transaction, bit by bit |
+| `CTR REGISTER CONTENTS / EXPECTED`, with `COUNT SOURCE` or `GATE SIGNAL` | A counter's hold register after a timed or event-driven count |
+| `TTA INTERRUPT DID NOT OCCUR` / `OCCURRED WHEN NOT EXPECTED`, with trap and enable bits | Module 50, with the trigger latches and interrupt enables at the time |
+| `ACQ PTR IS xx; SHOULD BE yy`, with `ADDRESS / ACTUAL / EXPECTED DATA` | Module 60: the acquisition pointer or a stored sample is wrong |
+
+#### The probe interface test (option 7)
+
+Option 7 asks for a set-up: "Follow set up procedure described in the Probe Interface Test section of the TTA service manual". That section is not in the service manual we have (070-3761-00). With nothing clipped onto the probe, the test fails, as the real board would:
+
+![Option 7 without the fixture: PROBE LINES CANNOT BE SET TO 55H](screenshots/tta/07_probe.png)
+
+What the test does is readable from its code:
+- It writes **AA**, then **55**, to the Emulator Controller's port F4. That port drives the extended address lines A23–A16 and is written active low.
+- After each write it expects the events that page 73 of the comparator RAM assigns to probe values 55 and AA respectively.
+- So the fixture evidently clips the probe leads onto the extended address lines.
+
+`-tta probe` models exactly that, and the test then passes:
+
+![Option 7 with -tta probe: iteration 0287 (647 passes), no errors](screenshots/tta/08_probe_fixture.png)
+
+The polarity is the one inference: the probe could equally see F4 uninverted, with the event bits reversed. Both explain the test. If the set-up procedure turns up, it will settle this.
+
 ## 11. Scripting, logging, screenshots
 
 When stdin is not a terminal, the emulator runs flat out, at roughly 100× real time:

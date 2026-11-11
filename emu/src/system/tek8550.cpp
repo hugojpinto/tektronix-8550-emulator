@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 #include "system/tek8550.h"
+#include "system/tta_console.h"
 #include "cpu/s2650/2650dasm.h"
 #include "cpu/t11/t11dasm.h"
 #include <sstream>
@@ -67,10 +68,12 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	outf = opt.outputs_log.empty() ? nullptr : fopen(opt.outputs_log.c_str(), "w");
 	if (outf) out.subscribe([this](const std::string &n, int v) { fprintf(outf, "%.6f %s %d\n", now(), n.c_str(), v); fflush(outf); });
 
-	ct.send = [this](u8 b) { mdu->term.host_rx(b); };
+	ct.send = [this](u8 b) { key_in(b); };
 	ct.send_break = [this]() { mdu->term.host_break(); };
 	mdu->term.on_tx = [this](u8 c) {
 		c &= 0x7f;
+		// DOS/50 echoing keys that were already shown while a line might have been a TTA command
+		if (!m_echo_skip.empty()) { if (c == m_echo_skip.front()) { m_echo_skip.pop_front(); return; } m_echo_skip.clear(); }
 		if (m_feed_ct || !opt.screenfile.empty() || !opt.snaps.empty()) { ct.feed(c); terminal_dirty = true; }
 		if (on_term_tx) on_term_tx(c);
 		if (logf) { fputc(c, logf); fflush(logf); }
@@ -129,6 +132,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	mdu->rtpa_board.present = opt.rtpa_on;
 	mdu->rtpa_board.probe_loopback = opt.rtpa_probe;
 	mdu->tta_board.present = opt.tta_on;
+	if (opt.tta_on) m_tta_con = std::make_unique<tta_console>(*this);   // the TTA software: run mode from the start
 	if (opt.tta_probe) mdu->tta_board.probe = [m = mdu.get()]() { return m->bank_lines(); };   // inferred TTA.TST option 7 fixture
 	mdu->prom_dos50_fix = opt.prom_fix;
 	if (!opt.prom_dev.empty()) { std::string e; mdu->prom.load_socket(opt.prom_dev, e); }
@@ -180,7 +184,7 @@ void tek8550_system::scripted_events()
 					else if (e == 'x' && i + 2 < t.text.size()) { ch = char(strtol(t.text.substr(i + 1, 2).c_str(), nullptr, 16)); i += 2; }
 					else ch = e;
 				}
-				mdu->term.host_rx(u8(ch));
+				key_in(u8(ch));
 			}
 			t.text.clear();
 		}
@@ -390,4 +394,73 @@ void tek8550_system::shutdown(bool show_state)
 		for (u32 a = 0; a < 0x10000; a++) fputc(mdu->progmem(u16(a)), f);
 		fclose(f);
 	}
+}
+
+// ---- TTA command entry
+void tek8550_system::tta_print(const std::string &s)
+{
+	if (m_feed_ct || !opt.screenfile.empty() || !opt.snaps.empty()) { for (char c : s) ct.feed(u8(c)); terminal_dirty = true; }
+	if (!m_feed_ct) { fwrite(s.data(), 1, s.size(), stdout); fflush(stdout); }
+}
+
+std::string tek8550_system::tta_command(const std::string &line)
+{
+	if (!mdu->tta_board.present) { std::string e = "TTA not installed (start with -tta)\r\n"; tta_print(e); return e; }
+	if (!m_tta_con) m_tta_con = std::make_unique<tta_console>(*this);
+	std::string out = m_tta_con->run(line);
+	tta_print(out);
+	return out;
+}
+
+// The keyboard, as the later DOS/50 with the TTA commands would have read it. A line that
+// may be a TTA command is held (and shown) here until its first word decides: a TTA command
+// runs here, and DOS/50 then gets an empty line for a fresh prompt; anything else goes to
+// DOS/50, whose echo of the held keys is then dropped.
+void tek8550_system::key_in(u8 c)
+{
+	if (!m_tta_con) { mdu->term.host_rx(c); return; }
+	auto release = [&]() {
+		for (char k : m_kb_line) { mdu->term.host_rx(u8(k)); m_echo_skip.push_back(u8(k)); }
+		m_kb_line.clear(); m_kb_hold = false; m_kb_start = false;
+	};
+	auto could_be = [](const std::string &l) {        // a prefix of a TTA command, or one and a space
+		static const char *n[] = { "acq", "ad", "bre", "bus", "cons", "cou", "ctr", "data", "disp", "eve", "pro", "qua", "tclr", "ts" };
+		size_t sp = l.find(' ');
+		std::string w = l.substr(0, sp);
+		for (char &ch : w) ch = char(tolower(u8(ch)));
+		if (sp != std::string::npos) return tta_console::is_command(w);
+		for (const char *k : n) if (std::string(k).compare(0, w.size(), w) == 0) return true;
+		return false;
+	};
+	if (m_kb_hold) {
+		if (c == '\r' || c == '\n') {
+			std::string w = m_kb_line.substr(0, m_kb_line.find(' '));
+			if (tta_console::is_command(w)) {
+				tta_print("\r\n");
+				std::string l = m_kb_line; m_kb_line.clear(); m_kb_hold = false; m_kb_start = true;
+				tta_command(l);
+				mdu->term.host_rx('\r');         // DOS/50: an empty line, a new prompt
+				m_echo_skip.push_back('\r');
+				return;
+			}
+			release(); mdu->term.host_rx(c); m_kb_start = true; return;
+		}
+		if (c == 0x08 || c == 0x7f) {
+			if (!m_kb_line.empty()) { m_kb_line.pop_back(); tta_print("\b \b"); }
+			if (m_kb_line.empty()) m_kb_hold = false;
+			return;
+		}
+		if (c < 0x20) { release(); mdu->term.host_rx(c); return; }
+		m_kb_line += char(c);
+		tta_print(std::string(1, char(c)));
+		if (!could_be(m_kb_line)) release();
+		return;
+	}
+	if (m_kb_start && isalpha(c) && could_be(std::string(1, char(c)))) {
+		m_kb_hold = true; m_kb_line = std::string(1, char(c));
+		tta_print(m_kb_line);
+		return;
+	}
+	m_kb_start = c == '\r' || c == '\n';
+	mdu->term.host_rx(c);
 }

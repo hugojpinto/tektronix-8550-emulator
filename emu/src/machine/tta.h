@@ -9,9 +9,11 @@
 #define TEK_TTA_H
 #include "emu.h"
 #include "machine/am9513.h"
+#include "machine/tta_run.h"
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <vector>
 
 class tta
 {
@@ -39,6 +41,25 @@ public:
 	bool take_irq() { bool i = m_irq; m_irq = false; return i; }
 	bool requesting() const { return present && m_req; }
 
+	// ---- run mode: the board watches the program under test on the emulator processor
+	// (port 70 = x5: comparators on, clock running, RAM not selected; inferred). Modelled
+	// functionally by tta_run (see tta_run.h): the run-mode encoding of the comparator RAMs
+	// and the TTA software's Am9513 programming are not known.
+	tta_run run;
+	bool target_watch() const { return present && (m_reg[0] & 0x07) == 0x05; }
+	void run_start(bool reset_counters, u64 t) { m_brk_status = 0; run.run_start(reset_counters, t); }
+	void instr_begin(u64 t, u16 pc) { run.instr_begin(pc, t); }
+	enum cycle_t { FETCH = tta_run::FETCH, MREAD = tta_run::MREAD, MWRITE = tta_run::MWRITE, IOREAD = tta_run::IOREAD, IOWRITE = tta_run::IOWRITE };
+	void target_bus(u64 t, u32 a, u8 d, cycle_t c) { run.cycle(a, d, tta_run::cycle_t(c), t); }
+	void instr_end(u16 pc, u64 t) { run.instr_end(pc, t); if (run.take_stop()) { m_stopped = true; m_break = true; m_brk_status = u8(0x18 | (run.last_stop_trig() & 3)); } }
+	bool stopped() const { return m_stopped; }
+	// the last run's break as DOS/50 V1.0 reads it at C2 (see tek8301::io_read): latched until the next run
+	u8 break_status() const { return m_brk_status; }
+	void release() { m_stopped = false; }
+	bool take_break() { bool b = m_break; m_break = false; return b; }
+	void port_write(int r, u8 d) { write(r, d, m_last); }   // for the command software
+	u8 port_read(int r) { return read(r, m_last); }
+
 	am9513_device stc{ 5'000'000 };
 	// the P6451 data acquisition probe's eight lines; unset = nothing clipped on (read high)
 	std::function<u8()> probe;
@@ -51,6 +72,9 @@ private:
 	bool m_irq = false;                       // INT 29 edge (taken by the 8301)
 	bool m_req = false;                       // the request flip-flop, read in F2 bit 2
 	u8 m_acq_ptr = 0;                         // next acquisition sample (port 75)
+	bool m_stopped = false, m_break = false;
+	u8 m_brk_status = 0;
+	void triggers(u8 ev, int row_or_minus1);
 	u8 m_ev = 0;                              // event outputs 4-1, latched at each RAM access in test mode
 	void set_events(u8 ev);                           // trigger N has armed trigger N+1 (cyclic)
 	u64 m_last = 0; u32 m_half = 0;           // counter clock: 5 MHz = 2.5 X1 per 2650 clock

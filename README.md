@@ -37,7 +37,7 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 | | |
 |---|---|
 | [**docs/TUTORIALS.md**](docs/TUTORIALS.md) | short recipes: first boot in the graphical lab, a Z80 program from scratch, formatting and duplicating discs, scripted runs, building for Windows |
-| [**docs/TTA.md**](docs/TTA.md) | the Trigger Trace Analyzer: what it does, running its diagnostic (with pictures), and how the board works at register level |
+| [**docs/TTA.md**](docs/TTA.md) | a tutorial on the Trigger Trace Analyzer: stop on conditions, watch, record, count and time a program, following the 1983 manual's own learning guide |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | for implementers: connect another emulator as the target system, a host computer over the REMOTE port, or add an emulator processor board or panel lamps |
 | [docs/OPERATION.md](docs/OPERATION.md) | the long hands-on tour: DOS/50, editors, assembler, debugging, target systems, host link, RTPA, PROM programmer, diagnostics |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the 8550 works and how the emulator models it |
@@ -58,7 +58,7 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 ## What's emulated
 | Unit | Boards and status |
 |---|---|
-| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80** and **8085** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), **TTA** (test mode: its diagnostic passes) |
+| **8301 MDU** | 2650 system controller and boot/diagnostic ROMs, system and program memory, DMA, Z80 Language Processor, Emulator Controller, **Z80** and **8085** emulator boards, memory map and write protection, REMOTE port, **RTPA**, **PROM programmer** (2708/2716/2732), **TTA** (Trigger Trace Analyzer, with its command set) |
 | **8501 DMU** | LSI-11/2 with utility PROMs and LTC, HSI link to the 8301, **Flexible Disc Controller at chip level** (Z80 + ROM 160-0412-00), Qume DataTrak 8 drives in all four disc formats |
 | **CT8500** | the terminal's command set and host-control mode (ACE works), drawn as text or as its dot raster |
 

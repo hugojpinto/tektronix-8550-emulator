@@ -1,270 +1,259 @@
-# The Trigger Trace Analyzer (TTA)
+# Analysing programs with the Trigger Trace Analyzer
 
-The TTA was the 8550's top-end debugging option (Tektronix 8550F03, 1982–83): two boards in the 8301 that watch every bus transaction of the program under test. It recognises up to four **events**, counts them, chains them, breaks the program or raises an interrupt when they happen, and records the last 255 transactions. It is the most intricate board in the lab.
+The **Trigger Trace Analyzer** (TTA, option 8550F03, 1982) was the most powerful debugging tool you could put in an 8550. It is two boards in the 8301, wired to the bus of the emulator processor that runs your program. They watch every bus cycle of that processor at full speed. With them you can:
 
-This guide covers:
-- what the TTA does;
-- what the emulator can and cannot do with it;
-- how to run its diagnostic, step by step, with pictures;
-- how the board works at register level, for anyone who wants to drive it from 2650 code or continue the reverse engineering.
+- **stop the program** on an exact condition: an address, a range of addresses, a data value, a kind of bus cycle, or several of these at once;
+- **watch without stopping**: print the processor's state each time the condition happens, and let the program run on;
+- **record** the last 255 bus cycles, or only the ones you care about, and list them afterwards with the opcodes decoded;
+- **count** events, passes, cycles or time, with four hardware counters, and use the counts to decide when to stop ("on the third pass") or to measure how long code takes;
+- **chain conditions**: "a write to the last stack byte *immediately followed by* a write past the stack".
 
-The facts, and how each was established, are in [notes/tta.md](../notes/tta.md).
+The TTA does all this without touching your program or slowing it down. DOS/50's own `BK` breakpoints can only stop on an address. The older RTPA option has two simple events and a 128-cycle trace.
 
-**Contents:** [In one paragraph](#in-one-paragraph) · [What the TTA does](#what-the-tta-does) · [Fitting it](#fitting-it) · [Running the diagnostic](#running-the-diagnostic) · [Reading the results](#reading-the-results) · [How it works inside](#how-it-works-inside) · [A walk through module 30](#a-walk-through-module-30) · [Tracing](#tracing) · [What is not emulated](#what-is-not-emulated) · [Regenerating the pictures](#regenerating-the-pictures)
+This tutorial follows the **learning guide of the TTA users manual** (Tektronix 070-3760-01, §1), with its own sample program, then goes further into counting and timing. Each step shows what you type and what the lab answers.
 
-## In one paragraph
+**Contents:** [How it fits together](#how-it-fits-together) · [1. Start the lab](#1-start-the-lab) · [2. The sample program](#2-the-sample-program) · [3. What the TTA recorded](#3-what-the-tta-recorded) · [4. Stop on an event](#4-stop-on-an-event) · [5. Watch without stopping](#5-watch-without-stopping) · [6. Hunt a bug](#6-hunt-a-bug) · [7. Record only what matters](#7-record-only-what-matters) · [8. Stop on the third pass](#8-stop-on-the-third-pass) · [9. Time a piece of code](#9-time-a-piece-of-code) · [Command reference](#command-reference) · [In the emulator](#in-the-emulator)
 
-Start the lab with `-tta` and the board is there. No program you can run on this 8550 uses it: DOS/50 V1.0 (1980) predates the TTA, and the TTA commands (`ad`, `data`, `eve`, `cou`, `bre`, `acq`, `disp`…) belong to later DOS/50 versions and to the 8540's OS/40, which have not surfaced. What does exist is the board's own diagnostic, **TTA.TST V1.3A** on `8550_DIAG.IMD`, and it passes in full. TTA.TST drives the board in its **test mode**: the 8301's own 2650 processor plays the "program under test", and the diagnostic checks every part of the board against it. That is the mode the emulator implements, so you can watch the TTA's events, triggers, counters, interrupt and acquisition memory work, and program them yourself from 2650 code.
+## How it fits together
 
-## What the TTA does
+You type TTA commands at the DOS/50 prompt, mixed with ordinary DOS/50 commands: `P` to patch memory, `GO` to run, and so on. A TTA set-up has four **trigger channels**, numbered 1 to 4. Each channel has three parts:
 
-From the users manual (070-3760-01, §1):
-
-```mermaid
-flowchart LR
-    BUS["Each bus transaction<br/>24 address · 16 data · 8 probe<br/>4 counter outputs · 1 qualifier<br/>11 bus-control signals"]
-    BUS --> E1["Event comparator 1"] & E2["Event comparator 2"] & E3["Event comparator 3"] & E4["Event comparator 4"]
-    E1 --> T1(("Trigger 1")); E2 --> T2(("Trigger 2")); E3 --> T3(("Trigger 3")); E4 --> T4(("Trigger 4"))
-    C["Am9513 counters 1–4<br/>(5 MHz, or counting events)"] --> T1 & T2 & T3 & T4
-    T1 & T2 & T3 & T4 --> OUT["break the program · interrupt the 8301<br/>clock or gate a counter · BNC output"]
-    BUS --> ACQ["Acquisition memory<br/>last 255 transactions<br/>(or selected ones)"]
-```
-
-- **Four trigger channels.** Each has an event comparator and a programmable counter, and its trigger is *event AND counter output*.
-- **An event** is a pattern over the transaction: an address, data value, probe value or bus-control combination, or several ANDed. Address and data can be exact, carry don't-care digits (`ad 3 0X5XX`), or be ranges, including "not in range" (`ad -n 2 500 505`).
-- **Triggers can arm each other:** trigger N arms trigger N+1, so the TTA can wait for "A, then B, then C".
-- **Counters** (an AMD Am9513 with five 16-bit counters) can time, count events, or count only while an event condition holds.
-- **Acquisition memory** keeps the last 255 transactions (address, data, probe, cycle type), or only selected ones.
-
-## Fitting it
-
-```
-cd emu
-build/tek8550 -tta -pm ext -0 ../sources/bitsavers/disks/8550_DIAG.IMD
-```
-
-| Option | Effect |
-|---|---|
-| `-tta` | Fits the TTA: ports 70–77 on the 8301, its RAM in the system-bus window E800–F9FF, the Am9513 |
-| `-tta probe` | Also clips the P6451 acquisition probe onto the test points the diagnostic's probe test expects (an inferred fixture: see [the probe test](#the-probe-interface-test-option-7)) |
-| `-pm ext` | The newer program-memory boards the 1983 diagnostics need (not the TTA itself) |
-| `-ep none` | Optional: removes the Z80 emulator board, whose undumped firmware makes a full verification report 07/00D0 |
-
-Without `-tta` nothing changes; the 8301 behaves exactly as before.
-
-## Running the diagnostic
-
-TTA.TST lives in the **Select** mode of Diagnostic System 3.0. Interactively, after the disc boots (about 30 s), answer the prompts as below. For batch runs, the same answers go in as `-type` timings (see the end of this section).
-
-**1. Choose Select mode (2), then program 6, TRIGGER TRACE ANALYZER TEST.**
-
-![The diagnostic's program list](screenshots/tta/01_programs.png)
-
-**2. TTA.TST's option menu.** Option 0 runs everything except the probe test; 1–7 run one group; `T` runs one module; `H` lists the modules.
-
-![TTA.TST option menu](screenshots/tta/02_options.png)
-
-**3. The module list** (`H`). Each test module has a two-digit number: the tens digit is its group.
-
-![TTA.TST module list](screenshots/tta/03_modules.png)
-
-| Module | Test | What it proves on the board |
+| Part | Set with | What it is |
 |---|---|---|
-| 00 | TTA Detection | Port 70 reads with bits 7–6 high: the board is fitted |
-| 10 | I/O Port | Ports 70–74 hold a walking bit (73 holds four bits) |
-| 20–23 | RAM inhibit, select, data, address lines | The TTA RAM appears in the window when selected, inhibits system RAM there, and every bit and address line works; page F5 is absent |
-| 30 | Event & Trigger | Each event fires on its own, and triggers need the counter outputs |
-| 31 | Consecutive Events | "Trigger N arms N+1", for every starting trigger |
-| 40–43 | Counter chip, register select, register bits, step | The Am9513 is there and its registers work |
-| 44 | Dynamic Counter | The counter clock is 5 MHz: the count over a timed 2650 loop must be exact to ±1 |
-| 45 | Count Source Selection | Each event drives the right counter input (SRC1–4, GATE2–5), and F2–F5 divide correctly |
-| 46 | Counter Gating | Counting only while an event condition holds, for each Am9513 gating mode |
-| 50 | TTA Interrupt | A trigger interrupts the 8301 only when enabled, and only once |
-| 60 | Acquisition | Transactions are stored and the pointer advances, for "selected" and "all" |
-| 70 | Probe Interface | The eight probe lines reach the event comparators (option 7 only, needs a set-up) |
+| **Event** | `ad`, `data`, `bus`, `pro`, `ctr`, `qua`, or `eve` for all of them at once | A condition on one bus cycle: address, data, cycle type, probe lines, counter outputs, external qualifier. Parts you leave undefined are "don't care", so an empty event matches every cycle |
+| **Counter** | `cou` | A 16-bit counter. Its output is ANDed with the event, so it can hold the trigger back until "the third time", or until some time has passed. Unprogrammed, its output stays high and the trigger simply follows the event |
+| **Action** | `bre` | What the trigger does: **stop** the program, or **cont**inue and print a trace line |
 
-**4. Run option 0.** The next two menus are the same for every option:
-- **Error loop control:** `3` = do not loop on error, just continue.
-- **Display:** `RETURN` = on the terminal. `2` also prints on a printer at the 8301's J103 AUX port: with `-aux8301 file:log.txt` the whole report lands in that file.
+**Trigger N = event N AND counter N's output.** On top of the channels:
+- `cons` links events into sequences on consecutive cycles;
+- `acq` chooses what goes into the acquisition memory, and `disp` lists it;
+- `ts` shows the whole set-up, and `tclr` clears it.
 
-TTA.TST then loops over modules 00–60 forever, updating the status line at the bottom (iteration and error counts are hex). Here it is in its 72nd pass (iteration 0047):
+## 1. Start the lab
 
-![Option 0, iteration 0047, no errors](screenshots/tta/04_option0_pass.png)
-
-**5. One module.** Option `T`, then the module number, runs that module over and over. Here is module 44, the clock-exact counter test, at iteration 00D7 (215 passes):
-
-![Module 44 alone](screenshots/tta/05_module44.png)
-
-**Batch.** The same session with no terminal, as the regression check runs it:
-
+Fit the TTA with `-tta`, from `emu/`, on a copy of the system disc:
 ```
-build/tek8550 -tta -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD \
-    -cycles $((200*2000000)) -type 31 '2\r' -type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'
+cp ../disks/System_Fixed.img /tmp/work.img
+build/tek8550-gui -tta -0 /tmp/work.img        # or build/tek8550 -tta -0 /tmp/work.img
+```
+When the `>` prompt appears (after about 30 s), select the Z80 emulator:
+```
+> SEL Z80
+```
+The TTA works with the emulator processor board, the Z80 by default. The commands below can be typed in upper or lower case.
+
+## 2. The sample program
+
+The manual's program adds the five numbers 1 to 5 from a table at 0500 and leaves the sum in the accumulator. It was written for the 8085, but its bytes are equally valid Z80 code, so we use it as printed. The only change is the ending: the manual exits through a service call, while we let the program loop at its end and put a DOS/50 breakpoint there.
+
+| Address | Bytes | Z80 | Explanation |
+|---|---|---|---|
+| 0100 | 21 00 05 | LD HL,0500 | Set table pointer |
+| 0103 | 06 05 | LD B,5 | Set pass counter |
+| 0105 | AF | XOR A | Clear accumulator |
+| 0106 | 86 | ADD A,(HL) | Add byte from table |
+| 0107 | 23 | INC HL | Point to next byte |
+| 0108 | 05 | DEC B | Decrement pass counter |
+| 0109 | C2 06 01 | JP NZ,0106 | Loop if not fifth pass |
+| 010C | 18 FE | JR 010C | Done: wait here |
+
+Patch it in, set the breakpoint and run it:
+```
+> P 100 21 00 05 06 05 AF 86 23 05 C2 06 01 18 FE
+> P 500 01 02 03 04 05
+> BK 10C
+> GO 100
 ```
 
-`-type T TEXT` types at emulated second T, and `-cycles` sets the run's length (2,000,000 per emulated second). Batch runs go at about 100× real time, so 200 emulated seconds (about 30 passes) take a few seconds. Use `-snap T FILE` to save the screen, or grep the output for `Error Code`.
+![The sample program runs: A = 0F](screenshots/tta/u1_program.png)
 
-## Reading the results
+The trace line shows **A = 0F** (15 = 1+2+3+4+5): the program works. `<BREAK BKPT1>` is DOS/50's own breakpoint at 010C.
 
-The status line reads `OPTION nn  MODULE RUNNING = mm  ITERATION # iiii  ERRORS = eeee`, with the iteration and error counts in hex. On a failure, TTA.TST prints a report:
-- `DIAGNOSTIC FAILURE` and an error code `11/00mm`, where 11 is the TTA and mm the module;
-- what it read against what it expected;
-- the suspect board.
+## 3. What the TTA recorded
 
-The same diagnostic **without `-tta`**: every module fails, starting with the detection test.
+The TTA was recording while the program ran. By default it keeps the last 255 bus cycles. List them:
+```
+> disp
+```
 
-![Without the board: TRIGGER TRACE ANALYZER BOARD NOT DETECTED](screenshots/tta/06_board_absent.png)
+![disp: every bus cycle of the run](screenshots/tta/u2_disp.png)
 
-Typical reports, and what they mean in board terms:
+Each line is one bus cycle:
+- **ADDR** and **DATA**: what was on the bus.
+- **MNEMONIC**: the opcode, decoded, on instruction fetches.
+- **7-PROBE-0**: the eight lines of the data acquisition probe (nothing is clipped on here).
+- **BUS**: the cycle type: `M RD F` is a memory read that fetches an opcode, `M RD` a plain memory read, `M WT` a write, `I RD`/`I WT` I/O.
 
-| Report | Meaning |
-|---|---|
-| `TRIGGERS ARE INCORRECT BECAUSE COUNTER OUTPUTS ARE STUCK` | The Am9513's status did not read FF with its outputs at high impedance, so the triggers (event AND counter output) cannot be judged |
-| `EVENTS/TRIGGERS 4321  ACTUAL xxxx  EXPECTED xxxx` | The trigger latches (port 73) after a test transaction, bit by bit |
-| `CTR REGISTER CONTENTS / EXPECTED`, with `COUNT SOURCE` or `GATE SIGNAL` | A counter's hold register after a timed or event-driven count |
-| `TTA INTERRUPT DID NOT OCCUR` / `OCCURRED WHEN NOT EXPECTED`, with trap and enable bits | Module 50, with the trigger latches and interrupt enables at the time |
-| `ACQ PTR IS xx; SHOULD BE yy`, with `ADDRESS / ACTUAL / EXPECTED DATA` | Module 60: the acquisition pointer or a stored sample is wrong |
+You can follow the program cycle by cycle: each pass fetches `ADD A,(HL)` at 0106, then reads the table byte at 0500, 0501, …
 
-### The probe interface test (option 7)
+The run is 43 cycles (6 to set up, 7 per pass, 2 for the final JR), so its start has scrolled off the screen; `disp 20` shows only the last 20. `disp all` shows everything still in memory, with a dotted line between runs.
 
-Option 7 asks for a set-up: "Follow set up procedure described in the Probe Interface Test section of the TTA service manual". That section is not in the service manual we have (070-3761-00). With nothing clipped onto the probe, the test fails, as the real board would:
+## 4. Stop on an event
 
-![Option 7 without the fixture: PROBE LINES CANNOT BE SET TO 55H](screenshots/tta/07_probe.png)
+Define **event 1** as any access to address 0106, and tell trigger channel 1 to **stop** the program:
+```
+> ad 1 106
+> bre 1
+> GO 100
+```
 
-What the test does is readable from its code:
-- It writes **AA**, then **55**, to the Emulator Controller's port F4. That port drives the extended address lines A23–A16 and is written active low.
-- After each write it expects the events that page 73 of the comparator RAM assigns to probe values 55 and AA respectively.
-- So the fixture evidently clips the probe leads onto the extended address lines.
+![Breaking on event 1](screenshots/tta/u3_break.png)
 
-`-tta probe` models exactly that, and the test then passes:
+The program stops after the instruction at 0106, the first `ADD`, so A = 01. The TTA names the channel that stopped it (**TTA break: TRIG1**), then DOS/50 prints the processor's state.
 
-![Option 7 with -tta probe: iteration 0287 (647 passes), no errors](screenshots/tta/08_probe_fixture.png)
+## 5. Watch without stopping
 
-The polarity is the one inference: the probe could equally see F4 uninverted, with the event bits reversed. Both explain the test. If the set-up procedure turns up, it will settle this.
+`bre 1 cont` makes channel 1 print a trace line each time it triggers, and lets the program run on:
+```
+> bre 1 cont
+> GO 100
+```
 
-## How it works inside
+![Continue mode: five trace lines, one per pass](screenshots/tta/u4_cont.png)
 
-This is the board as the emulator models it, everything as TTA.TST established it. Addresses are as the 2650 sees them, through the diagnostic's bank window (port EE = 07: CPU 4000–7FFF = system bus C000–FFFF).
+Five lines, one per `ADD`, show the accumulator growing: 01, 03, 06, 0A, 0F. The program still ends at the DOS/50 breakpoint. This is how you monitor a running program without single-stepping it.
 
-### Ports
+Clear channel 1 before going on:
+```
+> ad 1 clr
+> bre 1 clr
+```
 
-| Port | R/W | Function |
+## 6. Hunt a bug
+
+Now break the program: change the fourth number in the table from 04 to 00.
+```
+> P 503 00
+```
+Run it and the sum comes out as 0B instead of 0F. Pretend the program is a subroutine buried in something big, and that reading the listing doesn't explain the wrong answer. Rather than trace every instruction, ask the TTA to report each `ADD A,(HL)`. Its opcode is 86, so define event 1 as **data 86** and use continue mode:
+```
+> data 1 86
+> bre 1 cont
+> GO 100
+```
+
+![Each ADD reported: the accumulator does not change after the fourth](screenshots/tta/u5_bug.png)
+
+The `ADD` ran five times, as it should, but A did not change after the fourth (06 → 06). So the fourth table entry is suspect.
+
+## 7. Record only what matters
+
+Recording everything makes a long listing. Better to record **only the bytes the ADD reads**. These are the memory reads that come straight after an `ADD` opcode fetch:
+```
+> data 1 clr
+> bre 1 clr
+> data 3 86            event 3: the ADD opcode (data 86)
+> bus 4 m rd           event 4: any memory read
+> cons cyc 34          event 4 counts only on the cycle right after event 3
+> acq ev4              store only event 4's cycles
+> GO 100
+> disp
+```
+
+![Only the ADD operands are recorded: 00 at 0503](screenshots/tta/u6_operands.png)
+
+`cons cyc 34` links the events. Event 4 only fires when event 3 happened on the **immediately preceding** cycle. So among all memory reads, only the operand of an `ADD` qualifies. `acq ev4` stores just those, each with the `ADD` fetch that qualified it. The listing is ten lines, and it points straight at **0503 = 00**. You could now fix it with `P 503 04`.
+
+## 8. Stop on the third pass
+
+The counters make conditions like "the third time" possible. Here channel 2 stops the program on the third execution of the `ADD`:
+```
+> tclr -x                  clear the whole TTA set-up
+> P 503 04                 (repair the table)
+> ad 1 106                 event 1: the ADD at 0106
+> cou 2 v=3 s=ev1 o=delay  counter 2: count event 1 down from 3; its output goes high when done
+> bre 2                    trigger 2 stops the program
+> GO 100
+```
+
+![Stopped by trigger 2 on the third pass: A = 06](screenshots/tta/u7_pass.png)
+
+Event 2 is undefined, so it matches every cycle. Trigger 2 is therefore just counter 2's output. With `o=delay` that output stays low while counting and goes high when the count completes, on the third event 1. The program stops with A = 06 (1+2+3).
+
+The output modes (`o=`) decide how a counter gates its trigger:
+
+| `o=` | Counts | Output while counting | At the end | After |
+|---|---|---|---|---|
+| `arm` | up | 1 | 1 | 1 |
+| `disarm` | up | 0 | 0 | 0 |
+| `pulse` | down | 0 | 1 | 0 |
+| `delay` | down | 0 | 0 | 1 |
+| `timeout` | down | 1 | 1 | 0 |
+
+So `delay` means "only after N", and `timeout` means "only during the first N". `pulse` fires once, exactly at the Nth.
+
+## 9. Time a piece of code
+
+The counters can also count time, with five timebases: `200nsec`, `2usec`, `20usec`, `200usec`, `2msec`. The manual's recipe measures the time from one address to another, here from the program's start at 0100 to its end at 010C:
+```
+> tclr -x
+> eve 1 a=100 b=f              event 1: the fetch at 0100 (start)
+> cou 1 s=ev1 o=delay v=1      counter 1's output goes high from the start onwards
+> eve 2 a=10C b=f              event 2: the fetch at 010C (end)
+> cou 2 s=ev2 o=delay v=1      counter 2's output goes high from the end onwards
+> eve 3 c=10xx                 event 3: counter 1 high and counter 2 low, i.e. between start and end
+> cou 3 g=self o=arm v=0 s=200nsec   counter 3 counts 200 ns ticks while trigger 3 holds
+> GO 100
+> ts 3
+```
+
+![Counter 3: 197 ticks of 200 ns between 0100 and 010C](screenshots/tta/u8_timing.png)
+
+Counter 3 holds **197**: 197 × 200 ns = 39.4 µs. To check by hand, the Z80 at 4 MHz needs 10 + 7 + 4 T-states to set up, then 5 × 27 for the loop: 156 T-states = 39.0 µs. The timer is right to within its 200 ns tick. Change `s=` to `2usec` for longer code; `ts` shows any counter's value at any time.
+
+`ts` on its own shows the complete set-up of all four channels, as in the manual's Display 2-1.
+
+## Command reference
+
+Commands are typed at the `>` prompt.
+- **Numbers:** addresses and data are hex, counts decimal, probe values binary. A suffix changes the radix: `H` hex, `T` decimal, `Y` binary. `X` is a don't-care digit (`ad 3 0X5XX`).
+- **Flags:** `-s` (stop) and `-c` (continue) set the channel's break on any event command; `-n` inverts an address or data match.
+
+| Command | Does | Examples |
 |---|---|---|
-| **70** | R/W | Control. **Bit 0:** comparators on (writing 0 clears the event latches). **Bit 1:** RAM select. **Bit 2:** counter clock on, and the comparator RAMs addressed by the 2650 (test mode); writing 0 clears the arming chain. Reads back with bits 7–6 high (board present). `07` = test mode, `03` = comparators on the probe, `02` = RAM access only |
-| **71** | R/W | **Bits 7–4:** trigger 4–1 must be armed by the previous trigger (1 is armed by 4). **Bit 1:** acquire every access (otherwise only those on which event 4 fires) |
-| **72** | R/W | Interrupt enables, one per trigger (bits 3–0). A write clears a pending TTA interrupt request |
-| **73** | R/W | Trigger latches (bits 3–0), set by triggers. The 2650 writes it too (write 0 to clear) |
-| **74** | R/W | 8-bit register, role unknown (the diagnostic only checks it holds data) |
-| **75** | R | Acquisition pointer: where the next sample goes |
-| **76 / 77** | R/W | Am9513: data / command and status |
+| `ad` | event address: one, a range, with don't-cares, or outside a range (`-n`) | `ad 1 500` · `ad 2 500 505` · `ad -n 2 500 505` · `ad 3 0X5XX` · `ad 1 clr` · `ad all clr` |
+| `data` | event data: value, range, don't-cares, `-n` | `data 1 86` · `data 2 01 0FF` · `data 3 0XF` |
+| `bus` | event cycle type, ANDed: `f` fetch, `nf` non-fetch, `m` memory, `i` I/O, `rd` read, `wt` write | `bus 1 f` · `bus 3 m wt` · `bus 4 m rd` |
+| `pro` | event probe lines (8 bits) | `pro 1 05H` · `pro 2 0X111XX11` |
+| `ctr` | event counter outputs, counters 1-4 left to right | `ctr 1 1100` · `ctr 2 0X1X` |
+| `qua` | event qualifier input (the EVENT QUALIFIER BNC) | `qua 2 1` |
+| `eve` | all of an event on one line: `a=` `an=` `d=` `dn=` `b=` `p=` `c=` `q=`, `clr` first to start over | `eve 1 clr a=0FFFF d=0FF b=m wt` · `eve 3 an=3000 4000 b=f -s` |
+| `cou` | counter: `v=` value, `s=` source, `o=` output mode, `g=` gate (counters 2-4), `r=on/off` restart | `cou 2 v=4 s=ev1 o=delay` · `cou 3 v=22 s=cyc o=delay` · `cou 4 o=arm` |
+| `bre` | the trigger's action: `stop` (or nothing), `cont`, `clr` | `bre 1` · `bre 2 cont` · `bre 1 clr 2 stop` · `bre all clr` |
+| `cons` | link events on consecutive cycles: `cyc` (any cycle), `fet` (fetches), `emu`; sequences 12 23 34 41 123 … 4123 | `cons cyc 12` · `cons cyc 12 34` · `cons clr` |
+| `acq` | what to record: `all` or `ev4`, optionally `for n source` and `aftertrig4` | `acq ev4` · `acq all for 10 cyc` · `acq all for 128 acq aftertrig4` |
+| `disp` | list the recording: since the last run, the last n, or `all` | `disp` · `disp 12` · `disp all` |
+| `ts` | the set-up and counter values; `-e` events only, `-c` counters only; channels | `ts` · `ts 4` · `ts -c 3` |
+| `tclr` | clear channels, or everything (`-x`: also `cons` and `acq`) | `tclr 1` · `tclr 2 3` · `tclr -x` |
 
-### Memory
+**Counter sources (`s=`):**
+- the timebases `200nsec`, `2usec`, `20usec`, `200usec`, `2msec`;
+- `ev1`…`ev4`: each cycle on which the event is true;
+- `trig1`…`trig4`: each time the trigger fires;
+- `acq`: each stored sample;
+- `cyc`: each bus cycle;
+- `emuclk`: the processor clock divided by two;
+- `qua`: the qualifier input.
 
-With port 70 bit 1 set and EE = 07, the TTA RAM answers at system bus E800–F9FF (CPU 6800–79FF) and system RAM there is switched off. It is organised as 256-byte pages:
+**Gates (`g=`, counter N):**
+- `off`;
+- `ctr`: while counter N−1 is at its end;
+- `trigh` / `trigl`: while trigger N−1 is high or low;
+- `seqh` / `seql`: start when trigger N−1 goes high or low;
+- `self`: while trigger N itself is high.
 
-| CPU page | Contents |
-|---|---|
-| 68–6F | **Acquisition memory:** 256 samples × 8 bytes, one page per byte. In test mode each byte of a sample is the 2650's A7–0; on the probe, page 6A is the probe byte |
-| 70–74, 76–79 | **Comparator lookup RAMs**, one per input group, addressed by that group's value (or by the 2650's A7–0 in test mode). Each holds, per row, the events that value takes part in |
-| 75 | Absent: no RAM, and system RAM is still inhibited (module 20 checks this) |
+**More recipes from the manual (§3):**
+- stack overflow: `eve 1 a=01FF b=wt`, `eve -s 2 a=0200 b=wt`, `cons cyc 12`;
+- a watchdog that breaks when a periodic event stops coming: `cou -s 2 v=45 s=2usec o=delay g=seqh r=on`;
+- the trigger centred in the recording: `acq all for 128 acq aftertrig4`.
 
-### Events and triggers
+## In the emulator
 
-At each 2650 access to a comparator page, with port 70 bits 1–0 set, the board looks up one row in every comparator RAM and latches four events. The row is the 2650's A7–0 in test mode; page 73 uses the probe lines instead when port 70 bit 2 is clear.
+- **Where the commands come from.** In 1983 these commands were part of the later DOS/50 and of OS/40 on the 8540. Neither survives, and the DOS/50 V1.0 we have predates the TTA. So the emulator runs them itself. A line typed at the DOS/50 prompt whose first word is a TTA command is taken by the emulator, and its output is printed on the terminal; DOS/50 then gets an empty line and shows its prompt again. Every other line reaches DOS/50 untouched. Syntax and displays follow the users manual.
+- **How the board is modelled.** Everything the board's own diagnostic exercises is emulated at register level and passes: counters, event latches, triggers, interrupt, acquisition. How the board is programmed to watch a target program, and what the TTA software wrote into it, is not known. That part, events and counters as the manual describes them, is modelled functionally. [ARCHITECTURE.md §8](ARCHITECTURE.md#8-inside-the-trigger-trace-analyzer) explains the split.
+- **Breaks.** DOS/50 V1.0 can only name RTPA triggers in its `<BREAK …>` line. So a TTA stop shows `<BREAK   >`, preceded by the TTA's own line, **TTA break: TRIGn**.
+- **Bus symbols.** The manual lists the 8085's (`f nf m i rd wt`) and none for the Z80. The emulator uses the same set for the Z80 board, which has the same cycle types.
+- **The probe and the qualifier.** Nothing is clipped onto them, so the probe lines read 0 and the qualifier is low. TRIG OUT and ACQ CLK OUT are not modelled.
+- **The board's own diagnostic**, TTA.TST, runs in Select mode → 6. See [OPERATION.md §10](OPERATION.md#the-trigger-trace-analyzers-diagnostic).
 
-- **Event k** fires when **page 73's bit 3+k is set** (high nibble, one bit per event) **and page 74's bit pair for event k is 00**. Page 74 holds two bits per event (bits 1–0 for event 1, … 7–6 for event 4). That fits the relation codes a range comparator needs, though in the tests only 00 = "match" appears.
-- Event outputs are **levels**, held until the next comparator access. They hold while port 70 bit 0 stays set, even with the clock stopped.
-- **Trigger k** = event k AND counter k's output. With port 71 bit 3+k set, trigger k also needs trigger k−1 to have fired on an earlier access. Triggers set the latches in port 73.
-
-### Counters
-
-- The Am9513 runs from **X1 = 5 MHz** while port 70 bit 2 is set. It comes from the 8301's 20 MHz oscillator, which also gives the 2650 its 2 MHz, so there are exactly 2.5 counter clocks per 2650 clock.
-- **Event k drives SRC k and GATE k+1.** So a counter can count event k (count source SRC k), or count F1 only while event k−1 holds (gating "GATE N", active high or low), and so on. SRC5 and GATE1 are not driven by events.
-- **Counter outputs OUT1–4 feed the triggers.** An output set to high impedance (output control 100) reads high: that is how a channel's trigger is made to follow its event alone. The status register's bits 7–6 read 1.
-
-### Interrupt
-
-- A **new** trigger whose port 72 bit is set raises 2650 interrupt **29** (vector 3A), the one the RTPA also uses. Triggers already latched when the enables are written do not, nor do bits the 2650 writes into port 73.
-- The request shows in Emulator Controller port F2 bit 2 (read active low) until port 72 is written again.
-
-### Acquisition
-
-- At each comparator access, if port 71 bit 1 is set, or else if event 4 fires, a sample is stored at the pointer, and the pointer (port 75) advances by one, wrapping at 256.
-
-### A recipe: one event, counted
-
-These steps are put together from what TTA.TST does in modules 30 and 45. They have not been run as a separate program:
-1. **Select the RAM:** EE ← 07, port 70 ← 02.
-2. **Clear pages 70–79**, then set up the row you will use, say 10:
-   - page 73 row 10 = F0 (all events may fire);
-   - page 74 row 10 = 54 (event 1's pair 00, the others 01).
-3. **Program the counters.**
-   - Am9513 reset: 77 ← FF, then 77 ← 5F (load all).
-   - Counter 1 mode = 0108 (count source SRC1, count up): 77 ← 01 (data pointer: counter 1's mode), 76 ← 08 (low byte first), 76 ← 01.
-   - Arm counter 1: 77 ← 21.
-4. **Start:** port 70 ← 07 (comparators on, test mode, clock running).
-5. **Fire event 1:** each write to page 7x row 10, for example 2650 address 7810, is one event 1. Its rising edge on SRC1 is one count. Port 73 bit 0 (trigger 1) is not set, though: in this mode counter 1's output is low. For triggers that follow the event, give counter 1 a high-impedance output (mode low byte 0C, as module 30 does).
-6. **Read the count:** 77 ← 9F (disarm and save all), 77 ← 19 (counter 1's hold register), then read 76 twice, low byte first.
-
-## A walk through module 30
-
-`TEK_TTATRACE=1` logs every port access, event change and acquisition, with the time in emulated seconds, exact to the 2650 clock. Here is one pass of module 30, the event & trigger test, annotated:
-
-```
-[66.0878720 TTA wr 77 01]       counter 1 mode register...
-[66.0878765 TTA wr 76 0c]       ...= 0B0C: count F1 up, output high impedance
-[66.0878810 TTA wr 76 0b]
-[66.0879110 TTA rd 77 ff]       status FF: all counter outputs high, so triggers = events
-[66.0879380 TTA wr 70 02]       RAM select: initialise the comparator pages (31D3)
-[66.1202150 TTA wr 70 07]       test mode
-[66.1202285 TTA wr 73 00]       clear the trigger latches
-[66.1202375 TTA events 1]       the 2650 writes page 78 row 10: event 1 fires
-[66.1202420 TTA rd 73 01]       trigger 1 latched: expected 0001
-[66.1202705 TTA wr 73 00]
-[66.1202795 TTA events 2]       row 20: event 2
-[66.1202840 TTA rd 73 02]
-[66.1203125 TTA wr 73 00]
-[66.1203215 TTA events 4]       row 30: event 3
-[66.1203260 TTA rd 73 04]
-[66.1203545 TTA wr 73 00]
-[66.1203635 TTA events 8]       row 40: event 4...
-[66.1203635 TTA acquire 40 at 00]  ...which also takes an acquisition sample
-[66.1203680 TTA rd 73 08]
-[66.1204085 TTA wr 70 00]       comparators off: event latches cleared
-[66.1204385 TTA wr 77 ff]       counter reset: outputs now low
-[66.1204835 TTA rd 77 c1]       status C1: outputs low
-[66.1204985 TTA wr 70 07]
-[66.1205075 TTA events f]       row 0: all four events fire...
-[66.1205150 TTA rd 73 00]       ...but no triggers: the counter outputs are low
-```
-
-## Tracing
-
-| Variable | What it logs |
-|---|---|
-| `TEK_TTATRACE=1` | TTA ports, event changes and acquisitions (stderr) |
-| `TEK_INTTRACE=1` | interrupts the 2650 takes (`INT 29` is the TTA's or the RTPA's) |
-
-To study a module, run it alone (`-type 51 'T\r' -type 56 '46\r'`) with the trace on, and dump TTA.TST from memory to read its code:
-
-```
-build/tek8550 -tta -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD \
-    -cycles $((45*2000000)) -type 31 '2\r' -type 41 '6\r' -dump /tmp/tt </dev/null
-build/dasm s2650 /tmp/tt.8301 0 2000 2000 | less
-```
-
-The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
-
-## What is not emulated
-
-- **Run mode:** watching a real target program. In real use the comparator RAMs are addressed by the target's bus (address bytes, data bytes, probe, control signals), one group per page. Which group feeds which page, and how page 74's 2-bit codes combine into ranges, cannot be learned from the diagnostic: it only uses test mode. Software that programs the TTA (a later DOS/50 or OS/40 with its `ad`/`data`/`eve` commands) would settle it. Until then the TTA watches only the 2650's own accesses to it.
-- **Counter inputs not driven by events:** SRC5, GATE1 and F1-as-source (TTA.TST skips them), the event-qualifier BNC input and the trigger BNC outputs.
-- **The probe fixture's polarity** (above).
-
-## Regenerating the pictures
-
-```
-tools/make_tta_shots.sh [WORKDIR]
-```
-
-It renders `docs/screenshots/tta/*.png` from batch runs. They are deterministic, so the pictures come out the same every time.
+The pictures are made by `tools/make_tta_shots.sh` from a scripted session (`-type` lines can include TTA commands), so they come out the same on every run.
