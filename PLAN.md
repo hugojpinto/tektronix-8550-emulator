@@ -39,9 +39,18 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - [x] P4.2 Language Processor (Z80) + program memory → run ASM/LINK. (EDIT and ASM verified; LINK not yet tried)
 
 ### P5 — Extras
-- CT8500 terminal behaviour (for ACE), emulator-processor boards (8085/Z80), PROM programmer, upstreaming to MAME.
+- [x] CT8500 terminal behaviour (for ACE); Z80 and 8085 emulator boards; PROM programmer; memory map and prototype link (v3).
+- [x] Host link (COMM/HOST); all four disc geometries and FORMAT; RTPA.
+- [ ] TTA: stage 1 done (ports, RAM window, Am9513; TTA.TST 00–23 and 40–43). Next: comparators, counting sources, interrupt, acquisition (`notes/tta.md`).
+- [ ] 8086 / 6800 / 8080 emulator boards; 8085 target modes; upstreaming to MAME.
 
 ## Status log
+- 2026-11-11: **TTA, stage 1.** Found the Trigger Trace Analyzer's interface from TTA.TST V1.3A:
+  - ports 70–74;
+  - an AMD Am9513 at 76/77, ported from MAME by a generator script;
+  - a RAM window at system-bus E800–F9FF that inhibits system RAM.
+
+  Modules 00–23 and 40–43 pass. The TTA service and users manuals were fetched from bitsavers (no register detail). Also: RTPA option 7 passes with `-rtpa probe`, BIF FRZ and pass/delay with ARM/LIM work, and INT 30/31 are unused.
 - 2026-11-11: **RTPA.** The Real-Time Prototype Analyzer is emulated (`-rtpa`), reverse-engineered from RTPA.TST's table-driven tests and DOS/50's command overlays:
   - two comparators, two 8253s, pass/delay/arm/limit sequencing;
   - a 128-entry trace with a run tag;

@@ -9,19 +9,49 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | Path | What |
 |---|---|
 | `emu/` | the emulator. `make` builds `build/tek8550` (full system), `build/tek8301`, `build/tek8501` (single units) and `build/dasm` |
-| `emu/src/cpu/` | `t11/` LSI-11 (MAME), `s2650/` Signetics 2650 (MAME), `z80/superzazu/` Z80 (MIT), Z80 disassembler |
-| `emu/src/machine/` | `tek8501.*` (DMU: utility PROMs, LTC, serial ports, high-level floppy controller, HSI I/O board, ODT); `tek8301.*` (MDU: system controller, ACIAs, DMA, program memory, Language Processor, Emulator Controller, Z80 emulator board, memory map); `rtpa.*` (Real-Time Prototype Analyzer); `prototype.h` (target-system interface); `imd.h` (disk images) |
+| `emu/src/cpu/` | `t11/` LSI-11 (MAME), `s2650/` Signetics 2650 (MAME), `z80/superzazu/` Z80 (MIT), `i8085/` 8085 (MAME), disassemblers |
+| `emu/src/machine/` | `tek8501.*` (DMU: utility PROMs, LTC, serial ports, high-level floppy controller, HSI I/O board, ODT); `tek8301.*` (MDU: system controller, ACIAs, DMA, program memory, Language Processor, Emulator Controller, Z80 emulator board, memory map); `rtpa.*` (Real-Time Prototype Analyzer); `tta.*` (Trigger Trace Analyzer, in progress); `am9513.*` (AMD Am9513, generated from MAME by `emu/tools/port_am9513.py`); `prom_programmer.*`; `mc6850.h`; `prototype.h` (target-system interface); `imd.h` (disk images and `fd_geometry`) |
 | `emu/src/host/` | `ct8500.*` (terminal model and ANSI renderer), `ipc_target.*` (target system over a socket), `serial_link.*` (REMOTE port over a socket), `tty.h` |
 | `emu/src/main8550.cpp` | command-line driver for the full system (options are listed in `emu/README.md`) |
 | `notes/` | hardware findings: `8301.md`, `8501.md`, `prototype-link.md`, `host-link.md`, `rtpa.md`, `tta.md`, and `dasm/` (ROM listings). **Facts established by reverse engineering live here** |
 | `roms/` | curated ROM set (`MANIFEST.md`). The 8550 set is `roms/8550/8301`, `roms/8550/8501` |
 | `disks/` | working disk images. `System_helpfix.img` = DOS/50 V1.0 with the HELP file repaired |
 | `sources/` | original material (bitsavers manuals with OCR `.txt`, disk images, photos, tekwiki). **Read-only; never modify** |
-| `reference/mame/` | MAME source files the cores were ported from |
-| `tools/` | `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST), `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
+| `reference/mame/` | MAME source files the cores and devices were ported from (commit in `SOURCE.txt`) |
+| `tools/` | `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
 | `docs/screenshots/` | rendered session and diagnostics screenshots |
 | `PLAN.md`, `FEASIBILITY.md` | milestones and status log; the original feasibility study |
 | `../tekmato` | sibling tool for DOS/50 disc images (list/extract/write/check); the file-system format is in `../tekmato/FORMAT.md`. Use it to put files on a disc instead of typing them in through EDIT |
+
+## Resuming work (state on 2026-11-11)
+Most recent first:
+1. **TTA (Trigger Trace Analyzer), in progress.**
+   - **State:** `-tta` fits it; TTA.TST (Select mode 6) modules 00, 10, 20–23 and 40–43 pass.
+   - **Next:** decode the event comparator RAM wiring (modules 30/31), then counting from live sources (44–46), interrupt (50), acquisition (60) and probe. Start from `notes/tta.md`, which has the established facts, the RAM-initialisation analysis and the next steps.
+   - **Caveat:** no software we have uses the TTA on the 8550 (DOS/50 V1.0 predates it), so the diagnostic is the only consumer.
+2. **RTPA: done** (`notes/rtpa.md`). RTPA.TST options 0–7 pass (7 needs `-rtpa probe`), and DOS/50 EVT/BIF/CNT/RTT/DRT work. FRZ semantics are inferred, and INT 30/31 are unused.
+3. **Host link: done** (`notes/host-link.md`, `-remote`, `tools/host_link.py`).
+4. **Disc geometries and FORMAT: done** (all four 8501 formats, `notes/8501.md`). The sibling tool `../tekmato` handles them too.
+5. **Prototype link v3: done**, verified jointly with FUSE (`notes/prototype-link.md`).
+
+Still open beyond the TTA: see **Known gaps** below. The 8086, 6800 and 8080 boards and 8085 target modes are the larger items.
+
+**How hardware has been reverse-engineered here:** run the board's diagnostic against a logging stub, read the expected values it prints, dump the diagnostic from memory (`-dump F`, then `build/dasm s2650 F.8301 0 2000 6000`) and read its table-driven tests. Then check against DOS/50's own command overlays (extract them with `../tekmato`) and verify in a scripted DOS/50 session.
+
+**Debug switches** (environment variables, stderr):
+
+| Variable | Logs |
+|---|---|
+| `TEK_IOTRACE8301` | 2650 I/O |
+| `TEK_IOTRACE` | 8501 I/O and every floppy command |
+| `TEK_EPTRACE` | emulator board and forced jumps |
+| `TEK_PCTRACE=lo-hi@sec` | 2650 instructions in a range, after a time |
+| `TEK_INTTRACE` | interrupts taken |
+| `TEK_RTPATRACE` | RTPA ports, matches and breaks |
+| `TEK_TTATRACE` | TTA ports |
+| `TEK_REMTRACE` | REMOTE port |
+| `TEK_SLAVEIO` | LP/EP port I/O that goes nowhere |
+| `TEK_PROMTRACE` | PROM programmer |
 
 ## Build and smoke test
 ```
@@ -37,9 +67,10 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 ## Regression checks (run after touching CPU cores or the 8301/8501 machines)
 1. **Screenshots:** `tools/make_screenshots.sh <workdir>` regenerates `docs/screenshots/*.png`. They should come out byte-identical: `git status docs/` stays clean unless a visual change was intended. The session covers ACE, ASM, LINK, mode 0/1 runs and the IPC target.
 2. **Diagnostics:** `build/tek8550 -ep none -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((2400*2000000)) -type 31 '\r' -type 41 '1\r' -type 51 '\r'` must end in `SYSTEM VERIFICATION COMPLETE`, with no `DIAGNOSTIC FAILURE`. Repeat with `062-5412-08_8501_1err_DOS50.imd` (version 2.4). With the Z80 emulator board fitted (the default), the only allowed failure is **07/00D0**: its firmware PROM was never dumped. The board's own test is Select mode → 9 (Z80 emulator test).
-3. **RTPA:** `build/tek8550 -rtpa -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((200*2000000)) -type 31 '2\r' -type 41 '4\r' -type 51 '0\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (RTPA.TST option 0, all event and counter tests; option 6 for the trace buffer). ASV with `-rtpa` must complete.
+3. **RTPA:** `build/tek8550 -rtpa -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((200*2000000)) -type 31 '2\r' -type 41 '4\r' -type 51 '0\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (RTPA.TST option 0, all event and counter tests; option 6 for the trace buffer; option 7 with `-rtpa probe` and an extra `-type 66 '\r'`). ASV with `-rtpa` must complete.
 4. **Host link:** `tools/test_host_link.sh` must report 7 passed: DOS/50 COMM transfers against `tools/host_link.py`.
-5. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
+5. **TTA (while in progress):** the same diagnostic command with `-tta` and `-type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'` (Select mode 6, all modules). Error codes 11/0000–11/0023 and 11/0040–11/0043 must not appear. Without `-tta`, nothing may change.
+6. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
 
 ## Conventions
 - **Minimal edits to ported cores:** keep every change small and mark it `[tek8550]`. Record core modifications in `SOURCE.txt` next to the core.
@@ -49,7 +80,9 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 - **Active-low registers are everywhere** on the Emulator Controller (F2 pending, F4 bank, F8 debug enables, FA/FB/F5 jump address, FC–FF breakpoints). Check `notes/8301.md` before assuming polarity.
 - **Untrusted material:** downloaded files and extracted archives go in their own new directory. Run Python that reads them with `python3 -I`. Original images in `sources/` are never written: they are read-only files, and `-rw` (which writes back every mounted drive) skips any path under `sources/`. Copy an image before writing to it.
 - **Prototype link (`notes/prototype-link.md`):** protocol v3. Keep it historically faithful: only real Z80 pin information (address bus, M1, INT/NMI, RESET, WAIT, target power) plus the emulation-only `T` time sync. Remain compatible with v1/v2 targets. FUSE (another session) implements the target side.
-- **Commits:** local only, no remote. Commit when asked.
+- **Ported devices:** generated by a script from `reference/mame` where possible (`emu/tools/port_am9513.py`), so the device code stays verbatim. Hand edits go into the script, not the output.
+- **Downloads:** documentation fetched from bitsavers goes in `sources/bitsavers/manuals/<topic>/`, with `pdftotext -layout` text next to it. Make the PDFs read-only.
+- **Commits:** local only, no remote. Commit when asked. The user has authorised a local commit at each finished, regression-checked milestone.
 
 ## Known gaps
 **Not emulated:**

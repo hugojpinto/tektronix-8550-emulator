@@ -45,6 +45,10 @@ The 8301 is a card cage. Its most surprising feature is that the OS and the tool
 | **Language Processor** (LP) | **Z80A** at 4 MHz (2.5 MHz in slow mode) | Runs the big tools: `ASM`, `LINK`, `EDIT`, `ACE`… They are Z80 programs loaded into program memory |
 | **Emulator Controller** | ports F0–FF | Breakpoints, single-cycle, forced jumps, SVC decoding, "slave halted" detection, and the memory map with write protection |
 | **Z80 emulator processor** (8300E04) | Z80A + on-board firmware | Runs *your* program: the target CPU, which can be moved into the prototype |
+| **8085 emulator processor** (8300E06), option | 8085 + on-board firmware | The same role for 8085/8080 programs (`-ep 8085`) |
+| **PROM programmer** (8550F30), option | an 8085 controller | Reads and programs 2708/2716/2732 PROMs (`-prom`) |
+| **RTPA**, option | two comparators, two 8253s, trace RAM | Real-Time Prototype Analyzer: events, breaks, counters, a 128-transaction trace (`-rtpa`, ports C0–C7) |
+| **TTA**, option (later) | RAM-lookup comparators, Am9513, acquisition RAM | Trigger Trace Analyzer: four trigger channels, 255-transaction acquisition (`-tta`, partial) |
 
 ### Master and slave
 Only one processor owns the bus at a time:
@@ -118,6 +122,9 @@ The link is a 153.6 kbaud serial connection carrying packets:
 | 8501 boards | `emu/src/machine/tek8501.*` | register level, except the floppy controller, which is **high-level**: command blocks are executed directly against the disk image |
 | Z80 emulator board firmware | `tek8301::ep_firmware` | **high-level**: no dump survives. Its behaviour was reverse-engineered from DOS/50 (`notes/8301.md`) |
 | Probe and prototype | `emu/src/host/ipc_target.*` | an external process over a socket (`notes/prototype-link.md`) |
+| REMOTE port / host computer | `emu/src/host/serial_link.*` | a byte stream over a socket; DOS/50 COMM and HOST (`notes/host-link.md`) |
+| RTPA | `emu/src/machine/rtpa.*` | register level, reverse-engineered from RTPA.TST and DOS/50; passes its diagnostic (`notes/rtpa.md`) |
+| TTA | `emu/src/machine/tta.*`, `am9513.*` (MAME) | partial (`notes/tta.md`) |
 | CT8500 | `emu/src/host/ct8500.*` | the command set from the operator manual, rendered in your terminal with ANSI codes |
 | HSI cable | `main8550.cpp` | both units run in 100 µs lockstep; bytes are passed at the link's timing |
 
