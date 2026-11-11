@@ -213,6 +213,9 @@ void rtpa::instr_end(u16 next_pc, int tstates, double hz)
 	m_pc_last = m_cur_pc; m_pc_next = next_pc;
 	m_status |= 0x08;
 	m_stopped = true;
+	m_trig = false;                           // one break per trigger: once the Emulator Controller releases the
+	                                          // hold (F9), the status keeps it, but nothing breaks again until a
+	                                          // C2 write re-arms (ASV: RTPA.TST's last trigger broke the Z80 test, 07/0000)
 	m_tr_rd = 0; m_tr_byte = 0;               // the trace reads out oldest first
 	m_irq = true;
 	if (trace) fprintf(stderr, "[%.4f RTPA break: status %02x PC-LAST %04x PC-NEXT %04x, %d traced (C1 %02x)]\n", clock ? *clock : 0.0, m_status, m_pc_last, m_pc_next, m_tr_count, m_c1);

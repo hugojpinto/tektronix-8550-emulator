@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **RTPA: one break per trigger.** The trigger stayed set after the Emulator Controller released the hold. So the system verification with the RTPA and the Z80 board failed 07/0000 (RTPA.TST's last trigger stopped the Z80 test), and DOS/50's `GO` after an RTPA break stopped again one instruction later. The ASV now ends with only the Z80 board's 07/00D0, and `GO` runs to the next event.
 - 2026-11-11: **TTA run mode at register level.** The 8540's OS/40 TTA software survives in ROMs 160-1381/1382 (2650 code, which DOS/50 V2 shared; `notes/tta-os40.md`). It shows which target input addresses each comparator RAM, the range codes, and the Am9513 programming.
   - **The board:** every board's bus cycles (Z80, 8085, 8086, 80186) go through the comparator RAMs, a cascade magnitude comparator inferred from OS/40's codes and checked against all of them (`make test`), then the real Am9513 (SRC k = events, GATE k+1 = triggers, SRC5 per port 70), triggers, breaks and acquisition.
   - **The commands** program it as OS/40 did: EVE's RAM codes, COU's and TTA2's counter sequences, CONS/BRE/ACQ ports, OS/40's start, end and INT 29 handling, and DISP from acquisition memory. The functional engine (`tta_run`) is gone; the tutorial and its 16 pictures come out unchanged.

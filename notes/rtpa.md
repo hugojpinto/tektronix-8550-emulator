@@ -22,6 +22,8 @@ The board watches the **slave bus**: the emulator processor, or the Language Pro
 - **Trace:** a 128-transaction trace RAM.
 - **Results:** PC latches and a status byte.
 - **Break:** on a trigger it stops the processor (SLV OPREQ) after the current instruction and raises **DBG INT 29**, which is vector 003A ("TTA/RTPA (INT 29)", diagnostic number 35).
+  - **One break per trigger.** When the Emulator Controller takes over (F9), the hold ends. The status (C2: stopped, event) stays until a C2 write re-arms the board, but the same trigger does not break again.
+  - **Evidence:** the system verification (ASV) runs RTPA.TST before the Z80 board test. RTPA.TST's last trigger otherwise stopped the Z80 test's first instruction (07/0000 "EMULATOR NMI CLEAR"). DOS/50's `GO` after an RTPA break also stopped again after one instruction instead of at the next occurrence of the event.
 
 ## Ports C0–C7
 | Port | Write | Read |
