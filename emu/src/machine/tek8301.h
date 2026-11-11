@@ -106,6 +106,7 @@ public:
 	bool m_master_was_halted = false;
 	// 2650 clocks so far, exact to the instruction while the CPU runs (the current
 	// instruction's cycles are already counted: MAME charges them before executing)
+	u8 bank_lines() const { return u8(~m_f4); }   // extended address A23-A16 as driven (F4 is written active low)
 	u64 now_cycles() const { return m_in_cpu ? m_cycles + u64(m_chunk - cpu.icount()) : m_cycles; }
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)

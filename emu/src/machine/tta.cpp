@@ -83,36 +83,39 @@ void tta::write(int r, u8 d, u64 now)
 	}
 }
 
-// Test mode. With the RAM selected every comparator RAM is addressed by the 2650's A7-0
-// (that is how the CPU reads and writes them), so an access to the window looks up the
-// same row in all of them, and the event outputs are latched until the next access.
+// Comparators on (port 70 bits 1-0 = 11): each access to a comparator page (70-79) looks
+// up a row in every comparator RAM and latches the four event outputs until the next one.
 // TTA.TST establishes (notes/tta.md):
-// - event k fires when page 74 has event k's bit pair = 00 and pages 76 and 77 have it
-//   nonzero at that row (modules 30, 31, 46, 60: page 70 cannot be the one, module 60
-//   overwrites it; 76 and 77 hold F5 in every test, so which of them counts is open);
-//   pages 70-73, 78 and 79 do not take part in the tests;
+// - with port 70 bit 2 set (test mode, 07) every RAM is addressed by the 2650's A7-0; with
+//   it clear (03, module 70) page 73 is addressed by the probe lines;
+// - event k fires when page 73 has bit 3+k set and page 74 has event k's bit pair = 00
+//   (modules 30, 31, 46, 60, 70); pages 70-72 and 76-79 do not take part in the tests;
 // - event k drives Am9513 SRC k and GATE k+1 as a level (modules 45, 46);
 // - trigger k = event k AND counter k's output (module 30);
 // - with port 71 bit (3+k) set, trigger k also needs trigger k-1 (4 before 1) on an
-//   earlier access (module 31); port 73 latches the triggers.
+//   earlier access (module 31); port 73 latches the triggers;
+// - acquisition (module 60, 70): see below.
 void tta::ram_access(u64 now, u16 a)
 {
 	sync(now);
 	// only the comparator RAMs (pages 70-79) are looked up: an access to the acquisition
 	// memory (68-6F) clocks nothing (module 60 reads it back between samples)
 	if (!watching() || (a >> 8) < 0xf0) return;
-	int row = a & 0xff;
-	u8 p74 = page(0x74, row), p76 = page(0x76, row), p77 = page(0x77, row);
+	const bool test = m_reg[0] & 0x04;
+	const int row = a & 0xff;
+	const u8 pr = probe ? probe() : 0xff;
+	u8 p73 = page(0x73, test ? row : pr), p74 = page(0x74, row);
 	u8 ev = 0;
 	for (int k = 0; k < 4; k++)
-		if (!((p74 >> (2 * k)) & 3) && ((p76 >> (2 * k)) & 3) && ((p77 >> (2 * k)) & 3)) ev |= u8(1 << k);
+		if (((p73 >> (4 + k)) & 1) && !((p74 >> (2 * k)) & 3)) ev |= u8(1 << k);
 	set_events(ev);
-	// acquisition (module 60): with port 71 bit 1 every access, otherwise those on which
-	// event 4 fires, is stored in all eight acquisition pages (68-6F) at the pointer, which
-	// then advances (port 75). In test mode the acquired byte is the 2650's A7-0.
+	// acquisition: with port 71 bit 1 every access, otherwise those on which event 4 fires,
+	// is stored at the pointer, which then advances (port 75). In test mode all eight bytes
+	// are the 2650's A7-0 (module 60); otherwise page 6A holds the probe byte (module 70's
+	// error report) and the other bytes' inputs are not known (stored as 0).
 	if ((m_reg[1] & 0x02) || (ev & 0x08)) {
-		for (int p = 0; p < 8; p++) m_ram[(p << 8) | m_acq_ptr] = u8(row);
-		if (trace) fprintf(stderr, "[%.7f TTA acquire %02x at %02x]\n", double(m_last) / 2e6, row, m_acq_ptr);
+		for (int p = 0; p < 8; p++) m_ram[(p << 8) | m_acq_ptr] = test ? u8(row) : p == 2 ? pr : 0;
+		if (trace) fprintf(stderr, "[%.7f TTA acquire %02x at %02x]\n", double(m_last) / 2e6, test ? row : pr, m_acq_ptr);
 		m_acq_ptr++;
 	}
 	if (!ev) return;

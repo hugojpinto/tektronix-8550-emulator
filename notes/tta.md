@@ -1,11 +1,10 @@
 # TTA (Trigger Trace Analyzer): reverse-engineering notes
 
-**Status:** emulated in test mode (`-tta`, `emu/src/machine/tta.{h,cpp}`, `am9513.{h,cpp}`). TTA.TST V1.3A (on `8550_DIAG.IMD`, Select mode 6), **option 0 (all modules 00–60) passes**: 30 consecutive iterations with ERRORS = 0000.
+**Status:** emulated in test mode (`-tta`, `emu/src/machine/tta.{h,cpp}`, `am9513.{h,cpp}`). TTA.TST V1.3A (on `8550_DIAG.IMD`, Select mode 6) passes **option 0 (all modules 00–60)**, 30 consecutive iterations with ERRORS = 0000. It also passes **option 7 (probe interface) with `-tta probe`**, an inferred fixture. Usage guide with pictures: [docs/TTA.md](../docs/TTA.md).
 
 | Result | Modules |
 |---|---|
-| Pass | 00 detection, 10 I/O ports, 20–23 RAM, 30 event & trigger, 31 consecutive events, 40–43 counter chip, 44 dynamic counter, 45 count source selection, 46 counter gating, 50 interrupt, 60 acquisition |
-| Not emulated | 70 probe interface (option 7): needs the service manual's set-up fixture, see the end |
+| Pass | 00 detection, 10 I/O ports, 20–23 RAM, 30 event & trigger, 31 consecutive events, 40–43 counter chip, 44 dynamic counter, 45 count source selection, 46 counter gating, 50 interrupt, 60 acquisition; 70 probe interface with `-tta probe` |
 
 **No software in our collection uses the TTA on the 8550.** DOS/50 V1.0 (1980) predates it, and its EVT/BIF/CNT/RTT/DRT drive the RTPA. The TTA commands (AD, DATA, BUS, PRO, QUA, CTR, EVE, COU, BRE, TS, TCLR, ACQ, DISP…) exist in the 8540's OS/40 and in later DOS/50 versions, which we don't have. So everything below is what TTA.TST exercises: the board's **test mode**, in which the 2650 itself is the "bus" being watched. How the 64 run-mode inputs (target address, data, probe, control) reach the comparator RAMs is not exercised by anything we have and is not emulated.
 
@@ -39,13 +38,15 @@
 
 ### Comparator RAM and events (test mode)
 - The RAM window: with port 70 bit 1 and EE = 07 (2650 4000–7FFF window to system-bus C000–FFFF) the TTA RAM answers at system-bus E800–F9FF, CPU pages 68–79. Page 75 is absent, and system RAM is inhibited there too (module 20). **Pages 68–6F: acquisition memory** (8 bytes per sample). **Pages 70–74 and 76–79: comparator RAMs.**
-- In test mode every comparator RAM is addressed by the 2650's A7–0 (that is how the CPU reads and writes them), so **an access to a comparator page looks up the same row in all of them and latches the four event outputs** until the next such access. Accesses to the acquisition pages clock nothing (module 60 reads them back between samples).
-- **Event k fires when page 74 has event k's bit pair (bits 2k−1…2k−2) = 00 and pages 76 and 77 have it nonzero.** Evidence:
-  - module 30 writes rows 10·k after the init 31D3 (page 74 = 00, 54, 51, 45, 15 at rows 00…40, i.e. event k's pair cleared at row 10·k; pages 76–78 = F5; page 70 = FF; page 73 = F0) and expects event k alone;
+- With port 70 bits 1–0 set, **an access to a comparator page looks up a row in every comparator RAM and latches the four event outputs** until the next such access. Accesses to the acquisition pages clock nothing (module 60 reads them back between samples).
+- **With port 70 bit 2 set (test mode, 07)** every comparator RAM is addressed by the 2650's A7–0, which is how the CPU reads and writes them. **With bit 2 clear (03)**, page 73 is addressed by the probe lines (module 70). How the other pages are addressed outside test mode is unknown; module 70 fills them uniformly.
+- **Event k fires when page 73 has bit 3+k set (its high nibble, one bit per event) and page 74 has event k's bit pair (bits 2k−1…2k−2) = 00.** Evidence:
+  - module 30 writes rows 10·k after the init 31D3 (page 74 = 00, 54, 51, 45, 15 at rows 00…40, i.e. event k's pair cleared at row 10·k; page 73 = F0, pages 76–78 = F5 and page 70 = FF at those rows, all else 0) and expects event k alone;
   - module 31 expects all four at row 0 (page 74 = 00);
-  - module 46 needs the events to drop at rows 07 and C7, where everything is 0;
-  - module 60 overwrites page 70 row 40 with arbitrary values and still expects event 4 there, so page 70 is not the enabling page. Pages 76 and 77 hold F5 in every test, so whether one or both count is open; the emulator requires both.
-  - Pages 70–73, 78 and 79 take no part in the tests (page 78 is only the test's write target).
+  - module 46 needs the events to drop at rows 07 and C7, where page 73 is 0;
+  - module 60 overwrites page 70 row 40 with arbitrary values and still expects event 4 there;
+  - module 70 fills pages 76–79 with 80 (which would block events 1–3 if those pages took part) and expects events 1 and 3, or 2 and 4, straight from page 73's high nibble (50, A0).
+  - Pages 70–72 and 76–79 take no part in the tests (page 78 is only the test's write target). An earlier version of these notes took pages 76/77 as the enable; module 70 rules that out.
 - **Trigger k = event k AND counter k's output.** With port 71 bit (3+k) set, trigger k also needs trigger k−1 on an earlier access (module 31's four sequences E0, D0, B0, 70). Triggers set port 73's latches.
 - **Event latches hold across port 70 writes while bit 0 stays 1**, even with the clock (bit 2) stopped: module 46 case 4 leaves all events high, and case 5 (active-low gating) relies on that. Writing bit 0 = 0 clears them (module 45's SRC tests need the rising edge after a RAM initialisation).
 
@@ -67,9 +68,8 @@
 ## Open
 - **Run mode.** Which input group addresses which comparator page; the meaning of the 2-bit codes (range cascade?), of pages 70–73, 78, 79 and of port 74; the event qualifier and the bus control signals. Nothing we have exercises them; a later DOS/50 or OS/40 with the TTA commands would.
 - **SRC5, GATE1 and F1 as count sources**, which TTA.TST skips.
-- **Module 70, probe interface (option 7).** It asks for "the set-up procedure described in the Probe Interface Test section of the TTA service manual", which our 070-3761-00 lacks. What the code shows:
-  - It programs the counters hi-Z and sets 72 = 90, 71 = 02 and 70 = 02, then 03.
-  - It fills pages 76–79 with 80 and page 70 with FF, and writes 50 at page 73 row 55 and A0 at row AA.
-  - It then writes AA and 55 alternately to Emulator Controller port F4, which is active low, and expects port 73 to read 5 and A respectively.
-  - So the fixture presumably clips the probe onto lines carrying ~F4, **page 73 is the probe byte's RAM**, and its high nibble holds the per-event match bits.
-  - In this mode (70 = 03) the comparator pages are evidently not all addressed by the CPU, so a fixture model needs the run-mode addressing above.
+- **The probe fixture's polarity.** Module 70 (option 7, code at 30A3–3194) asks for "the set-up procedure described in the Probe Interface Test section of the TTA service manual", which our 070-3761-00 lacks. What the code shows:
+  - Set-up: it programs the counters hi-Z, sets 72 = 90, 71 = 02 (acquire every access) and 70 = 02, clears pages 68–73, fills pages 76–79 with 80 and page 70 with FF, and writes 50 at page 73 row 55 and A0 at row AA. Then 70 = 03.
+  - The test writes AA, then 55, to Emulator Controller port F4: the extended address A23–A16, written active low. After each write it touches page 73 and expects port 73 = 5, then A. It clears 73 in between.
+  - On failure it prints the probe byte that was acquired, taken from acquisition page 6A at pointer − 2, against the expected one. So the third acquisition byte is the probe byte.
+  - `-tta probe` models the fixture as the probe on the extended address lines, i.e. probe = ~F4. With it, 55 addresses row 55 → 50 → events 1, 3 = 5. **Inferred:** the probe seeing F4 uninverted, with the high nibble's event bits in reverse order, explains the test equally well.

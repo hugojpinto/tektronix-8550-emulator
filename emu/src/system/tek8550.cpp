@@ -129,6 +129,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	mdu->rtpa_board.present = opt.rtpa_on;
 	mdu->rtpa_board.probe_loopback = opt.rtpa_probe;
 	mdu->tta_board.present = opt.tta_on;
+	if (opt.tta_probe) mdu->tta_board.probe = [m = mdu.get()]() { return m->bank_lines(); };   // inferred TTA.TST option 7 fixture
 	mdu->prom_dos50_fix = opt.prom_fix;
 	if (!opt.prom_dev.empty()) { std::string e; mdu->prom.load_socket(opt.prom_dev, e); }
 	else mdu->prom.socket.assign(0x10000, 0xff);

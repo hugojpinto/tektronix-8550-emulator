@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **TTA guide and probe test.** `docs/TTA.md` explains the TTA with pictures from `tools/make_tta_shots.sh`: what it does, running TTA.TST, reading its reports, and the board at register level. The probe test's code showed that page 73's high nibble, not pages 76/77, enables the events (page 73 is the probe byte's RAM). With `-tta probe`, the probe clipped onto the extended address lines (inferred), option 7 passes too.
 - 2026-11-11: **TTA, test mode.** TTA.TST option 0 now passes in full (modules 00–60, 30 iterations without an error). Found from the diagnostic's code, in `notes/tta.md`:
   - **Events:** in test mode the comparator RAMs are addressed by the 2650's A7–0 and latch four events per access; port 74's 2-bit codes (00 = match) select them, gated by pages 76/77.
   - **Triggers:** event AND counter output, with trigger N arming N+1 via port 71, latched in port 73.

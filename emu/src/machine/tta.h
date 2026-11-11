@@ -11,6 +11,7 @@
 #include "machine/am9513.h"
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 
 class tta
 {
@@ -33,12 +34,14 @@ public:
 	void sync(u64 now);
 	// a 2650 access to the RAM window: in test mode (port 70 = x7) the comparators
 	// look up its row and latch the events (see tta.cpp)
-	bool watching() const { return present && (m_reg[0] & 0x07) == 0x07; }
+	bool watching() const { return present && (m_reg[0] & 0x03) == 0x03; }
 	void ram_access(u64 now, u16 a);
 	bool take_irq() { bool i = m_irq; m_irq = false; return i; }
 	bool requesting() const { return present && m_req; }
 
 	am9513_device stc{ 5'000'000 };
+	// the P6451 data acquisition probe's eight lines; unset = nothing clipped on (read high)
+	std::function<u8()> probe;
 
 private:
 	u8 m_reg[8] = {};

@@ -10,8 +10,7 @@ Captured from the emulated CT8500 at its native 80×25 grid. `raw/` holds the ba
 | `04_asv_with_rtpa` | Automatic System Verification with `-rtpa`: the RTPA diagnostic now runs, with 0 errors, between the Language Processor and the DMU tests. The run ends in SYSTEM VERIFICATION COMPLETE |
 | `05_dos50_rtpa_setup` | DOS/50 V1.0: event 1 = fetch at 0105; event 2 = fetch at 0106 with pass count 3; break on event 2; count fetches; trace fetches |
 | `06_dos50_rtpa_break_drt` | `GO 100` breaks on the third pass (TRIG2 at 0106). `CNT` = 13 fetches (1 + 3×4), and `DRT` lists the traced fetches with mnemonics |
-| `07_tta_diag_modules_pass` | `-tta`, TTA diagnostic V1.3A: detection, I/O ports and RAM modules (00–23) running with ERRORS = 0000 |
-| `08_tta_diag_events_not_yet` | The TTA's limit today: module 30/31 (event comparators) fails. See `notes/tta.md` |
+| `07_tta_diag_modules_pass` | `-tta`, TTA diagnostic V1.3A: detection, I/O ports and RAM modules (00–23) running with ERRORS = 0000 (the first stage; the full diagnostic now passes, see [docs/TTA.md](../../TTA.md) and `../tta/`) |
 
 Reproduce (from `emu/`):
 ```
