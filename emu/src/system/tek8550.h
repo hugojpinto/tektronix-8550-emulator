@@ -52,6 +52,8 @@ public:
 	// discs: insert at run time (the drive reports a disc change) / write back and remove
 	bool mount(int drive, const std::string &path, std::string &err);
 	bool eject(int drive, std::string &err);
+	// the image in a drive ("" = none), however it got there: command line, -mount, monitor, GUI
+	const std::string &disc(int drive) const { return m_disc[drive & 3]; }
 
 	void show(FILE *f);                            // registers of both CPUs (monitor)
 	tek8301 &mdu_unit() { return *mdu; }
@@ -70,6 +72,7 @@ private:
 	u64 m_ticks = 0;
 	int m_out_8301 = -1, m_out_8301_ram = -1, m_out_8501 = -1, m_out_drives = -1, m_out_panel = -1;
 	u64 m_dma_seen = 0;
+	std::string m_disc[4];
 
 	void scripted_events();
 	void update_outputs();

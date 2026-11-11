@@ -56,6 +56,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 		bool wb = opt.writeback && opt.disks[d].find("sources/") == std::string::npos;
 		if (opt.writeback && !wb) fprintf(stderr, "[drive %d: %s is an original; mounted without write-back]\n", d, opt.disks[d].c_str());
 		if (!dmu->mount(d, opt.disks[d], err, wb)) return false;
+		m_disc[d] = opt.disks[d];
 	}
 
 	logf = opt.logfile.empty() ? nullptr : fopen(opt.logfile.c_str(), "wb");
@@ -236,6 +237,7 @@ bool tek8550_system::mount(int drive, const std::string &path, std::string &err)
 	bool wb = opt.writeback && path.find("sources/") == std::string::npos;
 	if (dmu->mounted(drive) && !dmu->eject(drive, err)) return false;
 	if (!dmu->mount(drive, path, err, wb, true)) return false;
+	m_disc[drive & 3] = path;
 	out.set("drive" + std::to_string(drive) + ":disc", 1);
 	return true;
 }
@@ -243,6 +245,7 @@ bool tek8550_system::mount(int drive, const std::string &path, std::string &err)
 bool tek8550_system::eject(int drive, std::string &err)
 {
 	bool ok = dmu->eject(drive, err);
+	m_disc[drive & 3].clear();
 	out.set("drive" + std::to_string(drive) + ":disc", 0);
 	return ok;
 }

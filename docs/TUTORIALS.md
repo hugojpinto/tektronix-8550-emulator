@@ -24,7 +24,18 @@ What you are watching:
 2. **~3 s:** the 8501 boots from drive 0. Its red **drive lamp** flickers as the disc controller's own Z80 seeks and reads, at the real drive's speed.
 3. **~27 s:** `DOS/50 V1.0 18-AUG-80` and the `>` prompt.
 
-Click into the terminal and type `LDIR` + Return, then `HELP`. Things to try:
+![Power-up: the 8301's SELF TEST lamp is lit and drive 0 is reading](screenshots/tutorials/t1_selftest.png)
+*3 seconds in: the screen is still blank while both units test themselves. The 8301's SELF TEST lamp is lit, the inside LEDs show test codes, and drive 0's lamp glows as the 8501 starts booting.*
+
+![The DOS/50 prompt](screenshots/tutorials/t1_prompt.png)
+*~29 s: DOS/50 is up. SELF TEST has gone out, and the 8501 shows ON, AC ON and PROCESSOR BUSY.*
+
+Click into the terminal and type `LDIR` + Return, then `HELP`.
+
+![LDIR on the system disc](screenshots/tutorials/t1_ldir.png)
+*`LDIR` lists the root of the system disc in drive 0.*
+
+Things to try:
 
 | Do | To |
 |---|---|
@@ -53,12 +64,18 @@ DONE    JR      DONE
                          (an empty line ends input)
 *FILE
 ```
+![The program typed into EDIT and saved](screenshots/tutorials/t2_edit.png)
+*EDIT's `INPUT` mode takes the lines; an empty line ends it, and `FILE` saves.*
+
 Assemble, link and load it into the emulator board's memory. ASM and LINK take tens of seconds each, as they did on the real lab (**Cmd-T** speeds them up):
 ```
 > ASM T.OBJ T.LST T.ASM
 > LINK T.LOAD T.LNKL T.OBJ
 > LOAD T.LOAD
 ```
+![ASM and LINK finished](screenshots/tutorials/t2_asm_link.png)
+*No assembly errors; the linker resolves everything and puts the transfer address at 0100.*
+
 Debug it:
 ```
 > BK 102                 breakpoint on LOOP
@@ -69,6 +86,8 @@ Debug it:
 > CLBP
 > GO                     runs to the end; Esc Esc stops it
 ```
+![Breakpoints and registers](screenshots/tutorials/t2_debug.png)
+*Each `GO` stops at the breakpoint on `LOOP`. `DS` shows A counting up and B (the DJNZ counter) counting down.*
 Watch the 8301 panel while it runs: **PROGRAM** lights while the emulator processor runs your code, and **SYSTEM** lights while the 2650 has control.
 
 ACE, the full-screen editor, the assembler's syntax quirks and the other debugging commands are in [OPERATION.md §3–5](OPERATION.md#3-write-a-program).
@@ -83,15 +102,31 @@ The 8501's disc controller runs its original firmware, so a blank disc really ha
 - **Graphical:** drop `blank.img` onto **DRIVE 1** on the 8501 panel. Clicking the drive later ejects it.
 - **Headless:** add `-mount 30 1=../disks/blank.img` to the command line, or use the monitor (**Ctrl-]**, then `m 1 ../disks/blank.img`).
 
-Then, following Tektronix's own procedure:
+Then, following Tektronix's own procedure, type `FORMAT /DEV/FLX1`. FORMAT first probes the disc, which takes about 20 seconds on a blank one: the controller tries both densities and finds no data. Drive 1's lamp shows the work:
+
+![FORMAT probing the blank disc](screenshots/tutorials/t3_probe.png)
+*Drive 1 holds `blank.img` and its lamp is lit while the controller looks for data on the blank disc.*
+
+Then it asks for confirmation (the `Y` you type is not echoed):
 ```
 > FORMAT /DEV/FLX1
 DO YOU REALLY WANT TO FORMAT THIS DISK? Y        about 50 s: two revolutions per track, 154 tracks
+```
+![Formatting](screenshots/tutorials/t3_format.png)
+*Formatting: the controller's Z80 writes every track from index to index, laying down the IBM System 34 format sector by sector.*
+
+Check it, then copy the system disc onto it:
+```
 > VERIFY /DEV/FLX1
             0 BAD BLOCKS                          several minutes: block by block
 > COPY:L:B /DEV/FLX0 /DEV/FLX1
 Output file already exists.  Do you want to override it? Y
 ```
+![Copying the system disc](screenshots/tutorials/t3_copy.png)
+*COPY:L:B copies the whole device, block by block; drive 1's lamp stays lit while it writes.*
+
+![Done](screenshots/tutorials/t3_done.png)
+*Done: the blank disc is now a copy of the system disc.*
 Run with `-rw`, and `blank.img` is now a copy of the system disc. Check it with the sibling tool: `../tekmato/tekmato -open ../disks/blank.img -check -list /`. `FORMAT:S` makes a single-density disc. The disc's sides follow the image: an empty file is a double-sided disc, and a single-sided image (1989 records) gives single-sided media.
 
 ## 4. Scripted, headless runs
@@ -110,7 +145,7 @@ python3 ../tools/render_screens.py --crt ldir.scr ldir.png       # a CT8500-styl
 | `-outputs FILE` | log every front-panel lamp change with its time |
 | `-log`, `-hsilog`, `-dump` | terminal output, the 8301↔8501 link traffic, memory images |
 
-The graphical front end takes the same options. Add `-shot T FILE.bmp` to save its windows, and run it with no display using `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software`. `tools/make_hero.sh` makes the README picture that way. `tools/make_screenshots.sh` replays a whole edit → assemble → link → run session.
+The graphical front end takes the same options. Add `-shot T FILE.bmp` to save its windows, and run it with no display using `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software`. `tools/make_hero.sh` makes the README picture that way, and `tools/make_tutorial_shots.sh` makes the pictures in these tutorials. Batch runs of the graphical front end advance a fixed 1/60 s of machine time per frame, so the pictures come out identical on every run. `tools/make_screenshots.sh` replays a whole edit → assemble → link → run session.
 
 ## 5. Build for Windows
 

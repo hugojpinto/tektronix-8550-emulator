@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	if (!SDL_CreateWindowAndRenderer("Tektronix CT8500 \xe2\x80\x94 8550 MDL", int(LW * (scale > 0 ? scale : 1.25)), int(LH * (scale > 0 ? scale : 1.25)),
 		SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY, &win, &ren)) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
 	SDL_SetRenderLogicalPresentation(ren, LW, LH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-	SDL_SetRenderVSync(ren, 1);
+	SDL_SetRenderVSync(ren, opt.max_cycles >= 0 ? 0 : 1);       // batch runs never wait for the display
 	SDL_Texture *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, TW, TH);
 	terminal_view view; view.crt = style != "sharp";
 	SDL_SetTextureScaleMode(tex, view.crt ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
@@ -176,8 +176,6 @@ int main(int argc, char **argv)
 
 	// front panels, to the right of the terminal
 	std::vector<panel> panels;
-	std::string disc[4];
-	for (int d = 0; d < 4; d++) disc[d] = opt.disks[d].empty() ? "" : base_name(opt.disks[d]);
 	if (panels_on) {
 		int tx = 0, ty = 0, tw = 0, th = 0;
 		SDL_GetWindowPosition(win, &tx, &ty); SDL_GetWindowSize(win, &tw, &th);
@@ -237,7 +235,8 @@ int main(int argc, char **argv)
 	std::deque<uint8_t> paste;                   // pasted text, typed at the line rate
 	double next_paste = 0;
 	const double char_time = 10.0 / 9600;        // the terminal port's 9600 baud
-	bool turbo = opt.max_cycles >= 0, fullscreen = false, quit = false, redraw = true, blink_on = true;
+	const bool batch = opt.max_cycles >= 0;
+	bool turbo = batch, fullscreen = false, quit = false, redraw = true, blink_on = true;
 	Uint64 wall0 = SDL_GetTicksNS(); double emu0 = sys.now();
 	auto resync = [&]() { wall0 = SDL_GetTicksNS(); emu0 = sys.now(); };
 	auto update_title = [&]() {
@@ -263,8 +262,7 @@ int main(int argc, char **argv)
 				p->pressed = it;
 				if (it->input.compare(0, 5, "drive") == 0 && it->input.find(":eject") != std::string::npos) {
 					int d = it->input[5] - '0'; std::string er;
-					if (!disc[d].empty() && !sys.eject(d, er)) fprintf(stderr, "[drive %d: %s]\n", d, er.c_str());
-					disc[d].clear();
+					if (!sys.disc(d).empty() && !sys.eject(d, er)) fprintf(stderr, "[drive %d: %s]\n", d, er.c_str());
 				} else sys.input(it->input, 1);
 				break;
 			}
@@ -276,8 +274,7 @@ int main(int argc, char **argv)
 				const lay::item *it = lay::hit(*p->v, e.drop.x, e.drop.y, [](const lay::item &i) { return i.drive >= 0; });
 				if (!it) break;
 				std::string er;
-				if (sys.mount(it->drive, path, er)) disc[it->drive] = base_name(path);
-				else fprintf(stderr, "[drive %d: %s]\n", it->drive, er.c_str());
+				if (!sys.mount(it->drive, path, er)) fprintf(stderr, "[drive %d: %s]\n", it->drive, er.c_str());
 				break;
 			}
 			case SDL_EVENT_TEXT_INPUT:
@@ -349,11 +346,13 @@ int main(int argc, char **argv)
 		}
 
 		// run the machine: to real time, or flat out for ~14 ms per frame in turbo
+		// batch runs (-cycles) are deterministic: every frame is 1/60 s of machine time, so
+		// captures (-shot) come out the same on every run
 		Uint64 frame0 = SDL_GetTicksNS();
-		double target = emu0 + double(frame0 - wall0) / 1e9;
+		double target = batch ? sys.now() + 1.0 / 60 : emu0 + double(frame0 - wall0) / 1e9;
 		while (!sys.finished()) {
 			Uint64 now = SDL_GetTicksNS();
-			if (turbo ? now - frame0 > 14'000'000 : (sys.now() >= target || now - frame0 > 30'000'000)) break;
+			if (batch ? sys.now() >= target : turbo ? now - frame0 > 14'000'000 : (sys.now() >= target || now - frame0 > 30'000'000)) break;
 			if (!paste.empty() && sys.now() >= next_paste) {
 				uint8_t c = paste.front(); paste.pop_front();
 				ct.type(c);
@@ -373,8 +372,16 @@ int main(int argc, char **argv)
 		}
 		if (turbo || sys.now() < target - 0.25) resync();      // never try to catch up a backlog
 		if (ct.take_bell()) bell.ring();
+		// batch runs draw only for a capture (and ~30 times a second of wall time if a display shows them)
+		if (batch) {
+			static Uint64 last_draw = 0;
+			bool shot_due = false;
+			for (auto &sh : shots) if (!sh.file.empty() && sys.now() >= sh.at) shot_due = true;
+			if (!shot_due && SDL_GetTicksNS() - last_draw < 33'000'000) continue;
+			last_draw = SDL_GetTicksNS();
+		}
 
-		bool b = (SDL_GetTicksNS() / 500'000'000) % 2 == 0;    // blinking attribute, 1 Hz
+		bool b = batch ? int(sys.now() * 2) % 2 == 0 : (SDL_GetTicksNS() / 500'000'000) % 2 == 0;   // blinking attribute, 1 Hz
 		if (b != blink_on) { blink_on = b; redraw = true; }
 		if (sys.terminal_dirty) { sys.terminal_dirty = false; redraw = true; }
 		if (redraw) {
@@ -392,7 +399,7 @@ int main(int argc, char **argv)
 			for (panel &p : panels) if (p.pressed == &it) return 1.f;
 			return 0.f;
 		};
-		auto caption = [&](const lay::item &it) -> std::string { return it.drive >= 0 ? (disc[it.drive].empty() ? "(empty)" : disc[it.drive]) : ""; };
+		auto caption = [&](const lay::item &it) -> std::string { return it.drive >= 0 ? (sys.disc(it.drive).empty() ? "(empty)" : base_name(sys.disc(it.drive))) : ""; };
 		for (panel &p : panels) {
 			if (!p.shown || !p.ren) continue;
 			SDL_SetRenderDrawColor(p.ren, 30, 30, 32, 255);
