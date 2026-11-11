@@ -25,6 +25,7 @@ public:
 	void bus(u16 a, u8 d, bool fetch, bool write, bool io);
 	void instr_end(u16 next_pc);
 	bool stopped() const { return m_stopped; }   // holds the emulator processor (SLV OPREQ)
+	void release() { m_stopped = false; }        // the Emulator Controller takes over (F9 command)
 	bool take_irq() { bool i = m_irq; m_irq = false; return i; }   // INT 29
 
 private:

@@ -54,8 +54,9 @@ static inline void wb(z80* const z, uint16_t addr, uint8_t val) {
 }
 
 static inline uint16_t rw(z80* const z, uint16_t addr) {
-  return (z->read_byte(z->userdata, addr + 1) << 8) |
-         z->read_byte(z->userdata, addr);
+  // [tek8550] low byte first, as a real Z80 reads it (the expression order was unspecified)
+  const uint8_t lo = z->read_byte(z->userdata, addr);
+  return (z->read_byte(z->userdata, addr + 1) << 8) | lo;
 }
 
 static inline void ww(z80* const z, uint16_t addr, uint16_t val) {
@@ -64,8 +65,10 @@ static inline void ww(z80* const z, uint16_t addr, uint16_t val) {
 }
 
 static inline void pushw(z80* const z, uint16_t val) {
+  // [tek8550] high byte first (to SP-1), then low (SP-2), as a real Z80 pushes
   z->sp -= 2;
-  ww(z, z->sp, val);
+  z->write_byte(z->userdata, z->sp + 1, val >> 8);
+  z->write_byte(z->userdata, z->sp, val & 0xFF);
 }
 
 static inline uint16_t popw(z80* const z) {

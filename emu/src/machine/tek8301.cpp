@@ -159,13 +159,14 @@ void tek8301::bp_check(u16 a, bool write)
 
 void tek8301::ec_interrupt(int n, bool latch_pc)
 {
-	// F2 pending register bits (read active low): 7 BP1 6 BP2 5 S/CY 4 HALT 3 DIAG
+	// F2 pending register bits (read active low): 7 BP1 6 BP2 5 S/CY 4 HALT 3 DIAG 2 RTPA
 	switch (n) {
 	case INT_BP1: m_ec_pend |= 0x80; break;
 	case INT_BP2: m_ec_pend |= 0x40; break;
 	case INT_SCY: m_ec_pend |= 0x20; break;
 	case INT_SLV_HALT: m_ec_pend |= 0x10; break;
 	case INT_DIAG: m_ec_pend |= 0x08; break;
+	case INT_RTPA: m_ec_pend |= 0x04; break;   // DBG INT 29 from the RTPA (DOS/50 GO handler 681E tests F2 bit 2)
 	default: break;
 	}
 	if (latch_pc) m_lp_pc_next = ep85_enabled() ? ep85.pc() : slave().pc;
@@ -229,7 +230,7 @@ void tek8301::lp_run(int cycles2650)
 		if (watch) {
 			m_rtpa_watch = false;
 			rtpa_board.instr_end(z.pc);
-			if (rtpa_board.take_irq()) { m_pending |= 1u << INT_RTPA; update_irq(); }
+			if (rtpa_board.take_irq()) ec_interrupt(INT_RTPA);   // latches PC-next like a breakpoint (DS resumes there)
 		}
 		if (&z == &ep && proto_mode()) z.cyc += target->take_wait();   // v3: target WAIT states
 		m_lp_frac -= double(z.cyc - c0);
@@ -482,7 +483,8 @@ u8 tek8301::io_read(offs_t port)
 	case 0xef: v = 0xff; break;
 	case 0xf2: v = u8(~m_ec_pend); break;                 // pending, active low
 	case 0xe5: v = ep85_present ? u8((m_e5 & 0x80) && ep85.halted() ? 0x10 : 0x00) : 0x00; break;
-	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && ep.halted ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
+	// E3 bit 4: processor inactive (HALT, or held by an RTPA break)
+	case 0xe3: v = ep_present ? u8(0x20 | ((m_e3 & 0x80) && (ep.halted || rtpa_board.stopped()) ? 0x10 : 0x00)) : 0x00; if (ep_trace) fprintf(stderr, "[%.3f E3 read %02x]\n", m_cycles / CPU_HZ, v); break;
 	case 0xf6: case 0xf7: v = 0; break;                     // PC next/last A16-23
 	case 0xfc: v = u8(m_lp_pc_next); break;
 	case 0xfd: v = u8(m_lp_pc_next >> 8); break;
@@ -531,6 +533,7 @@ void tek8301::io_write(offs_t port, u8 d)
 		m_f9 = d;
 		m_ec_pend = 0;                      // a new command releases the latched debug state
 		m_svc_stop = false;                 // ... and a slave stopped by an SVC
+		rtpa_board.release();               // ... or held by an RTPA break
 		if (ep_trace) fprintf(stderr, "[%.3f F9 <- %02x  FA/FB=%02x%02x F5=%02x E3=%02x]\n", m_cycles / CPU_HZ, d, m_fb, m_fa, m_f5, m_e3);
 		if (!(d & 0x01)) { m_fr_pending = true; m_fj_pending = false; m_lp_live = true; }   // FR: forced reset (taken by the slave)
 		if (!(d & 0x04) && (d & 0x01)) { m_fj_pending = true; m_lp_live = true; }          // FJ: forced jump (FB:FA, F5); reset wins
@@ -617,6 +620,8 @@ int tek8301::intack()
 		if (all & (1u << n)) {
 			if (EDGE_IRQS & (1u << n)) m_pending &= ~(1u << n);
 			update_irq();
+			static const bool int_trace = getenv("TEK_INTTRACE") != nullptr;
+			if (int_trace && n >= 16) fprintf(stderr, "[%.4f 2650 takes INT %d (vector %04x)]\n", m_cycles / CPU_HZ, n, 2 * n);
 			return 0x80 | (2 * n);          // ZBSR indirect through page-0 vector 2n
 		}
 	update_irq();

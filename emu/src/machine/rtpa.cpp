@@ -100,7 +100,7 @@ void rtpa::write(int r, u8 d)
 		else m_pit[m_index & 1].c[(m_index >> 1) & 3].write(d);
 		break;
 	case 6: m_index = d; break;
-	case 7: m_mode[m_index & 3] = d; break;   // [0/1] address compare mode, [2/3] data compare mode
+	case 7: m_mode[m_index & 3] = d; m_index = u8((m_index & 0xfc) | ((m_index + 1) & 3)); break;   // [0/1] address, [2/3] data compare mode; auto-increments (DOS/50 writes all four after C6 = 0)
 	}
 }
 
@@ -146,10 +146,12 @@ void rtpa::occurrence(int e, bool &hit)
 
 void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 {
-	if (m_stopped) return;
+	if (m_stopped || !(m_c3 & 0x08)) return;   // C3 bit 3: analyser running (DOS/50 clears it after a break: the trace freezes)
 	u8 cyc = u8(0xf0 | (io ? 0 : 0x01) | (write ? 0x02 : 0) | (fetch ? 0x04 : 0));
 	if (traced(cyc)) {
-		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8(cyc & 0x0f), 0, d, 0 };
+		// bus byte: cycle bits, plus the upper bits of event 1's bus-value register as a
+		// run tag (DOS/50 steps it by 08 at every GO; DRT shows the entries of the last run)
+		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8((cyc & 0x07) | (m_ram[8] & 0xf8)), 0, d, 0 };
 		m_tr_head = (m_tr_head + 1) % TRACE;
 		if (m_tr_count < TRACE) m_tr_count++;
 	}
@@ -179,7 +181,7 @@ void rtpa::instr_end(u16 next_pc)
 	m_stopped = true;
 	m_tr_rd = 0; m_tr_byte = 0;               // the trace reads out oldest first
 	m_irq = true;
-	if (trace) fprintf(stderr, "[%.4f RTPA break: status %02x PC-LAST %04x PC-NEXT %04x]\n", clock ? *clock : 0.0, m_status, m_pc_last, m_pc_next);
+	if (trace) fprintf(stderr, "[%.4f RTPA break: status %02x PC-LAST %04x PC-NEXT %04x, %d traced (C1 %02x)]\n", clock ? *clock : 0.0, m_status, m_pc_last, m_pc_next, m_tr_count, m_c1);
 }
 
 // ---------------------------------------------------------------- trace buffer
