@@ -70,7 +70,6 @@ public:
 		return fmt("%04X %-9s%-5s%-11s%04X %02X %02X %02X %02X %02X %02X %02X %02X %04X %04X",
 			pc, inst.c_str(), mn.c_str(), op.c_str(), z.sp, f, z.a, z.b, z.c, z.d, z.e, z.h, z.l, z.ix, z.iy);
 	}
-	bool names_tta_breaks() const override { return false; }   // DOS/50 V1.0's Z80 GO handler: <BREAK   >
 protected:
 	util::disasm_interface &disasm() const override { return d; }
 private:
@@ -95,7 +94,6 @@ public:
 			pc, inst.c_str(), mn.c_str(), op.c_str(), p.sp(), p.af() & 0xff, p.af() >> 8, p.bc() >> 8, p.bc() & 0xff,
 			p.de() >> 8, p.de() & 0xff, p.hl() >> 8, p.hl() & 0xff, p.im() & 0xff);
 	}
-	bool names_tta_breaks() const override { return true; }    // its GO handler prints <BREAK TRIG1>
 protected:
 	util::disasm_interface &disasm() const override { return d; }
 private:

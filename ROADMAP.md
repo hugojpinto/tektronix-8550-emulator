@@ -3,11 +3,11 @@
 What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELOG.md); register-level findings are in [notes/](notes/).
 
 ## Hardware not yet emulated
-- **Trigger Trace Analyzer (TTA):** usable (`docs/TTA.md`): run mode is functional, and the command set is the emulator's stand-in for the lost later DOS/50. Open: run mode at register level (which input group addresses which comparator page, the range codes) and the probe fixture's polarity, which need the original software or its manual sections (`notes/tta.md`).
+- **Trigger Trace Analyzer (TTA):** register level in test and run mode (`notes/tta.md`, `notes/tta-os40.md`); the command set is the emulator's stand-in for the lost later DOS/50, programming the board as OS/40 did. Open: port 74 and a few unused bits, and the probe fixture's polarity, which need the service manual's Probe Interface Test section.
 - **TTA Data Acquisition Interface:** the probe's eight leads, the EVENT QUALIFIER input and the TRIG OUT / ACQ CLK OUT outputs as a separate connection (the real P6451 was a separate cable), so a target such as FUSE can feed the probe. Needs a small protocol agreed with target authors.
 - **The 6800 and 8080 emulator processor boards.** Their firmware does not survive.
 - **80186/80188 emulator, the rest** (`notes/8086.md`): and option 8 (MICROLAB modes 1/2), which needs a MicroLab I trainer and its ROM, not preserved.
-- **8086/8088 emulator, the rest** (`notes/8086.md`): prototype modes 1/2, the 8087, mapping RAM bits 1/3 and wait states. Its software is DOS/50 V2's (the EMU.8086 disc), which is lost. The 8540's OS/40 support in `roms/emulator_processor/8088/` (PDP-11) drives the same board and can be read for the command protocol.
+- **8086/8088 emulator, the rest** (`notes/8086.md`): prototype modes 1/2, the 8087, mapping RAM bits 1/3 and wait states. Its software is DOS/50 V2's (the EMU.8086 disc), which is lost. The 8540's OS/40 support in `roms/emulator_processor/8088/` (2650 code) drives the same board and can be read for the command protocol.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 
 ## Fidelity

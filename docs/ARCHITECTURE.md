@@ -113,20 +113,19 @@ The link is a 153.6 kbaud serial connection carrying packets:
 
 ## 8. Inside the Trigger Trace Analyzer
 
-The TTA (option 8550F03) sits in the 8301 next to the RTPA. How to use it for analysis is in [TTA.md](TTA.md); this section is the board at register level, as the emulator models it. Everything here was established from its diagnostic, TTA.TST V1.3A (`notes/tta.md` gives the evidence for each fact). TTA.TST drives the board in its **test mode**, in which the 2650 itself is the watched bus. The run-mode details (which target signals address which comparator RAM) are not known and are modelled functionally; see the end of this section.
+The TTA (option 8550F03) sits in the 8301 next to the RTPA. How to use it for analysis is in [TTA.md](TTA.md). This section is the board at register level, as the emulator models it, from two sources:
+- its diagnostic, TTA.TST V1.3A, which drives the board in its **test mode**, in which the 2650 itself is the watched bus (`notes/tta.md`);
+- the 8540's OS/40 TTA software (ROMs 160-1381/1382, which DOS/50 V2 shared), which programs the board in **run mode**, watching the program under test (`notes/tta-os40.md`). The 8086 diagnostic's TTA interface test (module 70) cross-checks it.
 
 Addresses are as the 2650 sees them, through the diagnostic's bank window (port EE = 07: CPU 4000–7FFF = system bus C000–FFFF).
-
-
-This is the board as the emulator models it, everything as TTA.TST established it. Addresses are as the 2650 sees them, through the diagnostic's bank window (port EE = 07: CPU 4000–7FFF = system bus C000–FFFF).
 
 ### Ports
 
 | Port | R/W | Function |
 |---|---|---|
-| **70** | R/W | Control. **Bit 0:** comparators on (writing 0 clears the event latches). **Bit 1:** RAM select. **Bit 2:** counter clock on, and the comparator RAMs addressed by the 2650 (test mode); writing 0 clears the arming chain. Reads back with bits 7–6 high (board present). `07` = test mode, `03` = comparators on the probe, `02` = RAM access only |
-| **71** | R/W | **Bits 7–4:** trigger 4–1 must be armed by the previous trigger (1 is armed by 4). **Bit 1:** acquire every access (otherwise only those on which event 4 fires) |
-| **72** | R/W | Interrupt enables, one per trigger (bits 3–0). A write clears a pending TTA interrupt request |
+| **70** | R/W | Control. **Bit 0:** comparators on (writing 0 clears the event latches). **Bit 1:** RAM select. **Bit 2:** test mode: the comparator RAMs addressed by the 2650, and the counter clock running; writing 0 clears the arming chain. **Bits 5–4:** what drives SRC5 (00 bus cycles, 01/11 the emulator clock, 10 the qualifier). Reads back with bits 7–6 high (board present). `07` = test mode, `01` = run mode, `03` = run-mode comparators with the RAM selected, `02` = RAM access only |
+| **71** | R/W | **Bits 7–4:** trigger 4–1 must be armed by the previous trigger on the preceding cycle (1 is armed by 4). **Bits 3–2:** which cycles count as consecutive (00 all, 01 fetches, 10 emulator-defined). **Bit 1:** acquire every cycle (otherwise only those on which trigger 4 fires) |
+| **72** | R/W | **Bits 3–0:** one per trigger: interrupt (test mode) or break the program (run mode). **Bit 4:** run marker, stored with each acquisition. A write clears a pending TTA interrupt request |
 | **73** | R/W | Trigger latches (bits 3–0), set by triggers. The 2650 writes it too (write 0 to clear) |
 | **74** | R/W | 8-bit register, role unknown (the diagnostic only checks it holds data) |
 | **75** | R | Acquisition pointer: where the next sample goes |
@@ -139,39 +138,58 @@ With port 70 bit 1 set and EE = 07, the TTA RAM answers at system bus E800–F9F
 | CPU page | Contents |
 |---|---|
 | 68–6F | **Acquisition memory:** 256 samples × 8 bytes, one page per byte. In test mode each byte of a sample is the 2650's A7–0; on the probe, page 6A is the probe byte |
-| 70–74, 76–79 | **Comparator lookup RAMs**, one per input group, addressed by that group's value (or by the 2650's A7–0 in test mode). Each holds, per row, the events that value takes part in |
+| 70–74, 76–79 | **Comparator lookup RAMs.** Each page is two 4-bit RAMs with their own address inputs, so each nibble is addressed by an input byte (or by the 2650's A7–0 in test mode), as the next table shows |
 | 75 | Absent: no RAM, and system RAM is still inhibited (module 20 checks this) |
 
 ### Events and triggers
 
-At each 2650 access to a comparator page, with port 70 bits 1–0 set, the board looks up one row in every comparator RAM and latches four events. The row is the 2650's A7–0 in test mode; page 73 uses the probe lines instead when port 70 bit 2 is clear.
+At each cycle (in test mode: each 2650 access to a comparator page, with port 70 bits 1–0 set) the board looks up one row in every comparator RAM and combines them into four events:
 
-- **Event k** fires when **page 73's bit 3+k is set** (high nibble, one bit per event) **and page 74's bit pair for event k is 00**. Page 74 holds two bits per event (bits 1–0 for event 1, … 7–6 for event 4). That fits the relation codes a range comparator needs, though in the tests only 00 = "match" appears.
-- Event outputs are **levels**, held until the next comparator access. They hold while port 70 bit 0 stays set, even with the clock stopped.
-- **Trigger k** = event k AND counter k's output. With port 71 bit 3+k set, trigger k also needs trigger k−1 to have fired on an earlier access. Triggers set the latches in port 73.
+| Page | Bits 7–4 addressed by | Bits 3–0 addressed by | Contents for event k |
+|---|---|---|---|
+| 76+k | A23–16 | A15–8 | M7 M6 M5 (bit 4 unused) and m3 m2 m1 m0 |
+| 74 | A7–0 | A7–0 | the pair p1 p0 in bits 2k+1, 2k |
+| 72 | D15–8 | D15–8 | 3-bit codes n2 n1 n0: event 1 in bits 2–0, 2 in 5–3, 3's n1 n0 in 7–6 |
+| 73 | the probe P7–0 | D15–8 | bit 4+k: probe match; bit 0: event 3's n2; bits 3–1: event 4's code |
+| 71 | D7–0 | D7–0 | the pair q1 q0 in bits 2k+1, 2k |
+| 70 | X: bus extension (7–5), qualifier (4), OUT4–OUT1 (3–0) | Y: the emulator's bus status | bit 4+k (X), bit k (Y) |
+
+The codes are a cascade magnitude comparator, one byte at a time:
+```
+ADDR = M7 & !(M6 & (m3 | m2 & p1)) & !(M5 & (m1 | m0 & p0))
+DATA = !n2 & !(n1 & q1) & !(n0 & q0)
+EVENT k = ADDR & DATA & probe bit & X bit & Y bit
+```
+M7 means "inside" (or "outside" for an excluded range); M6 and M5 mean "on the upper or lower bound, so the next byte decides". With the codes OS/40 writes, this gives values, ranges, excluded ranges and don't-care digits exactly (`tests/tta_eve.cpp` checks every kind). In test mode every RAM is addressed by the 2650's A7–0, and the 2650's writes to the comparator pages are only stimuli: they do not change the RAMs.
+
+- Event outputs are **levels**, held until the next cycle. They hold while port 70 bit 0 stays set, even with the clock stopped.
+- **Trigger k** = event k AND counter k's output, sampled before this cycle's counts. With port 71 bit 3+k set, trigger k also needs trigger k−1 on the preceding qualifying cycle. Triggers set the latches in port 73.
 
 ### Counters
 
-- The Am9513 runs from **X1 = 5 MHz** while port 70 bit 2 is set. It comes from the 8301's 20 MHz oscillator, which also gives the 2650 its 2 MHz, so there are exactly 2.5 counter clocks per 2650 clock.
-- **Event k drives SRC k and GATE k+1.** So a counter can count event k (count source SRC k), or count F1 only while event k−1 holds (gating "GATE N", active high or low), and so on. SRC5 and GATE1 are not driven by events.
-- **Counter outputs OUT1–4 feed the triggers.** An output set to high impedance (output control 100) reads high: that is how a channel's trigger is made to follow its event alone. The status register's bits 7–6 read 1.
+- The Am9513 runs from **X1 = 5 MHz**: in test mode while port 70 bit 2 is set, in run mode while the program runs. It comes from the 8301's 20 MHz oscillator, which also gives the 2650 its 2 MHz, so there are exactly 2.5 counter clocks per 2650 clock. F1–F5 are 200 ns to 2 ms (BCD scaling).
+- **The counter inputs:** SRC k counts event k (once per cycle on which it is true); GATE k+1 is trigger k, as a level; SRC5 is port 70's choice (bus cycles, emulator clock or qualifier); GATE1 is the acquisition strobe. So a counter can count events, cycles, triggers, acquisitions or time, gated by the previous trigger or its own.
+- **Counter outputs OUT1–4 feed the triggers and the X byte;** OUT5 enables acquisition. An output set to high impedance (output control 100) reads high: that is how a channel's trigger is made to follow its event alone. The status register's bits 7–6 read 1.
 
 ### Interrupt
 
-- A **new** trigger whose port 72 bit is set raises 2650 interrupt **29** (vector 3A), the one the RTPA also uses. Triggers already latched when the enables are written do not, nor do bits the 2650 writes into port 73.
+- In test mode, a **new** trigger whose port 72 bit is set raises 2650 interrupt **29** (vector 3A), the one the RTPA also uses. Triggers already latched when the enables are written do not, nor do bits the 2650 writes into port 73.
+- In run mode the same trigger breaks the program instead: the Emulator Controller holds its slave and raises INT 29 itself; the 8086 board takes it as a break of its own.
 - The request shows in Emulator Controller port F2 bit 2 (read active low) until port 72 is written again.
 
 ### Acquisition
 
-- At each comparator access, if port 71 bit 1 is set, or else if event 4 fires, a sample is stored at the pointer, and the pointer (port 75) advances by one, wrapping at 256.
+- At each cycle, if port 71 bit 1 is set, or else if trigger 4 fires, and while OUT5 is high, a sample is stored at the pointer, and the pointer (port 75) advances by one, wrapping at 256.
+- A sample is eight bytes, one per page: 68 bus extension, qualifier and the run marker (port 72 bit 4), 69 bus status, 6A probe, 6B/6C data, 6D–6F address. In test mode each byte is the 2650's A7–0.
 
 ### A recipe: one event, counted
 
 These steps are put together from what TTA.TST does in modules 30 and 45. They have not been run as a separate program:
 1. **Select the RAM:** EE ← 07, port 70 ← 02.
 2. **Clear pages 70–79**, then set up the row you will use, say 10:
-   - page 73 row 10 = F0 (all events may fire);
-   - page 74 row 10 = 54 (event 1's pair 00, the others 01).
+   - page 76 row 10 = F5 (event 1's address decided by page 74, as TTA.TST does);
+   - page 74 row 10 = 54 (event 1's pair 00, the others 01);
+   - page 73 row 10 = 10 (event 1's probe bit), page 70 row 10 = 11 (event 1's X and Y bits).
 3. **Program the counters.**
    - Am9513 reset: 77 ← FF, then 77 ← 5F (load all).
    - Counter 1 mode = 0108 (count source SRC1, count up): 77 ← 01 (data pointer: counter 1's mode), 76 ← 08 (low byte first), 76 ← 01.
@@ -192,17 +210,21 @@ These steps are put together from what TTA.TST does in modules 30 and 45. They h
 [66.0879380 TTA wr 70 02]       RAM select: initialise the comparator pages (31D3)
 [66.1202150 TTA wr 70 07]       test mode
 [66.1202285 TTA wr 73 00]       clear the trigger latches
-[66.1202375 TTA events 1]       the 2650 writes page 78 row 10: event 1 fires
+[66.1202375 TTA access f910]    the 2650 writes page 79 row 10...
+[66.1202375 TTA events 1]       ...event 1 fires
 [66.1202420 TTA rd 73 01]       trigger 1 latched: expected 0001
 [66.1202705 TTA wr 73 00]
-[66.1202795 TTA events 2]       row 20: event 2
+[66.1202795 TTA access f920]    row 20: event 2
+[66.1202795 TTA events 2]
 [66.1202840 TTA rd 73 02]
 [66.1203125 TTA wr 73 00]
-[66.1203215 TTA events 4]       row 30: event 3
+[66.1203215 TTA access f930]    row 30: event 3
+[66.1203215 TTA events 4]
 [66.1203260 TTA rd 73 04]
 [66.1203545 TTA wr 73 00]
-[66.1203635 TTA events 8]       row 40: event 4...
-[66.1203635 TTA acquire 40 at 00]  ...which also takes an acquisition sample
+[66.1203635 TTA access f940]    row 40: event 4...
+[66.1203635 TTA events 8]
+[66.1203635 TTA acquire 404040 4040 bus 40 at 00]  ...which also takes an acquisition sample
 [66.1203680 TTA rd 73 08]
 [66.1204085 TTA wr 70 00]       comparators off: event latches cleared
 [66.1204385 TTA wr 77 ff]       counter reset: outputs now low
@@ -216,7 +238,7 @@ These steps are put together from what TTA.TST does in modules 30 and 45. They h
 
 | Variable | What it logs |
 |---|---|
-| `TEK_TTATRACE=1` | TTA ports, event changes and acquisitions (stderr) |
+| `TEK_TTATRACE=1` | TTA ports, comparator accesses, event changes, run-mode events and triggers, acquisitions (stderr) |
 | `TEK_INTTRACE=1` | interrupts the 2650 takes (`INT 29` is the TTA's or the RTPA's) |
 
 To study a module, run it alone (`-type 51 'T\r' -type 56 '46\r'`) with the trace on, and dump TTA.TST from memory to read its code:
@@ -233,15 +255,23 @@ The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
 
 **On the real board.** In use, the TTA sits on the 8301's emulator bus. On every bus cycle of the emulator processor:
 1. The leading edge of SLV OPREQ latches the address and control lines; its trailing edge latches the data and the probe lines (users manual §4).
-2. Each latched input group (address bytes, data, probe, control) addresses its own comparator RAM. The TTA software had loaded those RAMs, for every possible value of the group, with the events that value takes part in. So a value, a range, don't-care digits or an excluded range all become a table lookup at bus speed; page 74's 2-bit codes, seen in test mode, fit relation codes for ranges spanning several bytes.
-3. The RAM outputs combine into the four events about 60–80 ns after the cycle. Events feed the Am9513 (SRC k, GATE k+1, as in test mode); each is ANDed with its counter's output to make a trigger.
-4. A trigger with a break raises INT 29 and holds the processor after the current instruction. Each cycle, or event 4's only, is stored in acquisition memory. The 2650 reads it all back once the emulator stops.
+2. Each latched input byte addresses its comparator RAM nibble (the table above). The TTA software had loaded those RAMs, for every possible value, with the codes of each event's comparison. So a value, a range, don't-care digits or an excluded range all become a table lookup at bus speed.
+3. The RAM outputs combine into the four events about 60–80 ns after the cycle. Events feed the Am9513; each is ANDed with its counter's output to make a trigger.
+4. A trigger with its port 72 bit breaks the program after the current instruction. Each cycle, or trigger 4's only, is stored in acquisition memory. The 2650 reads it all back once the emulator stops.
 
-**In the emulator.** `machine/tta_run.*` runs the same steps per bus cycle of the emulated Z80. The difference is step 2: it evaluates the event definitions (values, ranges, masks, cycle types, counter pattern) directly instead of looking them up in RAM tables, because nothing that survives programs the board in run mode. The counters are modelled the same functional way, with the five output modes, sources, gates and restart of the users manual and the OS/40 manual's Table 5-2: the TTA software's exact Am9513 programming for each `cou` option is not known either. The timebases are the Am9513's F1–F5 at 5 MHz with decade scaling (200 ns … 2 ms), the clock found in test mode. The break holds the processor and raises INT 29, which also shows in the Emulator Controller (E3 bit 4, F2 bit 2) as the RTPA's does.
+**In the emulator.** Each emulator board hands its bus cycles to `tta::target_cycle`: the Z80 and 8085 boards in the 8085 support's bus status format (bit 0 fetch, bit 1 read, bit 2 memory), the 8086 board in its own. The board then does steps 2–4 from its RAMs and the Am9513, exactly as above. The X1 clock and EMUCLK follow the emulator processor's own clock, so timings are exact to its T-states.
 
 **The commands.** `system/tta_console.*` is the TTA command set of the users manual: `acq ad bre bus cons cou ctr data disp eve pro qua tclr ts`, standing in for the later DOS/50 that had it. `tek8550_system::key_in` gives it the lines typed at the DOS/50 prompt whose first word is a TTA command; DOS/50 then gets an empty line. Usage: [TTA.md](TTA.md).
 
-**One bridge.** DOS/50 V1.0's GO handler (overlay address 681E) accepts an INT 29 break only after reading the RTPA's status register C2 (10 present, 08 stopped, 01/02 TRIG1/2). With no RTPA fitted, the emulator shows the TTA's break there, so that DOS/50 V1.0 stops cleanly and prints the processor's state. With the Z80 support it still labels the break `<BREAK   >` (it ties the TRIG names to its own `BIF` settings), so the console prints `TTA break: TRIGn` first; DOS/50's 8085 support prints `<BREAK TRIG1>` itself. The TTA watches both emulator boards (Z80 and 8085), in every emulation mode: target accesses over the prototype link are cycles of the emulator processor like any other. This is emulator glue for software we don't have, not hardware.
+The commands program the board as OS/40 did:
+- **Comparator RAMs:** EVE's codes (`system/tta_eve.*`).
+- **Counters:** COU's and TTA2's Am9513 command sequences. A delay counter, for example, is loaded with v−1 and its toggle cleared, so that its output rises at the v-th count.
+- **Ports 70–72:** cons, bre and acq.
+- **Runs:** at GO and at the end of a run they do what OS/40's resident module did (`tek8301::tta_sw_go`/`tta_sw_stop`): reprogram the counters, flip the run marker, switch the comparators on; at the end, save the counters and read them back.
+- **At a TTA break** they act as OS/40's INT 29 handler (`tta_sw_break`): stop, or print a trace line and carry on (`cont`).
+- **`disp`** reads acquisition memory.
+
+**One bridge.** DOS/50 V1.0's GO handler (overlay address 681E) accepts an INT 29 break only after reading the RTPA's status register C2 (10 present, 08 stopped, 01/02 TRIG1/2). With no RTPA fitted, the emulator shows the TTA's break there, so that DOS/50 V1.0 stops cleanly and prints the processor's state. DOS/50 names the trigger in its `<BREAK …>` line only when its own RTPA settings (`BIF 1`, `BIF 2`) ask for it, and never TRIG3 or TRIG4, so the console prints `TTA break: TRIGn` first. The TTA watches both emulator boards (Z80 and 8085), in every emulation mode: target accesses over the prototype link are cycles of the emulator processor like any other. This is emulator glue for software we don't have, not hardware.
 
 ## 9. How the emulator models all of this
 
@@ -256,7 +286,7 @@ The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
 | Probe and prototype | `emu/src/host/ipc_target.*` | an external process over a socket (`notes/prototype-link.md`) |
 | REMOTE port / host computer | `emu/src/host/serial_link.*` | a byte stream over a socket; DOS/50 COMM and HOST (`notes/host-link.md`) |
 | RTPA | `emu/src/machine/rtpa.*` | register level, reverse-engineered from RTPA.TST and DOS/50; passes its diagnostic (`notes/rtpa.md`) |
-| TTA | `emu/src/machine/tta.*`, `am9513.*` (MAME) | test mode at register level (passes TTA.TST); run mode functional (§8, `notes/tta.md`) |
+| TTA | `emu/src/machine/tta.*`, `am9513.*` (MAME) | register level: test mode passes TTA.TST, run mode as OS/40 programs it (§8, `notes/tta.md`, `notes/tta-os40.md`) |
 | CT8500 | `emu/src/host/ct8500.*` | the command set from the operator manual, rendered in your terminal with ANSI codes |
 | HSI cable | `main8550.cpp` | both units run in 100 µs lockstep; bytes are passed at the link's timing |
 

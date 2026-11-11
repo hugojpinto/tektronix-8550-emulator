@@ -145,7 +145,7 @@ void tek8301::slave_run(emulator_board &b, int cycles2650)
 		const bool watch = rtpa_board.present && b.rtpa_visible();
 		const bool twatch = b.tta_visible() && tta_board.target_watch();   // the TTA in run mode: the program under test
 		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(b.pc()); m_rtpa_watch = true; }
-		if (twatch) { tta_board.run.hz = b.clock_hz(); tta_board.instr_begin(b.cycles(), b.pc()); m_tta_watch = true; }
+		if (twatch) m_tta_watch = true;
 		b.step();
 		if (watch) {
 			m_rtpa_watch = false;
@@ -154,9 +154,15 @@ void tek8301::slave_run(emulator_board &b, int cycles2650)
 		}
 		if (twatch) {
 			m_tta_watch = false;
-			tta_board.instr_end(b.pc(), b.cycles());
-			if (tta_board.take_break()) ec_interrupt(INT_RTPA);   // a TTA break: INT 29, PC-next latched
-			if (tta_board.take_irq()) tta_interrupt();
+			// a TTA break takes effect after the instruction that held the trigger (users manual
+			// 1-10): the TTA software decides between stopping and a trace line (cont)
+			u8 trig;
+			if (tta_board.take_target_break(trig)) {
+				if (!tta_sw_break || tta_sw_break(trig, m_lp_pc_last)) {
+					tta_board.hold(trig);            // the board holds the processor: INT 29, PC-next latched
+					ec_interrupt(INT_RTPA);
+				}
+			}
 		}
 		b.post_step();
 		m_lp_frac -= double(b.cycles() - c0);
@@ -173,6 +179,18 @@ void tek8301::slave_run(emulator_board &b, int cycles2650)
 		if (b.halted()) { ec_interrupt(INT_SLV_HALT); break; }
 	}
 	if (m_lp_frac > 0) m_lp_frac = 0;
+	// the program stopped (a break, breakpoint, single cycle or halt hands control back to
+	// DOS/50; an SVC does not end it): the TTA software reads its counters (OS/40 7480)
+	if (m_user_run && !lp_running() && !m_svc_stop) {
+		m_user_run = false;
+		if (tta_sw_stop) tta_sw_stop();
+	}
+}
+
+void tek8301::user_go(bool new_address)
+{
+	m_user_run = true;
+	if (tta_sw_go) tta_sw_go(new_address);
 }
 
 bool tek8301::load_roms(const std::string &dir, std::string &err)
@@ -286,7 +304,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
 	case 0xb8: v = pm_read(0); break;
 	case 0xb9: v = pm_read(1); break;
-	case 0xca: case 0xcb: v = remote.read(port & 1); if (rem_trace && (port & 1)) fprintf(stderr, "[%.3f REM rx %02x '%c' pc=%04x]\n", m_cycles / CPU_HZ, v, v >= 0x20 && v < 0x7f ? v : '.', cpu.pc()); break;
+	case 0xca: case 0xcb: v = remote.read(port & 1); if (rem_trace && (port & 1)) { fprintf(stderr, "[%.3f REM rx %02x '%c' pc=%04x]\n", m_cycles / CPU_HZ, v, v >= 0x20 && v < 0x7f ? v : '.', cpu.pc()); } break;
 	case 0xcc: case 0xcd: v = aux.read(port & 1); break;
 	case 0xce: case 0xcf: v = term.read(port & 1); break;
 	case 0xd2: v = u8(m_par_addr); m_pending &= ~(1u << INT_PARITY); break;

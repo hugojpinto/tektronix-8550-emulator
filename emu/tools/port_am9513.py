@@ -85,6 +85,18 @@ c = c.replace("""			break;
 	default: break;
 	}
 }""", 1)
+# [tek8550] master reset also disarms every counter. TTA.TST (module 44 and others) issues FF,
+# then "disarm and save" (9F), and expects counters 2-5 to hold 0000: counters left armed by
+# the TTA software (OS/40 arms them at every GO) must stop at FF, or they go on counting F1 under
+# the reset mode 0B00. MAME's master_reset leaves them running.
+c = c.replace("""	// Initialize counter mode, load and hold registers
+	for (int c = 0; c < 5; c++)
+	{
+		set_counter_mode(c, 0x0b00);""", """	// Initialize counter mode, load and hold registers
+	for (int c = 0; c < 5; c++)
+	{
+		disarm_counter(c);   // [tek8550] see tools/port_am9513.py
+		set_counter_mode(c, 0x0b00);""", 1)
 c = c.replace('\tmachine().scheduler().synchronize(timer_expired_delegate(FUNC(am9513_device::clear_outputs), this));', '\tclear_outputs(0);')
 c = c.replace('TIMER_CALLBACK_MEMBER(am9513_device::clear_outputs)', 'void am9513_device::clear_outputs(s32 param)')
 c = c.replace('TIMER_CALLBACK_MEMBER(am9513_device::timer_tick)', 'void am9513_device::timer_tick(s32 param)')

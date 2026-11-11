@@ -36,7 +36,7 @@ u8 z80_slave::mem_rd(void *u, u16 a)
 	m.bp_check(a, false);
 	u8 v = m.slave_rd(a, s.cpu.m1);
 	if (m.m_rtpa_watch) m.rtpa_board.bus(a, v, s.cpu.m1, false, false);
-	if (m.m_tta_watch) m.tta_board.target_bus(s.cpu.cyc, a, v, s.cpu.m1 ? tta::FETCH : tta::MREAD);
+	if (m.m_tta_watch) m.tta_board.target_cycle(s.cpu.cyc, s.clock_hz(), tta::cycle8(a, v, s.cpu.m1 ? tta::FETCH : tta::MREAD));
 	return v;
 }
 
@@ -46,7 +46,7 @@ void z80_slave::mem_wr(void *u, u16 a, u8 d)
 	tek8301 &m = s.mdu;
 	m.bp_check(a, true);
 	if (m.m_rtpa_watch) m.rtpa_board.bus(a, d, false, true, false);
-	if (m.m_tta_watch) m.tta_board.target_bus(s.cpu.cyc, a, d, tta::MWRITE);
+	if (m.m_tta_watch) m.tta_board.target_cycle(s.cpu.cyc, s.clock_hz(), tta::cycle8(a, d, tta::MWRITE));
 	m.slave_wr(a, d);
 }
 
@@ -55,7 +55,7 @@ u8 z80_slave::port_in(z80 *z, u16 port)
 	z80_slave &s = *static_cast<z80_slave *>(z->userdata);
 	tek8301 &m = s.mdu;
 	const u8 v = s.prototype_io() ? m.target->io_read(port) : 0xff;
-	if (m.m_tta_watch) m.tta_board.target_bus(s.cpu.cyc, port, v, tta::IOREAD);   // the TTA sees the I/O cycle
+	if (m.m_tta_watch) m.tta_board.target_cycle(s.cpu.cyc, s.clock_hz(), tta::cycle8(port, v, tta::IOREAD));   // the TTA sees the I/O cycle
 	else if (slave_io_trace && !s.prototype_io()) fprintf(stderr, "[%.3f %s in  %04x @%04x]\n", m.m_cycles / tek8301::CPU_HZ, s.name(), port, z->pc);
 	return v;
 }
@@ -64,7 +64,7 @@ void z80_slave::port_out(z80 *z, u16 port, u8 d)
 {
 	z80_slave &s = *static_cast<z80_slave *>(z->userdata);
 	tek8301 &m = s.mdu;
-	if (m.m_tta_watch) m.tta_board.target_bus(s.cpu.cyc, port, d, tta::IOWRITE);
+	if (m.m_tta_watch) m.tta_board.target_cycle(s.cpu.cyc, s.clock_hz(), tta::cycle8(port, d, tta::IOWRITE));
 	// SVC: OUT to the 8-port block selected by the SVC map (F3 D3-D0 = A7-A4, default F0-F7).
 	// SVC n is OUT (F8h-n): F7 = SVC 1 ... F0 = SVC 8 (Z80 Emulator Specifics, Table 7C-3)
 	// (SVC decode uses A0-A7 only; A8-A15 = A are ignored)

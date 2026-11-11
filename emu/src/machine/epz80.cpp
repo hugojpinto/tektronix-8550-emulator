@@ -40,8 +40,9 @@ bool epz80_board::forced_jump(u16 target)
 {
 	tek8301 &m = mdu;
 	const bool fw = firmware_mapped() && (target & 0xfe00) == 0xf800;   // into the PROM
-	// the TTA starts a run; GO with a new address (not the stop address) resets its counters
-	if (!fw && m.tta_board.target_watch()) { cpu.halted = false; m.tta_board.run_start(target != m.m_lp_pc_next, cpu.cyc); }
+	// the user's program starts (GO, or a step of TRACE); a new address (not where it
+	// stopped) is a new run for the TTA software
+	if (!fw) m.user_go(m.new_go_address(target));
 	jump(target);
 	if (fw) {
 		// DOS/50 dumps a Z80 stopped by HALT with F9 = F9: the forced interrupt (NMI) wakes

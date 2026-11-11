@@ -18,33 +18,33 @@ u8 ep8085_board::bus_t::read(u16 a)
 {
 	tek8301 &m = b->mdu;
 	m.bp_check(a, false); u8 v = m.slave_rd(a, false);
-	if (m.m_tta_watch) m.tta_board.target_bus(b->m_t, a, v, tta::MREAD);
+	if (m.m_tta_watch) m.tta_board.target_cycle(b->m_t, b->clock_hz(), tta::cycle8(a, v, tta::MREAD));
 	return v;
 }
 u8 ep8085_board::bus_t::fetch(u16 a)
 {
 	tek8301 &m = b->mdu;
 	m.bp_check(a, false); u8 v = m.slave_rd(a, true);
-	if (m.m_tta_watch) m.tta_board.target_bus(b->m_t, a, v, tta::FETCH);
+	if (m.m_tta_watch) m.tta_board.target_cycle(b->m_t, b->clock_hz(), tta::cycle8(a, v, tta::FETCH));
 	return v;
 }
 void ep8085_board::bus_t::write(u16 a, u8 d)
 {
 	tek8301 &m = b->mdu;
 	m.bp_check(a, true);
-	if (m.m_tta_watch) m.tta_board.target_bus(b->m_t, a, d, tta::MWRITE);
+	if (m.m_tta_watch) m.tta_board.target_cycle(b->m_t, b->clock_hz(), tta::cycle8(a, d, tta::MWRITE));
 	m.slave_wr(a, d);
 }
 u8 ep8085_board::bus_t::io_read(u8 port)
 {
 	tek8301 &m = b->mdu;
-	if (m.m_tta_watch) m.tta_board.target_bus(b->m_t, u16(port | (port << 8)), 0xff, tta::IOREAD);
+	if (m.m_tta_watch) m.tta_board.target_cycle(b->m_t, b->clock_hz(), tta::cycle8(u16(port | (port << 8)), 0xff, tta::IOREAD));
 	return 0xff;
 }
 void ep8085_board::bus_t::io_write(u8 port, u8 d)
 {
 	tek8301 &m = b->mdu;
-	if (m.m_tta_watch) m.tta_board.target_bus(b->m_t, u16(port | (port << 8)), d, tta::IOWRITE);
+	if (m.m_tta_watch) m.tta_board.target_cycle(b->m_t, b->clock_hz(), tta::cycle8(u16(port | (port << 8)), d, tta::IOWRITE));
 	// SVC n = OUT (F8h-n) in the block selected by F3, as on the Z80 board
 	if ((m.m_f9 & 0x10) && (port & 0xf8) == ((m.m_f3 & 0x0f) << 4)) {
 		m.ec_interrupt(tek8301::INT_SVC1 + (7 - (port & 7)));
@@ -80,7 +80,7 @@ bool ep8085_board::forced_jump(u16 target)
 		firmware(target);
 		return true;
 	}
-	if (m.tta_board.target_watch()) { m.tta_board.run.hz = clock_hz(); m.tta_board.run_start(target != m.m_lp_pc_next, m_t); }
+	m.user_go(m.new_go_address(target));        // the user's program starts (see epz80_board::forced_jump)
 	cpu.set_pc(target);
 	return false;
 }

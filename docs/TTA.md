@@ -208,13 +208,13 @@ Counter 3 holds **197**: 197 × 200 ns = 39.4 µs. To check by hand, the Z80 at 
 **The 8085 board.** The TTA watches the 8085 emulator board as well (`-ep 8085`, with DOS/50's 8085 support installed once from the 8085 disc, see `emu/README.md`). There, everything looks exactly as in the manual, which was written for the 8085:
 - `disp` decodes `LXI H`, `ADD M`, `JNZ`…;
 - an `OUT F7` is acquired as `00F7F7 0F I WT`;
-- DOS/50's 8085 support itself prints `<BREAK TRIG1>` for a TTA stop.
+- the trace line has the 8085's columns (`IM`, `SOD`).
 
 The sample program needs the same ending as on the Z80: patch `C3 0C 01` (JMP 010C) at 010C and set `BK 10C`.
 
 **Target systems (emulation modes 1 and 2).** The TTA sits on the emulator processor's bus, so it sees the program's cycles whatever they reach: program memory, or a target system over the prototype link (`-target`, [INTEGRATION.md](INTEGRATION.md)). In mode 1, with the program in program memory and its I/O on the target, an `OUT (10H),A` to the target is caught and recorded as `I WT`. In mode 2, with program and data in the target's RAM, the operand-only recording of section 7 comes out the same. Mode 2 is slow (one socket round trip per access), but the TTA adds nothing to that.
 
-**The probe.** The real TTA's eight probe leads (and its EVENT QUALIFIER input) clip onto any signal of your prototype. The emulator has nothing connected to them: they read 0 and the qualifier reads low.
+**The probe.** The real TTA's eight probe leads (and its EVENT QUALIFIER input) clip onto any signal of your prototype. The emulator has nothing connected to them: the leads read 0, and the qualifier, left open, reads high (so `qua n 1` always matches and `qua n 0` never does).
 
 ## Command reference
 
@@ -263,10 +263,10 @@ Commands are typed at the `>` prompt.
 ## In the emulator
 
 - **Where the commands come from.** In 1983 these commands were part of the later DOS/50 and of OS/40 on the 8540. Neither survives, and the DOS/50 V1.0 we have predates the TTA. So the emulator runs them itself. A line typed at the DOS/50 prompt whose first word is a TTA command is taken by the emulator, and its output is printed on the terminal; DOS/50 then gets an empty line and shows its prompt again. Every other line reaches DOS/50 untouched. Syntax and displays follow the users manual.
-- **How the board is modelled.** Everything the board's own diagnostic exercises is emulated at register level and passes: counters, event latches, triggers, interrupt, acquisition. How the board is programmed to watch a target program, and what the TTA software wrote into it, is not known. That part, events and counters as the manual describes them, is modelled functionally. [ARCHITECTURE.md §8](ARCHITECTURE.md#8-inside-the-trigger-trace-analyzer) explains the split.
-- **Breaks.** With the Z80, DOS/50 V1.0 can't name a TTA trigger in its `<BREAK …>` line, so a stop shows `<BREAK   >`, preceded by the TTA's own line, **TTA break: TRIGn**. DOS/50's 8085 support names TRIG1 and TRIG2 itself.
+- **How the board is modelled.** At register level throughout. The commands program the board as the 8540's OS/40 TTA software did (its ROMs survive, and DOS/50 V2 used the same code): they write the comparator RAMs and give the Am9513 the same command sequences. The board then watches each bus cycle through those RAMs and counters, as the real one does. Its own diagnostic passes, and so do the 8086 and 80186 diagnostics' TTA tests. [ARCHITECTURE.md §8](ARCHITECTURE.md#8-inside-the-trigger-trace-analyzer) has the details.
+- **Breaks.** DOS/50 V1.0 names a TTA trigger in its `<BREAK …>` line only when its own RTPA settings ask for it, so a stop shows `<BREAK   >`, preceded by the TTA's own line, **TTA break: TRIGn**.
 - **Bus symbols.** `f nf m i rd wt` for the Z80 and the 8085: the generic set TNIX's TTA help gives for every processor without its own (the 8086, Z8000 and 68000 have their own).
-- **The probe and the qualifier.** Nothing is clipped onto them, so the probe lines read 0 and the qualifier is low. TRIG OUT and ACQ CLK OUT are not modelled.
+- **The probe and the qualifier.** Nothing is clipped onto them: the probe lines read 0 and the open qualifier input reads high. TRIG OUT and ACQ CLK OUT are not modelled.
 - **The board's own diagnostic**, TTA.TST, runs in Select mode → 6. See [OPERATION.md §10](OPERATION.md#the-trigger-trace-analyzers-diagnostic).
 
 The pictures are made by `tools/make_tta_shots.sh` from a scripted session (`-type` lines can include TTA commands), so they come out the same on every run.

@@ -209,13 +209,14 @@ bool ep8086_board::user_cycle(u32 a, int kind)
 // status byte, decoded by the 8540's 8088 support (160-1461, table after "CS]ES]DS]SS]"):
 // bit 0 first byte of an instruction, bits 3-1 S2-S0 (000 IA, 001 IR, 010 IW, 011 HT,
 // 100 fetch, 101 RD, 110 WT), bits 5-4 segment (11 ES, 10 SS, 01 CS, 00 DS), bit 6 BHE
-// and bit 7 TEST, both active low. Activity byte: bit 7 INT, bit 6 LOCK (active low),
-// bit 0 set (diag module 70 expects 01 under mask 83). Fetches are the instruction bytes
+// and bit 7 TEST, both active low. Activity byte: bit 7 INT, bit 6 LOCK (active low); the
+// TTA adds the qualifier and its run marker (bit 0: port 72 bit 4; module 70 sets 72 = 91 and
+// expects 01 under mask 83). Fetches are the instruction bytes
 // as the queue hands them out (module 70: one per byte, 19 then 18).
 void ep8086_board::tta_cycle(u32 a, int kind, u8 d)
 {
 	tta &t = mdu.tta_board;
-	if (!m_user || m_entering || !t.target_registers()) return;
+	if (!m_user || m_entering || !t.target_watch()) return;
 	static const u8 s20[] = { 0x08, 0x0a, 0x0c, 0x02, 0x04 };   // FETCH READ WRITE IOR IOW -> S2-S0 << 1
 	// the 80186 drives no segment status (S4/S3 = 00, read as ES: 186.TST module 70 expects
 	// 29/28/2C and ignores bit 4)
@@ -225,12 +226,15 @@ void ep8086_board::tta_cycle(u32 a, int kind, u8 d)
 	s.addr = a & (kind == IOR || kind == IOW ? 0xffff : 0xfffff);
 	s.data = d;
 	s.bus = u8(s20[kind] | segbits[seg & 3] | (kind == FETCH && m_first_fetch ? 0x01 : 0x00) | ((a & 1) ? 0x00 : 0x40));
-	s.activity = u8(0x01 | (m_lock ? 0x00 : 0x40));
+	s.ext = u8(m_lock ? 0x00 : 0x40);
+	s.fetch = kind == FETCH;
 	if (kind == FETCH) m_first_fetch = false;
-	t.target_cycle(mdu.now_cycles(), s);
-	// a TTA break reaches the 80186 one instruction later than the 8086 (186.TST module 70
-	// counts to 20 where the 8086 test counts to 22, and both expect the break after 0014)
-	if (t.take_target_break()) schedule_break((kind == FETCH ? 1 : 2) + (is186 ? 1 : 0), 0x00, 0x08);
+	t.target_cycle(m_t, clock_hz(), s);
+	// a TTA break takes effect like a breakpoint: after the instruction that held the trigger
+	// (8086 and 80186 alike: the 8086 test counts to 22, 186.TST to 20, and both expect the
+	// break after 0014)
+	u8 trig;
+	if (t.take_target_break(trig)) schedule_break(kind == FETCH ? 1 : 2, 0x00, 0x08);
 }
 
 // the reason latches are set when the condition occurs; the break itself follows

@@ -2,6 +2,17 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **TTA run mode at register level.** The 8540's OS/40 TTA software survives in ROMs 160-1381/1382 (2650 code, which DOS/50 V2 shared; `notes/tta-os40.md`). It shows which target input addresses each comparator RAM, the range codes, and the Am9513 programming.
+  - **The board:** every board's bus cycles (Z80, 8085, 8086, 80186) go through the comparator RAMs, a cascade magnitude comparator inferred from OS/40's codes and checked against all of them (`make test`), then the real Am9513 (SRC k = events, GATE k+1 = triggers, SRC5 per port 70), triggers, breaks and acquisition.
+  - **The commands** program it as OS/40 did: EVE's RAM codes, COU's and TTA2's counter sequences, CONS/BRE/ACQ ports, OS/40's start, end and INT 29 handling, and DISP from acquisition memory. The functional engine (`tta_run`) is gone; the tutorial and its 16 pictures come out unchanged.
+  - **Found on the way:**
+    - in test mode the 2650's writes to comparator pages are only stimuli (TTA.TST 31, 60);
+    - counter outputs are sampled before each cycle's counts (the manual's Table 5-2, and one break rule for the 8086 and the 80186);
+    - a run-mode break goes to the emulator, not to the 2650;
+    - Am9513 master reset disarms the counters (port fix);
+    - the qualifier, undriven, reads 1;
+    - the 8086's OS/40 support ROMs are 2650 code, not PDP-11.
+  - TTA.TST options 0 and 7, the 8086/80186 module 70, TNIX's recipes and the 8085 checks all pass.
 - 2026-11-11: **User SVCs under DOS/50 V1.0 work** on both boards: assign, read, write and exit, as in the Specifics manuals' demonstration. An SVC now holds the board only until the 2650 takes the interrupt, as the Language Processor already behaved; the Z80 diagnostic's SVC tests still pass. V1.0's SVC function table is in `notes/tta.md`.
 - 2026-11-11: **80188 timing:** an 8-bit word read costs a clock more than on the 80186 (inferred from the diagnostic's patched loop count). The 80188 now passes 186.TST like the 80186. Option 8 needs a MicroLab I trainer, which isn't preserved.
 - 2026-11-11: **Program memory boards, and the 80186 at full pass.**

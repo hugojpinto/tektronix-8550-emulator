@@ -32,8 +32,8 @@ DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cp
 I86_OBJ  := $(BUILD)/cpu/i86/i86.o $(BUILD)/cpu/i86/i186.o
 T11_OBJ  := $(BUILD)/cpu/t11/t11.o
 M8501    := $(BUILD)/machine/tek8501.o $(BUILD)/machine/tek8501_fdc.o $(BUILD)/machine/flexdrive.o
-M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/tta_run.o $(BUILD)/machine/emulator_specifics.o $(BUILD)/machine/ep8085.o $(BUILD)/machine/ep8086.o $(I86_OBJ) $(BUILD)/machine/z80_slave.o $(BUILD)/machine/epz80.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
-SYS8550  := $(BUILD)/system/tek8550.o $(BUILD)/system/tta_console.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ct8500_ansi.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(BUILD)/host/net.o
+M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/emulator_specifics.o $(BUILD)/machine/ep8085.o $(BUILD)/machine/ep8086.o $(I86_OBJ) $(BUILD)/machine/z80_slave.o $(BUILD)/machine/epz80.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
+SYS8550  := $(BUILD)/system/tek8550.o $(BUILD)/system/tta_console.o $(BUILD)/system/tta_eve.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ct8500_ansi.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(BUILD)/host/net.o
 
 all: $(BUILD)/dasm$(EXE) $(BUILD)/tek8501$(EXE) $(BUILD)/tek8301$(EXE) $(BUILD)/tek8550$(EXE)
 
@@ -97,17 +97,20 @@ endif
 endif
 $(GUI_OBJ): CPPFLAGS += $(SDL_CFLAGS)
 
-test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE) $(BUILD)/i86_test$(EXE) $(BUILD)/i186_test$(EXE)
+test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE) $(BUILD)/i86_test$(EXE) $(BUILD)/i186_test$(EXE) $(BUILD)/tta_eve_test$(EXE)
 	$(BUILD)/flexdrive_roundtrip$(EXE) $(wildcard ../sources/bitsavers/disks/*.imd ../sources/bitsavers/disks/*.IMD)
 	$(BUILD)/ct8500_keys$(EXE)
 	$(BUILD)/i86_test$(EXE)
 	$(BUILD)/i186_test$(EXE)
+	$(BUILD)/tta_eve_test$(EXE)
 $(BUILD)/ct8500_keys$(EXE): $(BUILD)/tests/ct8500_keys.o $(BUILD)/host/ct8500.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/i86_test$(EXE): $(BUILD)/tests/i86_test.o $(I86_OBJ) $(BUILD)/cpu/i386/i386dasm.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/i186_test$(EXE): $(BUILD)/tests/i186_test.o $(I86_OBJ) $(BUILD)/cpu/i386/i386dasm.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+$(BUILD)/tta_eve_test$(EXE): $(BUILD)/tests/tta_eve.o $(BUILD)/machine/tta.o $(BUILD)/machine/am9513.o $(BUILD)/system/tta_eve.o
+	$(CXX) $(LDFLAGS) -o $@ $^
 $(BUILD)/flexdrive_roundtrip$(EXE): $(BUILD)/tests/flexdrive_roundtrip.o $(BUILD)/machine/flexdrive.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/tests/%.o: tests/%.cpp

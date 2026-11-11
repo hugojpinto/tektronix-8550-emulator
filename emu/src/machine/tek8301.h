@@ -124,6 +124,16 @@ public:
 	u8 sysmem(u16 a) const { return m_sysram[a]; }
 	void progmem_w(u16 a, u8 d) { m_progmem[a] = d; }
 	std::function<void(u16)> lp_trace_hook;
+	// ---- the TTA software (system/tta_console, standing in for the later DOS/50 that had it):
+	// what it did when a program on an emulator board starts and stops (OS/40's GO hooks 4108,
+	// 410A and run start 7325; run stop 7480), and its INT 29 handler (7300/730C), which
+	// decides from its break settings whether a TTA break stops the program (true) or only
+	// prints a trace line (false). Unset: no TTA software, and every break stops.
+	std::function<void(bool new_address)> tta_sw_go;
+	std::function<void()> tta_sw_stop;
+	std::function<bool(u8 trig, u16 pc)> tta_sw_break;
+	void user_go(bool new_address);          // an emulator board starts the user's program (forced jump)
+	bool new_go_address(u16 target) const { return target != m_lp_pc_next; }
 	std::string lp_state() const {
 		return util::string_format("LP: e7=%02x live=%d z80halt=%d pc=%04x ec_pend=%02x f8=%02x f9=%02x pend=%08x 2650halt=%d",
 			m_e7, m_lp_live, int(lp.halted), lp.pc, m_ec_pend, m_f8, m_f9, m_pending, int(cpu.halted()));
@@ -204,6 +214,8 @@ private:
 	void tta_interrupt();
 	bool m_rtpa_watch = false;     // the emulator processor is stepping: the RTPA sees its cycles
 	bool m_tta_watch = false;      // ... and the TTA, in run mode (emulator processor only)
+	bool m_user_run = false;       // the user's program was started (user_go) and has not stopped
+	u64 m_tta_c0 = 0;              // the slave's clock count at the start of its current instruction
 	u8   slave_rd(u16 a, bool m1 = false);   // m1: opcode fetch
 	void slave_wr(u16 a, u8 d);
 	// Memory map / write-protect RAM: 512 blocks x 128 bytes, D0 = U (prototype), D2 = write

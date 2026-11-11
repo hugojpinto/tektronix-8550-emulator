@@ -154,6 +154,7 @@ void am9513_device::master_reset()
 	// Initialize counter mode, load and hold registers
 	for (int c = 0; c < 5; c++)
 	{
+		disarm_counter(c);   // [tek8550] see tools/port_am9513.py
 		set_counter_mode(c, 0x0b00);
 		m_counter_load[c] = 0;
 		m_counter_hold[c] = 0;

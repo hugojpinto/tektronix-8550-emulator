@@ -30,8 +30,6 @@ public:
 	// DOS/50's trace line for this processor, after the instruction at pc has run
 	virtual std::string trace_header() const = 0;
 	virtual std::string trace_line(u16 pc, const memory &mem) const = 0;
-	// DOS/50's support for this processor names a TTA break (<BREAK TRIG1>) itself
-	virtual bool names_tta_breaks() const = 0;
 protected:
 	virtual util::disasm_interface &disasm() const = 0;
 };
