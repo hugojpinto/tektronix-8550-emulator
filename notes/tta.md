@@ -91,7 +91,6 @@ TNIX 2.0, the 8560's Unix, drove the TTA in 8540 integration units with the same
 
 ## Open
 - **Run mode at register level.** Which input group addresses which comparator page, the meaning of the 2-bit codes (range cascade?), of pages 70–72, 78, 79 and of port 74, and the TTA software's Am9513 programming. Nothing we have exercises them; a later DOS/50 or OS/40 with the TTA commands would. Run mode is modelled functionally meanwhile.
-- **Z80 bus symbols.** The users manual gives only the 8085's (`f nf m i rd wt`); the emulator uses them for the Z80 too.
 - **The probe and the qualifier** have no source. A faithful one would be a separate Data Acquisition Interface connection, as the real P6451 probe was a separate cable from the emulator's probe (see the proposal in the session notes / ROADMAP), not more bits on the prototype link.
 - **SRC5, GATE1 and F1 as count sources**, which TTA.TST skips.
 - **The probe fixture's polarity.** Module 70 (option 7, code at 30A3–3194) asks for "the set-up procedure described in the Probe Interface Test section of the TTA service manual", which our 070-3761-00 lacks. What the code shows:
