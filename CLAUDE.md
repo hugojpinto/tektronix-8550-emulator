@@ -21,8 +21,8 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `disks/` | working disk images. `System_helpfix.img` = DOS/50 V1.0 with the HELP file repaired |
 | `sources/` | original material (bitsavers manuals with OCR `.txt`, disk images, photos, tekwiki). **Read-only; never modify** |
 | `reference/mame/` | MAME source files the cores and devices were ported from (commit in `SOURCE.txt`) |
-| `tools/` | `gen_ct8500_font.py` (font table for the GUI), `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
-| `docs/screenshots/` | rendered session and diagnostics screenshots |
+| `tools/` | `make_hero.sh` (README hero image from the GUI), `gen_panels.py` (front-panel artwork), `make_system_helpfix.py` (rebuilds the working System disc), `gen_ct8500_font.py` (font table for the GUI), `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
+| `docs/` | `TUTORIALS.md` (short recipes), `OPERATION.md` (long tour), `ARCHITECTURE.md`, `DESIGN-gui-and-fdc.md`; `screenshots/` (session, diagnostics, `hero.png`) |
 | `PLAN.md`, `FEASIBILITY.md` | milestones and status log; the original feasibility study |
 | `../tekmato` | sibling tool for DOS/50 disc images (list/extract/write/check); the file-system format is in `../tekmato/FORMAT.md`. Use it to put files on a disc instead of typing them in through EDIT |
 
@@ -40,7 +40,7 @@ Most recent first:
 7. **Disc geometries and FORMAT: done** (all four 8501 formats, `notes/8501.md`; FORMAT re-verified on the real controller firmware). The sibling tool `../tekmato` handles them too.
 8. **Prototype link v3: done**, verified jointly with FUSE (`notes/prototype-link.md`).
 
-Still open beyond the TTA: see **Known gaps** below. The 8086, 6800 and 8080 boards and 8085 target modes are the larger items.
+Windows builds: `make CROSS=x86_64-w64-mingw32-` (cross, verified to compile and link) or natively under MSYS2; not yet run on Windows. Still open beyond the TTA: see **Known gaps** below. The 8086, 6800 and 8080 boards and 8085 target modes are the larger items.
 
 **How hardware has been reverse-engineered here:** run the board's diagnostic against a logging stub, read the expected values it prints, dump the diagnostic from memory (`-dump F`, then `build/dasm s2650 F.8301 0 2000 6000`) and read its table-driven tests. Then check against DOS/50's own command overlays (extract them with `../tekmato`) and verify in a scripted DOS/50 session.
 

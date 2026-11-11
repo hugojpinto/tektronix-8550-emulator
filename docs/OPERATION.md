@@ -15,7 +15,7 @@ build/tek8550 -rw -0 ../disks/work.img
 - `-rw` saves changes back to that image, so your files survive. Without it, every write is lost at exit. Always use a copy; the originals in `sources/` are read-only by convention.
 - Use a terminal of at least **80×25**. Your terminal becomes the CT8500.
 
-After about 24 seconds (it runs at real speed) you see:
+After about 27 seconds (it runs at real speed, real disc seeks included) you see:
 ```
 BOOT V2.1
 8501 V1.0
