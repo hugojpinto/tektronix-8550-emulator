@@ -12,7 +12,7 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 - **Floppies:** the controller runs its real firmware, but the drive is a byte-cell model. Open: flux-level media (weak bits, speed variation), mixed density within a track, and keeping deleted-data (control field) marks in saved images.
 - **Undumped firmware** is emulated at high level: the Z80 and 8085 emulator boards (their PROM checksum tests 07/00D0 and 06/00D0 fail) and the PROM programmer's controller. A dump would replace each with the real thing; see "Wanted" in the [README](README.md#wanted).
 - **Unknown bits:** Z80 board E3 bits 4/1 and register-block byte 26; 8085 register block bytes 8 and 13; DOS/50 label byte 0x1C.
-- **CT8500:** the character ROM was never dumped, and the GUI maps the keyboard only approximately; the real keyboard has OFF LINE, five function keys, ERASE, BREAK and a keypad with IC/DC/IL/DL.
+- **CT8500:** the character ROM was never dumped, monitor mode (control characters shown as symbols) is not modelled, and the learn-status display is an approximation.
 
 ## Front ends and platforms
 - **Windows:** the builds compile and link; they still need a run on a real Windows machine.

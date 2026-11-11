@@ -63,8 +63,8 @@ tek8550 extras: `-hsilog FILE` (hex log of the HSI traffic), `-auxlog FILE` (850
 `-type SECONDS TEXT` (type into the terminal at a machine time; `\r` Return, `\e` ESC, `\xHH`), `-trace8301 T FILE`, `-trace8501 T LEN FILE`.
 ### Graphical terminal (optional, SDL3)
 `make gui` builds `build/tek8550-gui` when SDL3 is installed (`brew install sdl3`, `apt install libsdl3-dev`, MSYS2 `mingw-w64-x86_64-SDL3`); plain `make` never needs it. It takes every tek8550 option and shows the CT8500 in a window: the documented raster (6×8 characters in an 8×10 field, 640×250 dots, green phosphor), drawn with the screenshots' font (Tek 308 ROM upper case plus a matching lower case: the CT8500 character ROM was never dumped), as a CRT (`-style crt`, default) or sharp pixels (`-style sharp`). By default the terminal and the stacked front panels are sized together to fit the screen and centred on it (**L** re-applies that layout); `-scale F` gives fixed sizes instead. Every window can also be resized freely: the contents scale and keep their proportions.
-Type straight into it. Return, Backspace (BS), Tab/Shift-Tab, Esc, Ctrl-letters, the arrows and Home act as the CT8500's keys; F1–F8 are its function keys (PgDn/PgUp = F5/F6 page down/up), Insert/Delete insert/delete a character, F9/F10 insert/delete a line, F11/F12 erase to end of line/page.
-Hotkeys (Cmd on macOS, Ctrl+Alt elsewhere): **V** paste (typed at the terminal's 9600 baud, with a pause after each line), **C** copy the screen as text, **T** turbo, **F** full screen, **S** CRT/sharp, **L** fit the windows to the screen, **R** restart both units, **Q** quit (discs are written back as with the tty front end).
+Type straight into it: the keyboard follows the CT8500's own (map below). The window title shows the keyboard's indicators: REMOTE or LOCAL, TTY LOCK, and LEARN while a function key is being programmed.
+Hotkeys (Cmd on macOS, Ctrl+Alt elsewhere): **Shift-R** REMOTE, **Shift-L** LOCAL, **Shift-T** TTY LOCK, **B** BREAK (Shift: SEND line, Alt: SEND page), **V** paste (typed at the terminal's 9600 baud, with a pause after each line), **C** copy the screen as text, **T** turbo, **F** full screen, **S** CRT/sharp, **L** fit the windows to the screen, **R** restart both units, **Q** quit (discs are written back as with the tty front end).
 **Front panels** (`-panels off` to hide; Cmd/Ctrl+Alt **P** brings closed ones back): the 8301 and 8501 fronts, drawn after photos of real units, in `artwork/8301.lay` and `artwork/8501.lay` (a subset of MAME's `.lay` format: change the artwork there, no code; `-artwork DIR` picks another set). Lamps show the emulated state averaged over each frame: 8301 SYSTEM, PROGRAM, DMA, SELF TEST; 8501 ON, AC ON, PROCESSOR BUSY and each drive's activity lamp; the boards' internal diagnostic LEDs are on a strip below each unit. Click RESTART on either unit; drop a disc image on a drive to insert it, click the drive to eject it (written back first with `-rw`). The POWER/DC rockers and the 8501 HALT/RUN switch are drawn but not operable.
 `-shot SECONDS FILE.bmp` saves the window at a machine time (and the panels as FILE_8301.bmp, FILE_8501.bmp); with `-cycles` the run is flat out, and `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software` runs it with no display.
 Windows: the GUI itself is portable, but the prototype and REMOTE links (`host/ipc_target`, `host/serial_link`) still use POSIX sockets and need a Winsock shim first.
@@ -97,21 +97,30 @@ Your terminal shows an emulated **Tektronix CT8500** (25×80 window over 50 line
 cursor/top-line queries), so the full-screen **ACE** editor works. Use a terminal of at least 80×25. `-term tty` gives raw
 pass-through instead, and `-screen FILE` dumps the emulated screen at exit.
 
-Key map (ACE's configurable commands in brackets, see ACE manual Fig. 4-2):
+Key map, for both the GUI and the tty front end (CT8500 Operators Manual 070-3737 §1; ACE's configurable commands in brackets, ACE manual Fig. 4-2). Like the real terminal, the editing, paging and cursor keys act locally in power-up and local modes, and send ESC + their code in host-control mode (which ACE uses).
 
 | Your key | CT8500 key | ACE |
 |---|---|---|
-| arrows / Home | cursor keys / HOME | (cu) (cd) (cl) (cr) (ch) |
-| F1 F2 F3 F4 | F1–F4 (SCROLL ← ↓ ↑ →) | (sl) (sd) (su) (sr) |
-| F5 / PgDn, F6 / PgUp | F5 PAGE↓, F6 PAGE↑ | (pd) (pu) |
-| F7 | F7 REVISE | (rm) |
-| F8 | F8 | |
-| Insert / Delete | INSERT / DELETE CHAR | (ic) (dc) |
-| F9 / F10 | INSERT / DELETE LINE | (il) (dl) |
-| F11 / F12 | ERASE to EOL / EOP | |
-| Shift-Tab | BACK TAB | (mark) |
-| Ctrl-J | LINE FEED | (cmd-esc) |
+| arrows / Home | cursor keys / HOME (they wrap at the screen edges as on the terminal) | (cu) (cd) (cl) (cr) (ch) |
+| Ctrl-Home / Ctrl-Shift-Home | CNTRL-HOME / CNTRL-SHIFT-HOME: home of Page One / Page Two | |
+| F1 F2 F3 F4 | F1–F4 (F2/F3: SCROLL) | (sl) (sd) (su) (sr) |
+| F5 / PgUp, F6 / PgDn | F5, F6: PAGE (Page One / Page Two; in ACE, text towards the start / the end of the file) | (pd) (pu) |
+| F7, F8 | F7 REVISE, F8 | (rm) |
+| Shift-F1 … Shift-F8 | the programmable function keys (learn mode) | |
+| Insert / Delete (or Shift-Insert) | INSERT CHAR / DELETE CHAR | (ic) (dc) |
+| F12 / Shift-F12 | LINE INSERT / LINE DELETE | (il) (dl) |
+| F9 / Shift-F9 | ERASE TO EOL / ERASE TO EOP | |
+| F10 / Shift-F10 | CLEAR SCREEN / CLEAR ALL | |
+| F11 / Shift-F11 | TAB SET / TAB CLEAR | |
+| Tab / Shift-Tab | TAB FWD / TAB BACK | (mark) |
+| Return / Shift-Return (or Ctrl-J) | RETURN / LINE FEED | (cmd-esc) |
+| Backspace / Shift-Backspace | BACK SPACE (08) / RUB OUT (7F) | |
+| End (or Pause) / Shift-End / Ctrl-End | BREAK / SEND line / SEND page (to the first ETX) | |
+| Ctrl-Shift-F1 … F7 | learn status, enter learn, exit learn, monitor on, monitor off, host-control mode, split screen (the next character gives the line) | |
+| GUI hotkeys Shift-R, Shift-L, Shift-T | REMOTE, LOCAL, TTY LOCK (TTY LOCK makes letters upper case, which DOS/50's commands need) | |
 | Esc | ESC | ends insert; `EX` saves & exits ACE |
+
+Programming a function key, as in the manual: Ctrl-Shift-F2, then the shifted key (e.g. Shift-F1), then the text (Esc + a code character runs that terminal command when played), then Ctrl-Shift-F3. A host can program them too (ESC 39 ESC 4x … US). Monitor mode is not modelled.
 
 ## Running and debugging Z80 programs (emulation mode 0)
 The Z80 emulator processor board is emulated (its firmware at high level, see `notes/8301.md`):

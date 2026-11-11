@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **CT8500 keyboard.** Mapped from the Operators Manual: local/power-up/host-control semantics, REMOTE, LOCAL, TTY LOCK, BREAK (a framing-error null on the ACIA), SEND line/page, learn mode with programmable shifted F1–F8 (remote and local) and playback, the CNTRL-SHIFT commands, edge-wrapping cursor keys. PgUp/PgDn fixed (F5 = Page One = ACE's 'page down'). `make test` checks 27 behaviours against the manual.
 - 2026-11-11: **Public release.** GPL-2.0-or-later (`LICENSE`, `NOTICE.md`), authorship headers on every original file, personal files out of the history, published on GitHub. `PLAN.md` became this changelog plus `ROADMAP.md`; the feasibility study moved to `docs/history/`.
 - 2026-11-11: **Documentation.** README rewritten around a hero picture of the graphical lab; `docs/TUTORIALS.md` with five short recipes and progress screenshots, rendered reproducibly by `tools/make_tutorial_shots.sh` and `tools/make_hero.sh` (GUI batch runs advance a fixed 1/60 s of machine time per frame).
 - 2026-11-11: **Windows.** Portable sockets (`host/net.*`, Winsock) and console (`host/tty.h`, VT mode); the Makefile builds static `.exe` files natively under MSYS2 or cross with `CROSS=x86_64-w64-mingw32-`, and the GUI against SDL3's MinGW package. Verified by cross-compiling; not yet run on Windows.

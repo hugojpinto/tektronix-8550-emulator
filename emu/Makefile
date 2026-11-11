@@ -94,8 +94,11 @@ endif
 endif
 $(GUI_OBJ): CPPFLAGS += $(SDL_CFLAGS)
 
-test: $(BUILD)/flexdrive_roundtrip$(EXE)
+test: $(BUILD)/flexdrive_roundtrip$(EXE) $(BUILD)/ct8500_keys$(EXE)
 	$(BUILD)/flexdrive_roundtrip$(EXE)
+	$(BUILD)/ct8500_keys$(EXE)
+$(BUILD)/ct8500_keys$(EXE): $(BUILD)/tests/ct8500_keys.o $(BUILD)/host/ct8500.o
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/flexdrive_roundtrip$(EXE): $(BUILD)/tests/flexdrive_roundtrip.o $(BUILD)/machine/flexdrive.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/tests/%.o: tests/%.cpp

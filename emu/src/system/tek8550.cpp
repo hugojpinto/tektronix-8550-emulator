@@ -68,6 +68,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	if (outf) out.subscribe([this](const std::string &n, int v) { fprintf(outf, "%.6f %s %d\n", now(), n.c_str(), v); fflush(outf); });
 
 	ct.send = [this](u8 b) { mdu->term.host_rx(b); };
+	ct.send_break = [this]() { mdu->term.host_break(); };
 	mdu->term.on_tx = [this](u8 c) {
 		c &= 0x7f;
 		if (m_feed_ct || !opt.screenfile.empty() || !opt.snaps.empty()) { ct.feed(c); terminal_dirty = true; }

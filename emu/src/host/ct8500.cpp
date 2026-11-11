@@ -51,8 +51,16 @@ void ct8500::put(uint8_t v)
 void ct8500::feed(uint8_t v)
 {
 	v &= 0x7f;
-	if (learn) {                          // programming a function key: swallow until US
-		if (v == 0x1f) learn = false;
+	if (m_learn) {                        // remote learn: ESC 39, then ESC 4x, the string, US
+		if (v == 0x1f) { m_learn = 0; return; }
+		if (m_learn == 1) { if (v == 0x1b) m_learn = 2; return; }
+		if (m_learn == 2) {
+			m_learn_key = (v >= 0x48 && v <= 0x4f) ? v - 0x48 : -1;
+			if (m_learn_key >= 0) m_fkey[m_learn_key].clear();
+			m_learn = 3;
+			return;
+		}
+		if (m_learn_key >= 0) { if (m_fkey[m_learn_key].size() < 64) m_fkey[m_learn_key] += char(v); else bell = true; }
 		return;
 	}
 	if (esc == 1) {                       // command byte after ESC
@@ -93,19 +101,8 @@ void ct8500::feed(uint8_t v)
 void ct8500::command(uint8_t code)
 {
 	switch (code) {
-	case 0x01: {                          // transmit line
-		int e = COLS; while (e > 0 && ch[r][e - 1] == ' ') e--;
-		for (int i = 0; i < e; i++) reply(ch[r][i]);
-		reply(0x0d);
-		break;
-	}
-	case 0x02:                            // transmit page
-		for (int i = top; i < top + VIEW; i++) {
-			int e = COLS; while (e > 0 && ch[i][e - 1] == ' ') e--;
-			for (int j = 0; j < e; j++) reply(ch[i][j]);
-			reply(0x0d);
-		}
-		break;
+	case 0x01: transmit(r, r, 0); break;                    // transmit line (up to ETX)
+	case 0x02: transmit(r, top + VIEW - 1, c); break;       // transmit page: cursor to bottom (up to ETX)
 	case 0x04: clear_rows(top, top + VIEW - 1); r = top; c = 0; break;   // clear screen
 	case 0x05: clear_all(); break;                                        // clear all
 	case 0x09: { int i = c - 1; while (i > 0 && !tabs[i]) i--; c = i > 0 ? i : 0; break; }  // tab back
@@ -136,9 +133,9 @@ void ct8500::command(uint8_t code)
 		memmove(&ch[r][c], &ch[r][c + 1], COLS - c - 1); memmove(&at[r][c], &at[r][c + 1], COLS - c - 1);
 		ch[r][COLS - 1] = ' '; at[r][COLS - 1] = 0;
 		break;
-	case 0x1f: case 0x3a: learn = false; break;   // exit learn mode
-	case 0x39: learn = true; break;               // enter learn mode
-	case 0x38: reply(learn ? 0x31 : 0x30); break; // learn mode status (approximation)
+	case 0x1f: case 0x3a: m_learn = 0; m_learn_local = false; break;   // exit learn mode
+	case 0x39: m_learn = 1; break;                // enter learn mode (remote): ESC 4x string US follows
+	case 0x38: reply(m_learn || m_learn_local ? 0x31 : 0x30); break; // learn mode status (approximation)
 	case 0x3b: case 0x3c: break;                  // monitor mode on/off: not modelled
 	case 0x3d: m_mode = HOST; break;
 	case 0x5d: m_mode = POWERUP; break;
@@ -171,22 +168,132 @@ void ct8500::command(uint8_t code)
 	}
 }
 
-void ct8500::key(key_t k)
+// SEND and remote 01/02: rows from_row..to_row, starting at from_col on the first,
+// each followed by CR, stopping at the first ETX (03)
+void ct8500::transmit(int from_row, int to_row, int from_col)
+{
+	for (int i = from_row; i <= to_row && i < ROWS; i++) {
+		int e = COLS; while (e > 0 && ch[i][e - 1] == ' ') e--;
+		for (int j = (i == from_row ? from_col : 0); j < e; j++) {
+			if (ch[i][j] == 0x03) return;
+			reply(ch[i][j]);
+		}
+		reply(0x0d);
+	}
+}
+
+// a programmed function key: ESC sequences run as terminal commands (with their
+// operands), other characters are typed
+void ct8500::play(const std::string &str)
+{
+	for (size_t i = 0; i < str.size(); i++) {
+		uint8_t b = uint8_t(str[i]);
+		if (b == 0x1b) {
+			feed(b);
+			while (++i < str.size()) { feed(uint8_t(str[i])); if (!esc) break; }
+		} else type(b);
+	}
+}
+
+void ct8500::type(uint8_t v)
 {
 	if (kbd_locked) return;
-	bool cursor = k == K_LEFT || k == K_DOWN || k == K_UP || k == K_RIGHT || k == K_HOME;
-	if (m_mode != HOST && cursor) {                    // power-up/local: cursor keys act locally
+	if (m_tty_lock && v >= 'a' && v <= 'z') v = uint8_t(v - 0x20);     // TTY LOCK: upper case only
+	if (m_split_pending) { m_split_pending = 0; split = v - 0x20; if (split < 0 || split >= ROWS) split = 0; return; }
+	if (m_learn_local) {                                                // recording a function key
+		if (m_learn_key >= 0) { if (m_fkey[m_learn_key].size() < 64) m_fkey[m_learn_key] += char(v); else bell = true; }
+		return;
+	}
+	if (m_mode == LOCAL) {                                              // local: displayed, not sent
+		if (v == 0x1b) return;                                          // ESC has no local effect
+		if (v == 0x7f) { put(0x7f); return; }                           // RUB OUT shows its glyph
+		feed(v);
+		return;
+	}
+	reply(v);
+}
+
+void ct8500::key(key_t k, bool shift, bool cntrl)
+{
+	if (kbd_locked) return;
+	const bool fkey = k >= K_F1 && k <= K_F8;
+	// CNTRL-SHIFT-Fn: the terminal's own commands (070-3737 §2)
+	if (cntrl && shift && fkey) {
 		switch (k) {
-		case K_LEFT: if (c > 0) c--; break;
-		case K_DOWN: if (r < ROWS - 1) r++; follow(); break;
-		case K_UP: if (r > 0) r--; follow(); break;
-		case K_RIGHT: if (c < COLS - 1) c++; break;
-		case K_HOME: r = top; c = 0; break;
+		case K_F1: command(0x38); break;                                 // learn status
+		case K_F2: m_learn_local = true; m_learn_key = -1; break;         // enter learn mode
+		case K_F3: m_learn_local = false; break;                         // exit learn mode
+		case K_F4: case K_F5: break;                                     // monitor mode on/off: not modelled
+		case K_F6: m_mode = HOST; break;                                 // host-control mode
+		case K_F7: m_split_pending = 1; break;                           // split screen: next character is the line
 		default: break;
 		}
 		return;
 	}
-	reply_esc(uint8_t(k));
+	if (m_learn_local) {
+		if (shift && fkey) { m_learn_key = k - K_F1; m_fkey[m_learn_key].clear(); }   // the key to program
+		else if (m_learn_key >= 0 && k < 0x80) { type(0x1b); type(k); }              // a key's own code
+		return;
+	}
+	switch (k) {
+	case K_REMOTE: if (m_mode == LOCAL) m_mode = POWERUP; return;
+	case K_LOCAL: m_mode = LOCAL; return;
+	case K_TTY_LOCK: m_tty_lock = !m_tty_lock; return;
+	case K_BREAK:
+		if (shift || cntrl) {                                           // SEND: line or page, then on line
+			if (shift) command(0x01); else command(0x02);
+			if (m_mode == LOCAL) m_mode = POWERUP;
+		} else if (m_mode != LOCAL && send_break) send_break();         // BREAK: 100 ms spacing
+		return;
+	case K_TAB:
+		if (!shift) { type(0x09); return; }                              // TAB FWD is a typed HT
+		break;
+	default: break;
+	}
+	// the code this key stands for (shifted variants share a key)
+	uint8_t code = uint8_t(k);
+	if (shift) switch (k) {
+		case K_INS_CHAR: code = 0x1d; break;      // DELETE CHAR
+		case K_INS_LINE: code = 0x0d; break;      // DELETE LINE
+		case K_ERASE_EOL: code = 0x15; break;     // ERASE TO EOP
+		case K_CLEAR_SCREEN: code = 0x05; break;  // CLEAR ALL
+		case K_TAB_SET: code = 0x62; break;       // TAB CLEAR
+		case K_TAB: code = 0x09; break;           // TAB BACK
+		default: break;
+	}
+	if (k == K_HOME && cntrl) code = shift ? 0x79 : 0x59;   // home of Page Two / Page One
+	if (fkey) {
+		if (m_mode == HOST) { reply_esc(code); return; }
+		if (shift) {                                        // programmable: play the string, else send the code
+			const std::string &str = m_fkey[k - K_F1];
+			if (!str.empty()) play(str); else reply_esc(code);
+			return;
+		}
+		switch (k) {                                        // unshifted, power-up and local
+		case K_F2: command(0x41); return;                   // SCROLL: data down
+		case K_F3: command(0x42); return;                   // SCROLL: data up
+		case K_F5: command(0x45); return;                   // PAGE: Page One
+		case K_F6: command(0x44); return;                   // PAGE: Page Two
+		default: reply_esc(code); return;                   // F1/F4/F7/F8: for Tektronix editors
+		}
+	}
+	if (m_mode == HOST) { reply_esc(code); return; }        // host-control: keys only send codes
+	// power-up and local: act locally, within the displayed 25 lines (070-3737 1-18)
+	const int bottom = top + VIEW - 1;
+	switch (code) {
+	case 0x52: r = r > top ? r - 1 : bottom; return;        // up; from the top line, to the bottom line
+	case 0x51: r = r < bottom ? r + 1 : top; return;        // down; from the bottom line, to the top line
+	case 0x50:                                              // left; wraps to the previous line's end
+		if (c > 0) c--;
+		else { c = COLS - 1; r = r > top ? r - 1 : bottom; }
+		return;
+	case 0x53:                                              // right; wraps to the next line, scrolling at the end
+		if (c < COLS - 1) c++;
+		else { c = 0; if (r < bottom) r++; else line_feed(); }
+		return;
+	case 0x54: r = top; c = 0; return;                      // home
+	default: command(code); return;                         // editing, erase, clear, tabs, page homes
+	}
 }
 
 std::string ct8500::text() const

@@ -241,8 +241,15 @@ int main(int argc, char **argv)
 	bool turbo = batch, fullscreen = false, quit = false, redraw = true, blink_on = true;
 	Uint64 wall0 = SDL_GetTicksNS(); double emu0 = sys.now();
 	auto resync = [&]() { wall0 = SDL_GetTicksNS(); emu0 = sys.now(); };
+	// the title shows the keyboard's indicator lamps (REMOTE/LOCAL, TTY LOCK) and learn mode
+	std::string title_now;
 	auto update_title = [&]() {
-		SDL_SetWindowTitle(win, turbo ? "Tektronix CT8500 \xe2\x80\x94 8550 MDL  [turbo]" : "Tektronix CT8500 \xe2\x80\x94 8550 MDL");
+		std::string t = "Tektronix CT8500 \xe2\x80\x94 8550 MDL   ";
+		t += ct.mode() == ct8500::LOCAL ? "[LOCAL]" : "[REMOTE]";
+		if (ct.tty_lock()) t += " [TTY LOCK]";
+		if (ct.learning()) t += " [LEARN]";
+		if (turbo) t += "  [turbo]";
+		if (t != title_now) { title_now = t; SDL_SetWindowTitle(win, t.c_str()); }
 	};
 
 	while (!quit && !sys.finished()) {
@@ -287,7 +294,11 @@ int main(int argc, char **argv)
 				SDL_Keycode k = e.key.key; SDL_Keymod m = e.key.mod;
 				bool hot = (m & SDL_KMOD_GUI) || ((m & SDL_KMOD_CTRL) && (m & SDL_KMOD_ALT));
 				if (hot) {
-					if (k == SDLK_Q) quit = true;
+					if (false) {}
+					else if (k == SDLK_R && (m & SDL_KMOD_SHIFT)) { ct.key(ct8500::K_REMOTE); update_title(); }   // REMOTE
+					else if (k == SDLK_L && (m & SDL_KMOD_SHIFT)) { ct.key(ct8500::K_LOCAL); update_title(); }    // LOCAL
+					else if (k == SDLK_T && (m & SDL_KMOD_SHIFT)) { ct.key(ct8500::K_TTY_LOCK); update_title(); } // TTY LOCK
+					else if (k == SDLK_Q) quit = true;
 					else if (k == SDLK_V) {
 						if (char *t = SDL_GetClipboardText()) {
 							for (const char *p = t; *p; p++) {
@@ -303,36 +314,41 @@ int main(int argc, char **argv)
 					else if (k == SDLK_T) { turbo = !turbo; resync(); update_title(); }
 					else if (k == SDLK_F) { fullscreen = !fullscreen; SDL_SetWindowFullscreen(win, fullscreen); }
 					else if (k == SDLK_S) { view.crt = !view.crt; SDL_SetTextureScaleMode(tex, view.crt ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST); redraw = true; }
+					else if (k == SDLK_B) { ct.key(ct8500::K_BREAK, m & SDL_KMOD_SHIFT, m & SDL_KMOD_ALT); }      // BREAK / SEND
 					else if (k == SDLK_R) sys.input("restart");
 					else if (k == SDLK_P) for (panel &p : panels) { p.shown = true; SDL_ShowWindow(p.win); }
 					else if (k == SDLK_L) { if (fullscreen) { fullscreen = false; SDL_SetWindowFullscreen(win, false); } fit_layout(); }
 					break;
 				}
-				// keys the CT8500 sends as control codes or escape sequences
+				// the CT8500 keyboard (emu/README.md has the full map)
+				const bool sh = m & SDL_KMOD_SHIFT, cn = m & SDL_KMOD_CTRL;
+				using K = ct8500;
+				auto key = [&](ct8500::key_t kk) { ct.key(kk, sh, cn); };
 				switch (k) {
-				case SDLK_RETURN: case SDLK_KP_ENTER: ct.type('\r'); break;
-				case SDLK_BACKSPACE: ct.type(0x08); break;
-				case SDLK_TAB: if (m & SDL_KMOD_SHIFT) ct.key(ct8500::K_BACK_TAB); else ct.type('\t'); break;
+				case SDLK_RETURN: case SDLK_KP_ENTER: ct.type(sh ? 0x0a : 0x0d); break;   // Shift: LINE FEED
+				case SDLK_BACKSPACE: ct.type(sh ? 0x7f : 0x08); break;                  // Shift: RUB OUT
+				case SDLK_TAB: key(K::K_TAB); break;                                     // Shift: TAB BACK
 				case SDLK_ESCAPE: ct.type(0x1b); break;
-				case SDLK_UP: ct.key(ct8500::K_UP); break;
-				case SDLK_DOWN: ct.key(ct8500::K_DOWN); break;
-				case SDLK_LEFT: ct.key(ct8500::K_LEFT); break;
-				case SDLK_RIGHT: ct.key(ct8500::K_RIGHT); break;
-				case SDLK_HOME: ct.key(ct8500::K_HOME); break;
+				case SDLK_UP: key(K::K_UP); break;
+				case SDLK_DOWN: key(K::K_DOWN); break;
+				case SDLK_LEFT: key(K::K_LEFT); break;
+				case SDLK_RIGHT: key(K::K_RIGHT); break;
+				case SDLK_HOME: key(K::K_HOME); break;                                   // CNTRL: Page One/Two
 				case SDLK_F1: case SDLK_F2: case SDLK_F3: case SDLK_F4:
 				case SDLK_F5: case SDLK_F6: case SDLK_F7: case SDLK_F8:
-					ct.key(ct8500::key_t(ct8500::K_F1 + (k - SDLK_F1))); break;
-				case SDLK_PAGEDOWN: ct.key(ct8500::K_F5); break;
-				case SDLK_PAGEUP: ct.key(ct8500::K_F6); break;
-				case SDLK_INSERT: ct.key(ct8500::K_INS_CHAR); break;
-				case SDLK_DELETE: ct.key(ct8500::K_DEL_CHAR); break;
-				case SDLK_F9: ct.key(ct8500::K_INS_LINE); break;
-				case SDLK_F10: ct.key(ct8500::K_DEL_LINE); break;
-				case SDLK_F11: ct.key(ct8500::K_ERASE_EOL); break;
-				case SDLK_F12: ct.key(ct8500::K_ERASE_EOP); break;
+					key(ct8500::key_t(K::K_F1 + (k - SDLK_F1))); break;
+				case SDLK_PAGEUP: ct.key(K::K_F5); break;                                // PAGE: Page One
+				case SDLK_PAGEDOWN: ct.key(K::K_F6); break;                              // PAGE: Page Two
+				case SDLK_INSERT: key(K::K_INS_CHAR); break;                             // Shift: DELETE CHAR
+				case SDLK_DELETE: ct.key(K::K_INS_CHAR, true); break;                    // DELETE CHAR
+				case SDLK_F9: key(K::K_ERASE_EOL); break;                                // Shift: ERASE TO EOP
+				case SDLK_F10: key(K::K_CLEAR_SCREEN); break;                            // Shift: CLEAR ALL
+				case SDLK_F11: key(K::K_TAB_SET); break;                                 // Shift: TAB CLEAR
+				case SDLK_F12: key(K::K_INS_LINE); break;                                // Shift: DELETE LINE
+				case SDLK_END: case SDLK_PAUSE: key(K::K_BREAK); break;                  // BREAK; Shift/CNTRL: SEND line/page
 				default:
-					// Ctrl+letter and Ctrl+[\]^_ (no text event comes with these)
-					if ((m & SDL_KMOD_CTRL) && !(m & SDL_KMOD_ALT)) {
+					// CNTRL+letter and CNTRL+[\]^_ (no text event comes with these)
+					if (cn && !(m & SDL_KMOD_ALT)) {
 						if (k >= SDLK_A && k <= SDLK_Z) ct.type(uint8_t(k - SDLK_A + 1));
 						else if (k == SDLK_LEFTBRACKET) ct.type(0x1b);
 						else if (k == SDLK_BACKSLASH) ct.type(0x1c);
@@ -340,6 +356,7 @@ int main(int argc, char **argv)
 					}
 					break;
 				}
+				update_title();
 				break;
 			}
 			case SDL_EVENT_WINDOW_EXPOSED: redraw = true; break;
@@ -374,6 +391,7 @@ int main(int argc, char **argv)
 		}
 		if (turbo || sys.now() < target - 0.25) resync();      // never try to catch up a backlog
 		if (ct.take_bell()) bell.ring();
+		update_title();
 		// batch runs draw only for a capture (and ~30 times a second of wall time if a display shows them)
 		if (batch) {
 			static Uint64 last_draw = 0;

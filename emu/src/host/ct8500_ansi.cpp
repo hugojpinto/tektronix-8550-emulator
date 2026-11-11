@@ -5,27 +5,65 @@
 #include <cstring>
 #include <cstdio>
 
+// The host terminal's keys, as xterm-style sequences (with modifiers: ;2 Shift, ;5 Ctrl,
+// ;6 Ctrl+Shift), mapped like the GUI's keyboard (emu/README.md)
 void ct8500_ansi::key(ct8500 &t, const std::string &k)
 {
 	if (k.empty()) return;
 	using K = ct8500;
-	struct map_t { const char *seq; ct8500::key_t key; } static const m[] = {
-		{ "\x1b[A", K::K_UP }, { "\x1b[B", K::K_DOWN }, { "\x1b[C", K::K_RIGHT }, { "\x1b[D", K::K_LEFT },
-		{ "\x1bOA", K::K_UP }, { "\x1bOB", K::K_DOWN }, { "\x1bOC", K::K_RIGHT }, { "\x1bOD", K::K_LEFT },
-		{ "\x1b[H", K::K_HOME }, { "\x1bOH", K::K_HOME }, { "\x1b[1~", K::K_HOME },
-		{ "\x1bOP", K::K_F1 }, { "\x1bOQ", K::K_F2 }, { "\x1bOR", K::K_F3 }, { "\x1bOS", K::K_F4 },      // F1-F4
-		{ "\x1b[11~", K::K_F1 }, { "\x1b[12~", K::K_F2 }, { "\x1b[13~", K::K_F3 }, { "\x1b[14~", K::K_F4 },
-		{ "\x1b[15~", K::K_F5 }, { "\x1b[17~", K::K_F6 }, { "\x1b[18~", K::K_F7 }, { "\x1b[19~", K::K_F8 }, // F5-F8
-		{ "\x1b[6~", K::K_F5 }, { "\x1b[5~", K::K_F6 },       // PgDn = F5 (PAGE DOWN), PgUp = F6 (PAGE UP)
-		{ "\x1b[2~", K::K_INS_CHAR }, { "\x1b[3~", K::K_DEL_CHAR },
-		{ "\x1b[20~", K::K_INS_LINE }, { "\x1b[21~", K::K_DEL_LINE },   // F9/F10
-		{ "\x1b[23~", K::K_ERASE_EOL }, { "\x1b[24~", K::K_ERASE_EOP }, // F11/F12
-		{ "\x1b[Z", K::K_BACK_TAB },                                    // Shift-Tab
-	};
-	for (const auto &e : m)
-		if (k == e.seq) { t.key(e.key); return; }
-	if (k[0] == 0x1b && k.size() > 1) return;             // unknown escape sequence: drop
-	for (char ch1 : k) t.type(uint8_t(ch1 == '\n' ? '\r' : ch1));
+	if (k[0] != 0x1b || k.size() < 2) { for (char ch1 : k) t.type(uint8_t(ch1 == '\n' ? '\r' : ch1)); return; }
+	// ESC O x (SS3) or ESC [ params final (CSI)
+	int p1 = 0, mod = 1; char fin = 0;
+	if (k[1] == 'O' && k.size() >= 3) fin = k[2];
+	else if (k[1] == '[') {
+		size_t i = 2; int *cur = &p1;
+		for (; i < k.size(); i++) {
+			char ch1 = k[i];
+			if (ch1 >= '0' && ch1 <= '9') *cur = *cur * 10 + (ch1 - '0');
+			else if (ch1 == ';') { mod = 0; cur = &mod; }
+			else { fin = ch1; break; }
+		}
+	}
+	if (!fin) return;                                              // a lone ESC prefix or unknown: drop
+	if (mod <= 0) mod = 1;
+	const bool sh = (mod - 1) & 1, cn = (mod - 1) & 4;
+	auto key = [&](K::key_t kk) { t.key(kk, sh, cn); };
+	switch (fin) {
+	case 'A': key(K::K_UP); return;
+	case 'B': key(K::K_DOWN); return;
+	case 'C': key(K::K_RIGHT); return;
+	case 'D': key(K::K_LEFT); return;
+	case 'H': key(K::K_HOME); return;
+	case 'F': key(K::K_BREAK); return;                             // End: BREAK (Shift/Ctrl: SEND)
+	case 'Z': t.key(K::K_TAB, true); return;                       // Shift-Tab: TAB BACK
+	case 'P': key(K::K_F1); return;
+	case 'Q': key(K::K_F2); return;
+	case 'R': key(K::K_F3); return;
+	case 'S': key(K::K_F4); return;
+	case '~':
+		switch (p1) {
+		case 1: case 7: key(K::K_HOME); return;
+		case 4: case 8: key(K::K_BREAK); return;                   // End
+		case 2: key(K::K_INS_CHAR); return;                        // Insert (Shift: DELETE CHAR)
+		case 3: t.key(K::K_INS_CHAR, true); return;                // Delete: DELETE CHAR
+		case 5: t.key(K::K_F5); return;                            // PgUp: PAGE (Page One)
+		case 6: t.key(K::K_F6); return;                            // PgDn: PAGE (Page Two)
+		case 11: key(K::K_F1); return;
+		case 12: key(K::K_F2); return;
+		case 13: key(K::K_F3); return;
+		case 14: key(K::K_F4); return;
+		case 15: key(K::K_F5); return;
+		case 17: key(K::K_F6); return;
+		case 18: key(K::K_F7); return;
+		case 19: key(K::K_F8); return;
+		case 20: key(K::K_ERASE_EOL); return;                      // F9  (Shift: ERASE TO EOP)
+		case 21: key(K::K_CLEAR_SCREEN); return;                   // F10 (Shift: CLEAR ALL)
+		case 23: key(K::K_TAB_SET); return;                        // F11 (Shift: TAB CLEAR)
+		case 24: key(K::K_INS_LINE); return;                       // F12 (Shift: DELETE LINE)
+		default: return;
+		}
+	default: return;
+	}
 }
 
 std::string ct8500_ansi::render(ct8500 &t, bool full)
