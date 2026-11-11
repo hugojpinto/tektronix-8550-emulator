@@ -106,7 +106,7 @@ private:
 	u64 m_tcyc = 0; double m_thz = 0, m_tx1 = 0, m_temu = 0;   // run-mode time: X1 and EMUCLK phases
 	u8 m_prev_rec[8] = {}; bool m_prev_stored = true;
 	u8 page(int p, int row) const { return m_ram[((p - 0x68) << 8) | row]; }   // CPU page 68-79
-	u8 triggers(u8 ev, u8 outs, bool qualifying);
+	u8 link(u8 ev, bool qualifying);
 	void store(const u8 rec[8], double t);
 	void set_events(u8 ev);
 	void src_w(int n, int l);                 // Am9513 SRC n+1 / GATE n+1 levels

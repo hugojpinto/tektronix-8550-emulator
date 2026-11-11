@@ -124,7 +124,7 @@ Addresses are as the 2650 sees them, through the diagnostic's bank window (port 
 | Port | R/W | Function |
 |---|---|---|
 | **70** | R/W | Control. **Bit 0:** comparators on (writing 0 clears the event latches). **Bit 1:** RAM select. **Bit 2:** test mode: the comparator RAMs addressed by the 2650, and the counter clock running; writing 0 clears the arming chain. **Bits 5–4:** what drives SRC5 (00 bus cycles, 01/11 the emulator clock, 10 the qualifier). Reads back with bits 7–6 high (board present). `07` = test mode, `01` = run mode, `03` = run-mode comparators with the RAM selected, `02` = RAM access only |
-| **71** | R/W | **Bits 7–4:** trigger 4–1 must be armed by the previous trigger on the preceding cycle (1 is armed by 4). **Bits 3–2:** which cycles count as consecutive (00 all, 01 fetches, 10 emulator-defined). **Bit 1:** acquire every cycle (otherwise only those on which trigger 4 fires) |
+| **71** | R/W | **Bits 7–4:** event 4–1 counts only if the previous event came true on the preceding cycle (1 follows 4). **Bits 3–2:** which cycles count as consecutive (00 all, 01 fetches, 10 emulator-defined). **Bit 1:** acquire every cycle (otherwise only those on which event 4 fires) |
 | **72** | R/W | **Bits 3–0:** one per trigger: interrupt (test mode) or break the program (run mode). **Bit 4:** run marker, stored with each acquisition. A write clears a pending TTA interrupt request |
 | **73** | R/W | Trigger latches (bits 3–0), set by triggers. The 2650 writes it too (write 0 to clear) |
 | **74** | R/W | 8-bit register, role unknown (the diagnostic only checks it holds data) |
@@ -163,7 +163,8 @@ EVENT k = ADDR & DATA & probe bit & X bit & Y bit
 M7 means "inside" (or "outside" for an excluded range); M6 and M5 mean "on the upper or lower bound, so the next byte decides". With the codes OS/40 writes, this gives values, ranges, excluded ranges and don't-care digits exactly (`tests/tta_eve.cpp` checks every kind). In test mode every RAM is addressed by the 2650's A7–0, and the 2650's writes to the comparator pages are only stimuli: they do not change the RAMs.
 
 - Event outputs are **levels**, held until the next cycle. They hold while port 70 bit 0 stays set, even with the clock stopped.
-- **Trigger k** = event k AND counter k's output, sampled before this cycle's counts. With port 71 bit 3+k set, trigger k also needs trigger k−1 on the preceding qualifying cycle. Triggers set the latches in port 73.
+- **Consecutive events:** with port 71 bit 3+k set, event k counts only if event k−1 came true on the preceding qualifying cycle (the 1983 catalogue: `cons` sets "the sequence in which trigger channel events must come true").
+- **Trigger k** = event k AND counter k's output, sampled before this cycle's counts. Triggers set the latches in port 73.
 
 ### Counters
 
@@ -179,7 +180,7 @@ M7 means "inside" (or "outside" for an excluded range); M6 and M5 mean "on the u
 
 ### Acquisition
 
-- At each cycle, if port 71 bit 1 is set, or else if trigger 4 fires, and while OUT5 is high, a sample is stored at the pointer, and the pointer (port 75) advances by one, wrapping at 256.
+- At each cycle, if port 71 bit 1 is set, or else if event 4 fires (after the consecutive links, regardless of counter 4), and while OUT5 is high, a sample is stored at the pointer, and the pointer (port 75) advances by one, wrapping at 256.
 - A sample is eight bytes, one per page: 68 bus extension, qualifier and the run marker (port 72 bit 4), 69 bus status, 6A probe, 6B/6C data, 6D–6F address. In test mode each byte is the 2650's A7–0.
 
 ### A recipe: one event, counted
@@ -257,7 +258,7 @@ The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
 1. The leading edge of SLV OPREQ latches the address and control lines; its trailing edge latches the data and the probe lines (users manual §4).
 2. Each latched input byte addresses its comparator RAM nibble (the table above). The TTA software had loaded those RAMs, for every possible value, with the codes of each event's comparison. So a value, a range, don't-care digits or an excluded range all become a table lookup at bus speed.
 3. The RAM outputs combine into the four events about 60–80 ns after the cycle. Events feed the Am9513; each is ANDed with its counter's output to make a trigger.
-4. A trigger with its port 72 bit breaks the program after the current instruction. Each cycle, or trigger 4's only, is stored in acquisition memory. The 2650 reads it all back once the emulator stops.
+4. A trigger with its port 72 bit breaks the program after the current instruction. Each cycle, or event 4's only, is stored in acquisition memory. The 2650 reads it all back once the emulator stops.
 
 **In the emulator.** Each emulator board hands its bus cycles to `tta::target_cycle`: the Z80 and 8085 boards in the 8085 support's bus status format (bit 0 fetch, bit 1 read, bit 2 memory), the 8086 board in its own. The board then does steps 2–4 from its RAMs and the Am9513, exactly as above. The X1 clock and EMUCLK follow the emulator processor's own clock, so timings are exact to its T-states.
 

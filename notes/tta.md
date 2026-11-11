@@ -92,14 +92,16 @@ The 8086/8088 diagnostic's TTA interface test (on `8550_DIAG.IMD`, Select mode 1
 ## Run mode in the emulator
 How run mode works, and how the emulator models it, is in `docs/ARCHITECTURE.md` §8; the user's guide is `docs/TTA.md`. The commands (`system/tta_console.*`, standing in for the later DOS/50) program the board at register level as OS/40 does. Facts found while building it:
 - **The users manual's timebases are the Am9513's F1–F5** at 5 MHz with decade (BCD) scaling: 200 ns, 2 µs, 20 µs, 200 µs and 2 ms. This confirms the X1 clock found from module 44.
-- **`cons` is port 71's arming.** Module 31's "trigger N arms N+1" on successive accesses is the users manual's consecutive-event function: a linked trigger fires only if the previous one fired on the preceding cycle of the kind port 71 bits 3–2 select (OS/40 CONS).
+- **`cons` is port 71's arming, and it links events.** Module 31's "N arms N+1" on successive accesses is the users manual's consecutive-event function. A linked event counts only if the previous one came true on the preceding cycle of the kind port 71 bits 3–2 select (OS/40 CONS).
+  - **It acts on the events, before the counters,** and acquisition (`acq ev4`) is qualified by event 4, not trigger 4. Source: the 1983 Tektronix catalogue's TTA pages (`sources/bitsavers/manuals/catalog/Tek_1983.pdf`, p. 47). Its command table says "cons: specifies the sequence in which trigger channel events must come true", and its acquisition diagram's store qualifier is "Event 4 Qualification".
+  - **The difference only shows when a counter output is low:** with `cou 4 o=disarm`, `acq ev4` still records event 4's cycles. Module 31 cannot tell the two apart (its counter outputs are high).
 - **An undefined event is always true** (users manual 3-4, 3-9; OS/40's cleared codes). With an unprogrammed counter (output high), a trigger then fires on every cycle; that is how a counter alone can stop a program.
 - **OS/40's counter sequences and Table 5-2.** COU and TTA2 load a delay, pulse or timeout counter with v − 1 and set its starting toggle. The Am9513 reaches terminal count on the (v − 1)th count and toggles its output when that TC ends, at the v-th. With the outputs sampled before each cycle's counts, the manual's examples come out:
   - "asserted after the fourth occurrence of event 1" (`cou 2 v=4 s=ev1 o=delay`);
   - pulse high at the v-th count, delay after it, timeout up to it (OS/40 manual Table 5-2);
   - for v = 1 and 2 the sequence steps the counter instead, with the same result.
   - At the end of a run OS/40 reads the counters back (7480) and shows a down-counter as the count still to go + 1, or 0 once done.
-- **Acquisition with `acq ev4` after `cons … 34`** also keeps the cycle that armed trigger 4. The users manual's Display 1-14 lists each ADD M fetch before its operand read, and the text says only event 4's transactions are recorded. Storing the arming cycle with the trigger 4 cycle is the only reading that gives that display. *Inferred*; nothing else depends on it.
+- **Acquisition with `acq ev4` after `cons … 34`** also keeps the cycle that armed event 4. The users manual's Display 1-14 lists each ADD M fetch before its operand read, and the text says only event 4's transactions are recorded. Storing the arming cycle with the event 4 cycle is the only reading that gives that display. *Inferred*; nothing else depends on it.
 - **The qualifier input, undriven, reads 1** (8086 module 70, above); the probe lines, with nothing clipped on, read 0 (the users manual's displays).
 - **SRC5 = EMUCLK** counts the emulator clock divided by two (users manual 3-8; inferred).
 - **DOS/50 V1.0 and INT 29.** Its GO handler at overlay address 681E reads F2, then the RTPA status C2, then E3. It handles the break only if C2 shows "present and stopped"; with C2 = 00 it dismisses the interrupt and keeps waiting. It names the trigger only when its own `BIF` settings agree. The emulator therefore shows a TTA break at C2 when no RTPA is fitted (a bridge, documented as such) and sets E3 bit 4 while the TTA holds the processor (hardware: the hold is SLV OPREQ, as for the RTPA).
@@ -118,6 +120,15 @@ How run mode works, and how the emulator models it, is in `docs/ARCHITECTURE.md`
   - **special cases:** 14/15 and 17/57;
   - **exit** 1A (flag 6D1D bit 1), **abort** 1F, and 19;
   - **everything else** (10 assign, 01 read, 02 write ...) goes through the general path. The handler marks the block in progress (status 7F), copies it with the DMA routine (vector 1FE0 = 5F47) and polls for completion as a coroutine (7E0B, 69D4).
+
+### The 1983 catalogue (Tek_1983.pdf, pp. 37–53)
+Tektronix's 1983 product catalogue, the 85xx section (bitsavers `pdf/tektronix/85xx/Tek_1983.pdf`; a scan, no text layer), describes the TTA in more detail than the brochures:
+- **Comparator inputs (Figure 1):** 24 address, 16 data, 8 probe, **11 micro-dependent**, 4 counter outputs, the external qualifier. The 11 are OS/40's X byte bits 7–5 and the Y byte, exactly (`tta-os40.md`).
+- **The counter:** a 16-bit counter per channel with 17 clock sources.
+- **Acquisition (Figure 2):** 255 × 62 bits = 24 address + 16 data + 8 probe + **14 processor-dependent**, stored on "Event 4 Qualification". Pages 68/69 hold 16 bits. So two of them are the board's own: bit 0 (the run marker), and probably bit 4. Page 68 bits 7–5 and 3–1 are processor-dependent, which fits OS/40's 8088 DISP decoding bits 7–2. Bit 4, emulated as the qualifier, is then *not* one of the recorded channels: its use stays open.
+- **Outputs and inputs:** "four trigger outputs and nine pattern/qualifier inputs" (TRIG OUT per channel; probe + qualifier).
+- **Speed and windows:** bus cycles up to 8 MHz; address ranges and windows in one channel (the cascade comparator).
+- **The 8540's OS/40** is "a DOS/50 derivative" (8 KB PROM OS, 88 KB command interpreter and kernel, 24 KB diagnostics, 4 KB patch EEPROM), which supports using its TTA modules as DOS/50 V2's.
 
 ### Checked against TNIX's TTA help (2026-11-11)
 TNIX 2.0, the 8560's Unix, drove the TTA in 8540 integration units with the same command set. Its update disc `TNIX_2.0_UPD-2.IMD` (bitsavers `bits/Tektronix/8560/`) carries the TTA menu script (`usr/lib/ksh/scripts/tta`, "Version 0.0 08JUN83"), with help text and the exact commands each menu issues. Against it:

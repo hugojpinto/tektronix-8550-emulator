@@ -122,19 +122,22 @@ u8 tta::comparators(u32 a, u16 d, u8 pr, u8 x, u8 y) const
 	return ev;
 }
 
-// trigger k = event k AND counter k's output; with port 71 bit 4+k set (cons) it also needs
-// trigger k-1 (4 before 1) on the preceding cycle of the kind port 71 bits 3-2 select
-// (00 any cycle, 01 fetches; OS/40 CONS; TTA.TST module 31)
-u8 tta::triggers(u8 ev, u8 outs, bool qualifying)
+// consecutive events (cons): with port 71 bit 4+k set, event k counts only if event k-1 (4
+// before 1) came true on the preceding cycle of the kind port 71 bits 3-2 select (00 any
+// cycle, 01 fetches; OS/40 CONS; TTA.TST module 31). The links act on the events, before the
+// counters: the 1983 catalogue's TTA command table ("cons: specifies the sequence in which
+// trigger channel events must come true") and its acquisition diagram, whose store qualifier
+// is event 4. Trigger k is then the linked event k AND counter k's output.
+u8 tta::link(u8 ev, bool qualifying)
 {
-	u8 tr = 0;
+	u8 lev = 0;
 	for (int k = 0; k < 4; k++) {
-		if (!((ev >> k) & 1) || !((outs >> k) & 1)) continue;
+		if (!((ev >> k) & 1)) continue;
 		if (((m_reg[1] >> (4 + k)) & 1) && !((m_armed >> k) & 1)) continue;
-		tr |= u8(1 << k);
+		lev |= u8(1 << k);
 	}
-	if (qualifying) m_armed = u8(((tr << 1) | (tr >> 3)) & 0x0f);   // trigger k arms trigger k+1
-	return tr;
+	if (qualifying) m_armed = u8(((lev << 1) | (lev >> 3)) & 0x0f);   // event k arms event k+1
+	return lev;
 }
 
 void tta::store(const u8 rec[8], double t)
@@ -169,24 +172,18 @@ void tta::ram_access(u64 now, u16 a)
 	const u8 ev = test ? comparators(u32(row * 0x10101), u16(row * 0x101), u8(row), u8(row), u8(row))
 	                   : comparators(0xffffff, 0xffff, pr, u8(0xf0 | (outs & 0x0f)), 0xff);
 	if (trace) fprintf(stderr, "[%.7f TTA access %04x]\n", double(m_last) / 2e6, a);
-	set_events(ev);
+	const u8 lev = link(ev, true);
+	set_events(lev);
 	// acquisition: with port 71 bit 1 every access, otherwise those on which event 4 fires,
 	// is stored at the pointer, which then advances (port 75). In test mode all eight bytes
 	// are the 2650's A7-0 (module 60); otherwise page 6A holds the probe byte (module 70's
 	// error report) and the other inputs are idle (0)
-	if ((m_reg[1] & 0x02) || (ev & 0x08)) {
+	if ((m_reg[1] & 0x02) || (lev & 0x08)) {
 		u8 rec[8];
 		for (int p = 0; p < 8; p++) rec[p] = test ? u8(row) : p == 2 ? pr : 0;
 		store(rec, double(m_last) / 2e6);
 	}
-	if (!ev) return;
-	u8 tr = 0;
-	for (int k = 0; k < 4; k++) {
-		if (!((ev >> k) & 1) || !((outs >> k) & 1)) continue;
-		if (((m_reg[1] >> (4 + k)) & 1) && !((m_armed >> k) & 1)) continue;
-		tr |= u8(1 << k);
-	}
-	m_armed |= u8(((tr << 1) | (tr >> 3)) & 0x0f);
+	const u8 tr = u8(lev & outs & 0x0f);
 	m_trig |= tr;
 	// a new trigger enabled in port 72 interrupts (INT 29, shared with the RTPA). Latched
 	// triggers do not when the enables are set later, nor do bits the 2650 writes to port 73
@@ -210,7 +207,7 @@ void tta::ram_access(u64 now, u16 a)
 //   interrupts the 2650 (INT 29, whose OS/40 handler reads 72 & 73), the 8086 board takes it
 //   as a break of its own (REASON2 08); the board does not interrupt the 2650 itself here
 //   (the 8086 diagnostic's module 70 sets 72 = 91 and takes INT 29 as unexpected);
-// - acquisition: every cycle with port 71 bit 1 (acq all), else those on which trigger 4
+// - acquisition: every cycle with port 71 bit 1 (acq all), else those on which (linked) event 4
 //   fires (acq ev4), while OUT5 is high (counter 5 ends it: acq ... for n). The record is
 //   page 68 bus extension | qualifier (bit 4, inferred) | port 72 bit 4 (bit 0: the run
 //   marker OS/40 flips at each GO), 69 bus status, 6A probe, 6B/6C data, 6D-6F address.
@@ -231,19 +228,20 @@ void tta::target_cycle(u64 cyc, double hz, const sample &s)
 	const u8 qual = 0x10;                     // the event qualifier, undriven: reads 1 (8086 diag module 70)
 	const u8 ev = comparators(s.addr, s.data, pr, u8((s.ext & 0xe0) | qual | (outs & 0x0f)), s.bus);
 	const bool qualifying = ((m_reg[1] >> 2) & 3) == 1 ? s.fetch : true;
-	const u8 tr = triggers(ev, outs, qualifying);
+	const u8 lev = link(ev, qualifying);
+	const u8 tr = u8(lev & outs & 0x0f);
 	const u8 rise = u8(tr & ~m_tr_level);
 	m_tr_level = tr;
 	m_trig |= tr;
 	m_tbreak |= u8(rise & m_reg[2] & 0x0f);
-	if (trace && ev) fprintf(stderr, "[%.7f TTA %06x %04x bus %02x: events %x triggers %x]\n", clock ? *clock : 0.0, unsigned(s.addr), s.data, s.bus, ev, tr);
+	if (trace && ev) fprintf(stderr, "[%.7f TTA %06x %04x bus %02x: events %x linked %x triggers %x]\n", clock ? *clock : 0.0, unsigned(s.addr), s.data, s.bus, ev, lev, tr);
 
 	const u8 rec[8] = { u8((s.ext & 0xe0) | qual | ((m_reg[2] >> 4) & 1)), s.bus, pr, u8(s.data), u8(s.data >> 8), u8(s.addr), u8(s.addr >> 8), u8(s.addr >> 16) };
 	int stored = 0;
 	if (outs & 0x10) {
 		const bool all = m_reg[1] & 0x02;
-		if (all || (tr & 0x08)) {
-			// acq ev4 after a sequence 3->4 also keeps the cycle that armed trigger 4 (inferred from
+		if (all || (lev & 0x08)) {
+			// acq ev4 after a sequence 3->4 also keeps the cycle that armed event 4 (inferred from
 			// the users manual's Display 1-14, which lists each ADD M fetch before its operand)
 			const double t = clock ? *clock : 0.0;
 			if (!all && (m_reg[1] & 0x80) && !m_prev_stored) { store(m_prev_rec, t); stored++; }
@@ -253,7 +251,7 @@ void tta::target_cycle(u64 cyc, double hz, const sample &s)
 	if (qualifying) { memcpy(m_prev_rec, rec, sizeof rec); m_prev_stored = stored > 0; }
 
 	for (int k = 0; k < 4; k++) gate_w(k + 1, (tr >> k) & 1);
-	for (int k = 0; k < 4; k++) if ((ev >> k) & 1) pulse_src(k);
+	for (int k = 0; k < 4; k++) if ((lev >> k) & 1) pulse_src(k);
 	switch ((m_reg[0] >> 4) & 3) {
 	case 0: pulse_src(4); break;
 	case 2: break;

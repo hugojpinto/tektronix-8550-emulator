@@ -83,6 +83,7 @@ Help preserve the 8550: if you have any of these, please [open an issue](https:/
 | **Full dumps of the 80186/80188 emulator's kernel PROMs** 160-2525-01 and 160-2526-01 (2 KB each) | the known dumps are 1 KB: the kernel's upper half is lost and emulated at high level |
 | **The CT8500 character ROM**, and its service manual 061-2431-00 | the screen font is reconstructed from a Tektronix 308 ROM plus a hand-drawn lower case |
 | **A DOS/50 V2.x system disc** (part 062-5xxx) and the **DOS/50 System Users Manual** 070-3457 / 070-3936 | only DOS/50 V1.0 survives; the 8086 emulator support disc we have (EMU.8086) needs V2, as does the TTA's command set |
+| **RT-11/50**, the 8550 option that ran DEC's RT-11 on the lab (Tektronix catalogue 1983, p. 39), and its manual | presumably on the 8501's LSI-11; nothing of it is known to survive |
 | **Dumps of the 8301 bipolar PROMs** 160-0884-00, 160-0822-00, 160-0727-00 | their decoding is emulated from the schematics |
 | **The 6800 or 8080 emulator boards**, their firmware and support discs, and service manuals for any emulator board (the 8086/8088 service manual 070-3774-00 too) | needed to emulate them |
 | **Clear, straight-on photos of an 8301's and an 8501's front panels** | the panel artwork is drawn from a catalogue photo and photos of related units |
