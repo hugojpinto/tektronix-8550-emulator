@@ -15,7 +15,7 @@ enum {
 };
 // parity (int 1) is NOT edge: it stays until I/O port D2 is read, and so does the address latch
 constexpr u32 EDGE_IRQS = (1u << INT_TIMER) | (1u << INT_DMA) | (1u << INT_REFRESH) | (1u << INT_WP) | 0xffff0000u;
-constexpr int INT_SVC1 = 16, INT_BP1 = 24, INT_BP2 = 25, INT_SCY = 26, INT_SLV_HALT = 27, INT_DIAG = 28;
+constexpr int INT_SVC1 = 16, INT_BP1 = 24, INT_BP2 = 25, INT_SCY = 26, INT_SLV_HALT = 27, INT_DIAG = 28, INT_RTPA = 29;
 }
 
 tek8301::tek8301()
@@ -24,6 +24,7 @@ tek8301::tek8301()
 	m_ep85_bus.m = this;
 	lp_reset();
 	prom.present = false;      // option; -prom on fits it
+	rtpa_board.clock = &m_seconds;
 	// -prom fix, part 2: the later DOS/50's 'post event' (0304 there) delivers the target
 	// task id as the woken task's r1; V1.0's 02FA delivers the caller's r1 instead. The
 	// PROM framework (6002) stores that r1 as its own task id (60E7), so calls coming from
@@ -222,9 +223,17 @@ void tek8301::lp_run(int cycles2650)
 			m_nmi_prev = n;
 			if (target->irq() && z.iff1) z80_gen_int(&z, target->irq_vector());
 		}
+		const bool watch = rtpa_board.present;   // the RTPA watches the slave bus: emulator processor or Language Processor
+		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(z.pc); m_rtpa_watch = true; }
 		z80_step(&z);
+		if (watch) {
+			m_rtpa_watch = false;
+			rtpa_board.instr_end(z.pc);
+			if (rtpa_board.take_irq()) { m_pending |= 1u << INT_RTPA; update_irq(); }
+		}
 		if (&z == &ep && proto_mode()) z.cyc += target->take_wait();   // v3: target WAIT states
 		m_lp_frac -= double(z.cyc - c0);
+		if (rtpa_board.stopped()) break;          // RTPA break (INT 29): the board holds the processor
 		if (m_pending != before) {              // SVC / write-protect violation (immediate): master takes over
 			// a breakpoint matched by the same instruction is pending as well (diag 07/0070-0075)
 			if (m_bp_hit & 1) ec_interrupt(INT_BP1);
@@ -450,6 +459,7 @@ u8 tek8301::io_read(offs_t port)
 {
 	u8 v = 0xff;
 	if (port >= 0x90 && port <= 0x9f) v = m_dma.read(port & 0x0f);
+	else if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; v = rtpa_board.read(port & 7); }
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
@@ -491,6 +501,7 @@ void tek8301::io_write(offs_t port, u8 d)
 {
 	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
+	if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; rtpa_board.write(port & 7, d); update_irq(); return; }
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
 	case 0xb9: m_b9 = d; break;

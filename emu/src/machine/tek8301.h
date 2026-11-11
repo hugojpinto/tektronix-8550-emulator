@@ -22,6 +22,7 @@ extern "C" {
 }
 #include <vector>
 #include "machine/prom_programmer.h"
+#include "machine/rtpa.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
@@ -94,6 +95,8 @@ public:
 	bool proto_all() const { return ep_enabled() && (m_e3 & 0x60) == 0x60; }   // mode 2 run (F2): all memory is the prototype's
 	bool ep_present = true;
 	prom_programmer prom;      // 8550F30 PROM programmer controller (ports D0/D1, ints 13/14)
+	rtpa rtpa_board;           // Real-Time Prototype Analyzer option (ports C0-C7)
+	double m_seconds = 0;      // for traces
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
@@ -102,7 +105,7 @@ public:
 	z80 &slave() { return ep_enabled() ? ep : lp; }
 	const z80 &slave() const { return ep_enabled() ? ep : lp; }
 	// slave runs while the master is halted and no debug interrupt is outstanding
-	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u); }
+	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped(); }
 	bool ep_trace = false;
 	u16 lp_pc_last() const { return m_lp_pc_last; }
 	u8 progmem(u16 a) const { return m_progmem[a]; }
@@ -173,8 +176,19 @@ private:
 	void z80_setup(z80 &z);
 	void lp_run(int cycles2650);
 	void ec_interrupt(int n, bool latch_pc = true);     // n = 16..31
-	static u8 lp_read(void *u, u16 a) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false); return m->slave_rd(a, m->lp.m1 || m->ep.m1); }
-	static void lp_write(void *u, u16 a, u8 d) { auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true); m->slave_wr(a, d); }
+	static u8 lp_read(void *u, u16 a) {
+		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, false);
+		bool m1 = m->lp.m1 || m->ep.m1;
+		u8 v = m->slave_rd(a, m1);
+		if (m->m_rtpa_watch) m->rtpa_board.bus(a, v, m1, false, false);
+		return v;
+	}
+	static void lp_write(void *u, u16 a, u8 d) {
+		auto *m = static_cast<tek8301 *>(u); m->bp_check(a, true);
+		if (m->m_rtpa_watch) m->rtpa_board.bus(a, d, false, true, false);
+		m->slave_wr(a, d);
+	}
+	bool m_rtpa_watch = false;     // the emulator processor is stepping: the RTPA sees its cycles
 	u8   slave_rd(u16 a, bool m1 = false);   // m1: opcode fetch
 	void slave_wr(u16 a, u8 d);
 	// Memory map / write-protect RAM: 512 blocks x 128 bytes, D0 = U (prototype), D2 = write

@@ -43,7 +43,7 @@ static void show(tek8301 &a, tek8501 &b)
 
 int main(int argc, char **argv)
 {
-	std::string remotespec; int remote_baud = 2400;
+	bool rtpa_on = false; std::string remotespec; int remote_baud = 2400;
 	std::string roms = "../roms/8550", logfile, hsilog, auxlog, dumpfile, termmode, screenfile, targetspec, disks[4];
 	long long max_cycles = -1; bool writeback = false; int sw = 0; bool pm_ext = false; std::string ep_prom_file; bool no_ep = false, ep85 = false; bool prom_on = false, prom_fix = false; std::string prom_dev;
 	struct typed_t { double at; std::string text; };
@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 		else if (a == "-term") termmode = next();
 		else if (a == "-target") targetspec = next();
 		else if (a == "-remote") remotespec = next();
+		else if (a == "-rtpa") rtpa_on = true;
 		else if (a == "-remote-baud") remote_baud = atoi(next().c_str());
 		else if (a == "-snap") { double t = atof(next().c_str()); snaps.push_back({ t, next() }); }
 		else if (a == "-poke") { double t = atof(next().c_str()); pokes.push_back({ t, next() }); }
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
 		else if (a == "-trace8301") { trace_at = atof(next().c_str()); tracefile = next(); }
 		else if (a == "-trace8501") { trace11_at = atof(next().c_str()); trace11_len = atof(next().c_str()); trace11file = next(); }
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
-		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N]\n", argv[0]); return 1; }
+		else { fprintf(stderr, "usage: %s [-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext] [-ep z80|8085|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-dump FILE] [-type SECONDS TEXT] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-rtpa]\n", argv[0]); return 1; }
 	}
 	auto mdu = std::make_unique<tek8301>();
 	auto dmu = std::make_unique<tek8501>();
@@ -143,6 +144,7 @@ int main(int argc, char **argv)
 	if (no_ep) mdu->ep_present = false;
 	mdu->ep85_present = ep85;
 	mdu->prom.present = prom_on;
+	mdu->rtpa_board.present = rtpa_on;
 	mdu->prom_dos50_fix = prom_fix;
 	if (!prom_dev.empty()) { std::string err; mdu->prom.load_socket(prom_dev, err); }
 	else mdu->prom.socket.assign(0x10000, 0xff);
