@@ -11,7 +11,7 @@ What runs, in about 990 emulated seconds (≈20 s wall clock):
 - System Processor & I/O 1.4 (reports 2 MHz)
 - Memory 1.4 (64K system + 64K program memory)
 - Language Processor 1.2, including the Emulator Controller
-- RTPA, correctly reported absent
+- RTPA, correctly reported absent. With `-rtpa`, its diagnostic now runs and passes; see `../rtpa_tta/`
 - DMU 1.2: RAM, ROM, CPU, LTC, AUX, HSI, flexible discs, and a 665-second device interaction test (the counters are octal)
 
 Reproduce:
