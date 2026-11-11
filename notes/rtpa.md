@@ -1,7 +1,7 @@
 # RTPA (Real-Time Prototype Analyzer)
 
 **Status:** emulated (`-rtpa`, `emu/src/machine/rtpa.{h,cpp}`).
-- **Diagnostic:** RTPA.TST V1.2 options 0–6 pass. That's all 16 event tests, the counter test, both counter options and the trace-buffer option, over hundreds of iterations. Automatic System Verification with `-rtpa` completes with no failures.
+- **Diagnostic:** RTPA.TST V1.2 options 0–6 pass. That's all 16 event tests, the counter test, both counter options and the trace-buffer option, over hundreds of iterations. Option 7 (probe) passes with `-rtpa probe`. Automatic System Verification with `-rtpa` completes with no failures.
 - **DOS/50:** `EVT`, `BIF`, `CNT`, `RTT` and `DRT` work.
 - **Not emulated:** the TTA (Trigger Trace Analyzer, Select mode 6).
 
@@ -42,11 +42,13 @@ The board watches the **slave bus**: the emulator processor, or the Language Pro
 | 0 | address low | inverted |
 | 1 | data | inverted |
 | 2 | address high | inverted |
-| 3 | probe (T) | inverted |
+| 3 | unknown (always written FF) | — |
 | 4 | bus value | as is |
-| 5 | probe mask | inverted |
+| 5 | probe pattern T | inverted |
 | 6 | bus mask | as is |
-| 7 | TM | as is |
+| 7 | probe mask TM | as is |
+
+A cycle's probe inputs match when (probe XOR T) AND TM = 0. RTPA.TST option 7 established fields 5 and 7. It asks for "the Data Acquisition Probe [on] A0-A7(L)" and expects the event with T=CC, TM=FF to fire on the fetch at 0033, since CC is 33 inverted.
 
 Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inactive high). A cycle matches when (cycle & mask) = (value & mask). The comparisons are inclusive: EVT2 "less than 5555" fires on the write to 5555.
 
@@ -57,10 +59,13 @@ Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inac
 | 01 | event 1 breaks |
 | 08 | event 2 breaks |
 | 09 | either breaks (IND) |
-| 03 (02 + 01) | LIM: both in the same cycle |
-| 0C (04 + 08) | ARM: event 1 arms event 2, and the G.P. counter counts once armed |
+| 03 (02 + 01) | LIM: both in the same cycle. The combined match is a channel-1 occurrence, so channel 1's pass count and delay apply, and then both events trigger |
+| 0C (04 + 08) | ARM: event 1 arms event 2, and the G.P. counter counts once armed. Event 1's pass count or delay applies before it arms; event 2's applies once armed |
+| 0C + C1 bit 20 | FRZ: as ARM, and the trace freezes at the arming event. This is inferred, see below |
 | 10 | channel 1 pass count |
 | 20 | channel 1 delay |
+
+DOS/50's BIF writes C2 as follows: `1` 01, `2` 08, `IND` 09, `LIM` 03, `ARM` 0C, and `FRZ` 0C with C1 bit 20 set. `EVT n P=n` sets the pass count (C5 index 0/1 = n, plus enable 10 in C2 or C3). `EVT n C=n` sets the delay (index 4/5 = n−1, plus enable 20). `T=bbbbbbbb` is the probe pattern in binary, `A=`/`A<`/`A>`/`A:` the address, and `D=` the data.
 
 **8253 behaviour that the tests pin down:**
 - **Loading:** a count loads on the first clock after it is written; later clocks count down.
@@ -104,8 +109,29 @@ Verified sessions (`SEL Z80`, `EM 0`, program patched with `P`):
 ## Found on the way
 The RTPA trace showed our Z80 core reading 16-bit operands high byte first. `rw()` used two calls in one expression, whose order C leaves unspecified. It now reads low then high, and PUSH writes high then low, as a real Z80 does (`[tek8550]` in `cpu/z80/superzazu`).
 
+## Combinations verified in DOS/50
+The program is `LD HL,000A` followed by 10 passes of `DEC HL / LD A,H / OR L / JR NZ`. All results match the hand-computed fetch numbers:
+
+| Setup | Result |
+|---|---|
+| ARM, event 1 0103 with P=3, event 2 0105 | break at 0105, 2 fetches counted since arming |
+| ARM, event 1 with C=3 | break at 0105, count 3 |
+| ARM, event 2 with P=2 | break at 0105, count 6 |
+| LIM, A≥0104 with P=3, together with A≤0105 | break at 0104, count 7 |
+| FRZ, event 1 0104, event 2 0106 | break at 0106, and `DRT` shows only 0100, 0103 and 0104 |
+
+`-rtpa probe` with `EVT 1 T=11111010` breaks at 0105, and `DRT`'s EXTERNAL column shows each address's low byte, inverted.
+
+**FRZ is inferred.** Its only hardware difference from ARM is C1 bit 20, and no test pins down what that bit does. "The trace freezes at the arming event" is consistent with the diagnostic's ARM test, which runs with C1 = 38 and expects a trace of the writes before the arming fetch. It also gives FRZ a use of its own: keep what led up to event 1.
+
+## INT 30 and INT 31
+The 8301 manual lists them as "RTPA (INT 30)" and "RTPA (INT 31)", with signal DBG INT 30(L) "provided by the RTPA". Nothing in our sources uses them:
+- DOS/50 V1.0 points vectors 003C/003E at its default handler 0040, and only 003A goes to the RTPA handler;
+- RTPA.TST's interrupt handler (3A25) treats anything other than codes 11, 33 and 35 as an "unexpected interrupt" error.
+
+The board model therefore never raises them. Their purpose (perhaps a counter output or a later DOS/50's trigger output) is unknown.
+
 ## Not modelled
-- **Probe (option 7):** RTPA.TST option 7 needs the Data Acquisition Probe clipped to A0–A7 and CQ to SLVOP, a physical loopback. The probe inputs read 00, and the `T`/`P` probe fields, `TM` and `XD` are stored but not compared. `EXTERNAL` in `DRT` is always 00000000.
-- **Interrupts and lines:** INT 30/31 and SLV INOP.
-- **BIF modes:** `FRZ`, and pass/delay combined with ARM/LIM, aren't covered by the tests.
+- **Probe:** only two states exist. Open (`-rtpa`), where the inputs read 00, or the diagnostic's loopback (`-rtpa probe`): A0–A7(L), qualified by SLVOP. There is no way to feed it a target's signals.
+- **Fields and lines:** comparator field 3, `XD`, INT 30/31 and SLV INOP.
 - **The TTA** (Trigger Trace Analyzer, `TTA.TST`, Select mode 6), the later analyser, is not emulated.

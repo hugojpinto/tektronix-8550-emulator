@@ -86,7 +86,7 @@ void rtpa::write(int r, u8 d)
 	case 2:                                   // event enables; writing it re-arms
 		m_c2 = d;
 		m_status = 0; m_trig = false; m_stopped = false; m_armed = false; m_delay[0] = m_delay[1] = false;
-		m_tr_rd = 0; m_tr_byte = 0;
+		m_tr_rd = 0; m_tr_byte = 0; m_frozen = false;
 		break;
 	case 3:
 		// bit 4 (channel 2 pass count enable) also strobes channel 2's pass and G.P.
@@ -107,12 +107,12 @@ void rtpa::write(int r, u8 d)
 // ---------------------------------------------------------------- comparators
 
 // Fields (C4 RAM, per event e at 2*k + e), inverted ones marked ~:
-//   k=0 ~address low, k=2 ~address high, k=1 ~data, k=3 ~probe (T),
-//   k=4 bus value, k=5 ~probe mask, k=6 bus mask, k=7 TM.
+//   k=0 ~address low, k=1 ~data, k=2 ~address high, k=3 (unused here, written FF),
+//   k=4 bus value, k=5 ~probe pattern (T), k=6 bus mask, k=7 probe mask (TM).
 // Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inactive high).
 // Address mode (C7 index e): 02 low byte equal, 04 equal, 08 <=, 01 >=, 0 don't care.
 // Data mode (C7 index 2+e): 02 equal, 0 don't care.
-bool rtpa::match(int e, u16 a, u8 d, u8 cyc) const
+bool rtpa::match(int e, u16 a, u8 d, u8 cyc, u8 probe) const
 {
 	u16 ea = u16(u8(~m_ram[0 + e]) | (u8(~m_ram[4 + e]) << 8));
 	u8 ed = u8(~m_ram[2 + e]);
@@ -126,21 +126,35 @@ bool rtpa::match(int e, u16 a, u8 d, u8 cyc) const
 	default: break;
 	}
 	if (m_mode[2 + e] == 0x02 && d != ed) return false;
+	if ((probe ^ u8(~m_ram[10 + e])) & m_ram[14 + e]) return false;   // probe T (inverted) under mask TM
 	return true;
 }
 
 void rtpa::instr_begin(u16 pc) { m_cur_pc = pc; }
 
-// An event occurred on channel e: count it (pass), start its delay, or trigger.
+// An event occurred on channel e: count it (pass), start its delay, then act:
+// arm (channel 1 under ARM/FRZ), or trigger. Under LIM the combined match is a
+// channel-1 occurrence and triggers both events.
 void rtpa::occurrence(int e, bool &hit)
 {
 	bool pass = e == 0 ? (m_c2 & 0x10) : (m_c3 & 0x10);
 	bool delay = e == 0 ? (m_c2 & 0x20) : (m_c3 & 0x20);
 	if (gp_source() == e) clock_gp(gp_gate());             // G.P. counts this channel's events
 	if (pass && !m_pit[e].c[0].clock()) return;
-	if (e == 0 && (m_c2 & 0x04)) { m_armed = true; return; } // ARM: event 1 arms event 2
 	if (delay) { m_delay[e] = true; return; }
+	qualified(e);
 	hit = true;
+}
+
+// A channel's qualified event (after pass count and delay)
+void rtpa::qualified(int e)
+{
+	if (e == 0 && (m_c2 & 0x04)) {                         // ARM: event 1 arms event 2
+		m_armed = true;
+		if (m_c1 & 0x20) m_frozen = true;                    // FRZ: the trace freezes at the arming event
+		return;
+	}
+	if (m_c2 & 0x02) { trigger(0); trigger(1); return; }    // LIM
 	trigger(e);
 }
 
@@ -148,12 +162,14 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 {
 	if (m_stopped || !(m_c3 & 0x08)) return;   // C3 bit 3: analyser running (DOS/50 clears it after a break: the trace freezes)
 	u8 cyc = u8(0xf0 | (io ? 0 : 0x01) | (write ? 0x02 : 0) | (fetch ? 0x04 : 0));
+	// probe inputs: open (00), or looped back to A0-A7(L) -- the low address byte, inverted
+	const u8 probe = probe_loopback ? u8(~a) : 0x00;
 	if (gp_source() == 4) clock_gp(gp_gate());                 // every bus cycle
-	if (traced(cyc)) {
+	if (!m_frozen && traced(cyc)) {
 		if (gp_source() == 2) clock_gp(gp_gate());             // every stored trace entry
 		// bus byte: cycle bits, plus the upper bits of event 1's bus-value register as a
 		// run tag (DOS/50 steps it by 08 at every GO; DRT shows the entries of the last run)
-		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8((cyc & 0x07) | (m_ram[8] & 0xf8)), 0, d, 0 };
+		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8((cyc & 0x07) | (m_ram[8] & 0xf8)), 0, d, probe };
 		m_tr_head = (m_tr_head + 1) % TRACE;
 		if (m_tr_count < TRACE) m_tr_count++;
 	}
@@ -161,16 +177,16 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 		// counting first: a counter gated by this cycle's own event starts with the next fetch
 		if (gp_source() == 3) clock_gp(gp_gate());
 		for (int e = 0; e < 2; e++)
-			if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; trigger(e); }
+			if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; qualified(e); }
 	}
 	bool en1 = (m_c2 & 0x07) != 0, en2 = (m_c2 & 0x0a) != 0;   // LIM (02) uses both events, ARM (04) event 1
-	bool m1 = en1 && match(0, a, d, cyc), m2 = en2 && match(1, a, d, cyc);
+	bool m1 = en1 && match(0, a, d, cyc, probe), m2 = en2 && match(1, a, d, cyc, probe);
 	if (trace && (m1 || m2)) fprintf(stderr, "[%.4f RTPA match%s%s at %04x d=%02x cyc=%02x pc=%04x]\n", clock ? *clock : 0.0, m1 ? " E1" : "", m2 ? " E2" : "", a, d, cyc, m_cur_pc);
-	if (m_c2 & 0x02) {                        // LIM: both events in the same cycle
-		if (m1 && m2) { trigger(0); trigger(1); }
+	bool hit = false;
+	if (m_c2 & 0x02) {                        // LIM: both events in the same cycle (channel 1's pass/delay apply)
+		if (m1 && m2) occurrence(0, hit);
 		return;
 	}
-	bool hit = false;
 	if (m1) occurrence(0, hit);
 	if (m2 && (!(m_c2 & 0x04) || m_armed)) occurrence(1, hit);
 }

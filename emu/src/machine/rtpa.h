@@ -14,6 +14,7 @@ class rtpa
 {
 public:
 	bool present = false;
+	bool probe_loopback = false;              // -rtpa probe: Data Acquisition Probe on A0-A7(L), CQ on SLVOP(L) (RTPA.TST option 7)
 	bool trace = getenv("TEK_RTPATRACE") != nullptr;
 	double *clock = nullptr;                  // seconds, for the trace
 
@@ -47,6 +48,7 @@ private:
 	u8 m_c0 = 0, m_c1 = 0, m_c2 = 0, m_c3 = 0, m_index = 0;
 	u8 m_status = 0;                          // 01 event 1, 02 event 2, 08 stopped
 	u16 m_pc_last = 0, m_pc_next = 0, m_cur_pc = 0;
+	bool m_frozen = false;                    // FRZ: trace stopped at the arming event
 	bool m_armed = false, m_delay[2] = {}, m_trig = false, m_stopped = false, m_irq = false;
 	double m_us_frac = 0;                     // time base for CNT usec/msec
 	u16 m_prescale = 0;
@@ -59,8 +61,9 @@ private:
 	bool traced(u8 cyc) const;
 	u8 trace_read();
 
-	bool match(int e, u16 a, u8 d, u8 cyc) const;
+	bool match(int e, u16 a, u8 d, u8 cyc, u8 probe) const;
 	void occurrence(int e, bool &hit);
+	void qualified(int e);
 	void trigger(int e) { m_status |= u8(1 << e); m_trig = true; }
 	void clock_gp(bool gate) { if (gate) m_pit[0].c[1].clock(); }
 	bool gp_gate() const { return (m_c2 & 0x04) ? m_armed : true; }   // ARM: G.P. counts once armed

@@ -53,7 +53,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 
 ## Known gaps
 **Not emulated:**
-- the TTA (Trigger Trace Analyzer, `TTA.TST`), and the RTPA's probe inputs (RTPA.TST option 7 needs a physical probe loopback);
+- the TTA (Trigger Trace Analyzer, `TTA.TST`), RTPA INT 30/31 (unused by DOS/50 V1.0 and RTPA.TST), and RTPA probe inputs other than the diagnostic's loopback (`-rtpa probe`);
 - the 6800, 8080 and 8086 emulator boards (an EMU.8086 disc exists);
 - target-system modes 1/2 for the 8085 board (the link carries Z80 pins only);
 - the 8301 AUX port and the 8501 printer/aux port beyond logging.
