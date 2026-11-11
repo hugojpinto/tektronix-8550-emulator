@@ -7,7 +7,7 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 - **TTA Data Acquisition Interface:** the probe's eight leads, the EVENT QUALIFIER input and the TRIG OUT / ACQ CLK OUT outputs as a separate connection (the real P6451 was a separate cable), so a target such as FUSE can feed the probe. Needs a small protocol agreed with target authors.
 - **User SVC exit under DOS/50 V1.0** hangs (function 1A at block 0040), on both emulator boards; see `notes/tta.md`.
 - **Extended Tekhex** (070-4478-00, Extended Hex Interface Users Manual, on bitsavers): symbol-carrying transfers for the host link (`tools/host_link.py`). 
-- **The 6800, 8080 and 8086 emulator processor boards.** An EMU.8086 disc survives; the boards' firmware does not.
+- **The 6800, 8080 and 8086 emulator processor boards.** The boards' firmware does not survive. The EMU.8086 disc survives, but only with DOS/50 **V2** support, and V2 itself is not in the collection; its monitor kills V1.0 (`notes/8301.md`). The 8086 board set (at least three boards) can still be reverse-engineered and checked against its diagnostic (Select mode 17).
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 
 ## Fidelity

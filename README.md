@@ -80,7 +80,7 @@ Help preserve the 8550: if you have any of these, please [open an issue](https:/
 | **Firmware PROM of the 8085 emulator processor board** (8300E06) | the same: test 06/00D0, expected checksum 5716 |
 | **Firmware of the 8550F30 PROM programmer's 8085A controller** | its controller is simulated |
 | **The CT8500 character ROM**, and its service manual 061-2431-00 | the screen font is reconstructed from a Tektronix 308 ROM plus a hand-drawn lower case |
-| **A DOS/50 V2.x system disc** (part 062-5xxx) and the **DOS/50 System Users Manual** 070-3457 / 070-3936 | only DOS/50 V1.0 survives |
+| **A DOS/50 V2.x system disc** (part 062-5xxx) and the **DOS/50 System Users Manual** 070-3457 / 070-3936 | only DOS/50 V1.0 survives; the 8086 emulator support disc we have (EMU.8086) needs V2, as does the TTA's command set |
 | **Dumps of the 8301 bipolar PROMs** 160-0884-00, 160-0822-00, 160-0727-00 | their decoding is emulated from the schematics |
 | **The 6800, 8080 or 8086 emulator boards**, their firmware and support discs, and service manuals for any emulator board | needed to emulate them |
 | **Clear, straight-on photos of an 8301's and an 8501's front panels** | the panel artwork is drawn from a catalogue photo and photos of related units |
