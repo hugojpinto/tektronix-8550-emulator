@@ -250,7 +250,7 @@ void tek8301::lp_run(int cycles2650)
 		const bool watch = rtpa_board.present;   // the RTPA watches the slave bus: emulator processor or Language Processor
 		const bool twatch = &z == &ep && tta_board.target_watch();   // the TTA in run mode: the program under test
 		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(z.pc); m_rtpa_watch = true; }
-		if (twatch) { tta_board.instr_begin(z.cyc, z.pc); m_tta_watch = true; }
+		if (twatch) { tta_board.run.hz = 4e6; tta_board.instr_begin(z.cyc, z.pc); m_tta_watch = true; }
 		z80_step(&z);
 		if (watch) {
 			m_rtpa_watch = false;
@@ -287,12 +287,15 @@ void tek8301::lp_run(int cycles2650)
 // slave like the Z80 board, with its own control port E5 (80 firmware call, 92 run in
 // mode 0, as DOS/50 V1.0 drives it) and firmware (not dumped) at the top of memory.
 
-u8 tek8301::ep85_bus_t::read(u16 a) { m->bp_check(a, false); return m->slave_rd(a, false); }
-u8 tek8301::ep85_bus_t::fetch(u16 a) { m->bp_check(a, false); return m->slave_rd(a, true); }
-void tek8301::ep85_bus_t::write(u16 a, u8 d) { m->bp_check(a, true); m->slave_wr(a, d); }
-u8 tek8301::ep85_bus_t::io_read(u8 port) { return 0xff; }
+// (the TTA, in run mode, sees every cycle of the 8085 too; an 8085 I/O cycle puts the port
+// number on both halves of the address bus: OUT F7 is acquired as 00F7F7, users manual 1-10)
+u8 tek8301::ep85_bus_t::read(u16 a) { m->bp_check(a, false); u8 v = m->slave_rd(a, false); if (m->m_tta_watch) m->tta_board.target_bus(m->m_ep85_t, a, v, tta::MREAD); return v; }
+u8 tek8301::ep85_bus_t::fetch(u16 a) { m->bp_check(a, false); u8 v = m->slave_rd(a, true); if (m->m_tta_watch) m->tta_board.target_bus(m->m_ep85_t, a, v, tta::FETCH); return v; }
+void tek8301::ep85_bus_t::write(u16 a, u8 d) { m->bp_check(a, true); if (m->m_tta_watch) m->tta_board.target_bus(m->m_ep85_t, a, d, tta::MWRITE); m->slave_wr(a, d); }
+u8 tek8301::ep85_bus_t::io_read(u8 port) { if (m->m_tta_watch) m->tta_board.target_bus(m->m_ep85_t, u16(port | (port << 8)), 0xff, tta::IOREAD); return 0xff; }
 void tek8301::ep85_bus_t::io_write(u8 port, u8 d)
 {
+	if (m->m_tta_watch) m->tta_board.target_bus(m->m_ep85_t, u16(port | (port << 8)), d, tta::IOWRITE);
 	// SVC n = OUT (F8h-n) in the block selected by F3, as on the Z80 board
 	if ((m->m_f9 & 0x10) && (port & 0xf8) == ((m->m_f3 & 0x0f) << 4)) {
 		m->ec_interrupt(INT_SVC1 + (7 - (port & 7)));
@@ -358,6 +361,7 @@ void tek8301::ep85_run(int cycles2650)
 			ep85_firmware(target);
 			return;
 		}
+		if (tta_board.target_watch()) { tta_board.run.hz = 3e6; tta_board.run_start(target != m_lp_pc_next, m_ep85_t); }
 		ep85.set_pc(target);
 	}
 	// forced interrupt: the 8085's TRAP (also wakes it from HLT). The line stays asserted
@@ -383,9 +387,19 @@ void tek8301::ep85_run(int cycles2650)
 		if (ep_trace && m_ep85_steps++ < 40) fprintf(stderr, "[EP85 %04x]\n", ep85.pc());
 		u32 before = m_pending;
 		m_bp_hit = 0;
+		const bool twatch = tta_board.target_watch();   // the TTA in run mode
+		if (twatch) { tta_board.run.hz = 3e6; tta_board.instr_begin(m_ep85_t, ep85.pc()); m_tta_watch = true; }
 		int c = ep85.run(1);                         // one instruction
+		m_ep85_t += u64(c);
+		if (twatch) {
+			m_tta_watch = false;
+			tta_board.instr_end(ep85.pc(), m_ep85_t);
+			if (tta_board.take_break()) ec_interrupt(INT_RTPA);
+			if (tta_board.take_irq()) tta_interrupt();
+		}
 		if (trap) { ep85.set_input_line(I8085_TRAP_LINE, CLEAR_LINE); trap = false; }
 		m_lp_frac -= c;
+		if (tta_board.stopped()) break;
 		if (m_pending != before) {
 			if (m_bp_hit & 1) ec_interrupt(INT_BP1);
 			if (m_bp_hit & 2) ec_interrupt(INT_BP2);

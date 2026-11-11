@@ -92,6 +92,7 @@ public:
 	u8 m_e5 = 0;
 	unsigned m_ep85_steps = 0;   // trace limiter
 	u16 m_ep85_resume = 0;       // user PC the firmware returns to after a restore
+	u64 m_ep85_t = 0;            // 8085 clock states run (the TTA's time base in run mode)
 	prototype_bus *target = &m_no_target;   // probe side (modes 1/2)
 	// E3 (emulator board control), as DOS/50 V1.0 drives it: 80 firmware call / 92 run in mode 0,
 	// C0 firmware call / B2 run in modes 1-2 -> bit 6 or bit 5 selects the prototype

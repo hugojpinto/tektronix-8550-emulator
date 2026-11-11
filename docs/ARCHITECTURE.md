@@ -241,7 +241,7 @@ The modules' entry points are listed in [notes/tta.md](../notes/tta.md).
 
 **The commands.** `system/tta_console.*` is the TTA command set of the users manual: `acq ad bre bus cons cou ctr data disp eve pro qua tclr ts`, standing in for the later DOS/50 that had it. `tek8550_system::key_in` gives it the lines typed at the DOS/50 prompt whose first word is a TTA command; DOS/50 then gets an empty line. Usage: [TTA.md](TTA.md).
 
-**One bridge.** DOS/50 V1.0's GO handler (overlay address 681E) accepts an INT 29 break only after reading the RTPA's status register C2 (10 present, 08 stopped, 01/02 TRIG1/2). With no RTPA fitted, the emulator shows the TTA's break there, so that DOS/50 V1.0 stops cleanly and prints the processor's state. It still labels the break `<BREAK   >`, because it ties the TRIG names to its own `BIF` settings; the console prints `TTA break: TRIGn` first. This is emulator glue for software we don't have, not hardware.
+**One bridge.** DOS/50 V1.0's GO handler (overlay address 681E) accepts an INT 29 break only after reading the RTPA's status register C2 (10 present, 08 stopped, 01/02 TRIG1/2). With no RTPA fitted, the emulator shows the TTA's break there, so that DOS/50 V1.0 stops cleanly and prints the processor's state. With the Z80 support it still labels the break `<BREAK   >` (it ties the TRIG names to its own `BIF` settings), so the console prints `TTA break: TRIGn` first; DOS/50's 8085 support prints `<BREAK TRIG1>` itself. The TTA watches both emulator boards (Z80 and 8085), in every emulation mode: target accesses over the prototype link are cycles of the emulator processor like any other. This is emulator glue for software we don't have, not hardware.
 
 ## 9. How the emulator models all of this
 

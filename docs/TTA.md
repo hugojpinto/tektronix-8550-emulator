@@ -203,6 +203,19 @@ Counter 3 holds **197**: 197 × 200 ns = 39.4 µs. To check by hand, the Z80 at 
 
 `ts` on its own shows the complete set-up of all four channels, as in the manual's Display 2-1.
 
+## Other processors and target systems
+
+**The 8085 board.** The TTA watches the 8085 emulator board as well (`-ep 8085`, with DOS/50's 8085 support installed once from the 8085 disc, see `emu/README.md`). There, everything looks exactly as in the manual, which was written for the 8085:
+- `disp` decodes `LXI H`, `ADD M`, `JNZ`…;
+- an `OUT F7` is acquired as `00F7F7 0F I WT`;
+- DOS/50's 8085 support itself prints `<BREAK TRIG1>` for a TTA stop.
+
+The sample program needs the same ending as on the Z80: patch `C3 0C 01` (JMP 010C) at 010C and set `BK 10C`.
+
+**Target systems (emulation modes 1 and 2).** The TTA sits on the emulator processor's bus, so it sees the program's cycles whatever they reach: program memory, or a target system over the prototype link (`-target`, [INTEGRATION.md](INTEGRATION.md)). In mode 1, with the program in program memory and its I/O on the target, an `OUT (10H),A` to the target is caught and recorded as `I WT`. In mode 2, with program and data in the target's RAM, the operand-only recording of section 7 comes out the same. Mode 2 is slow (one socket round trip per access), but the TTA adds nothing to that.
+
+**The probe.** The real TTA's eight probe leads (and its EVENT QUALIFIER input) clip onto any signal of your prototype. The emulator has nothing connected to them: they read 0 and the qualifier reads low.
+
 ## Command reference
 
 Commands are typed at the `>` prompt.
@@ -251,7 +264,7 @@ Commands are typed at the `>` prompt.
 
 - **Where the commands come from.** In 1983 these commands were part of the later DOS/50 and of OS/40 on the 8540. Neither survives, and the DOS/50 V1.0 we have predates the TTA. So the emulator runs them itself. A line typed at the DOS/50 prompt whose first word is a TTA command is taken by the emulator, and its output is printed on the terminal; DOS/50 then gets an empty line and shows its prompt again. Every other line reaches DOS/50 untouched. Syntax and displays follow the users manual.
 - **How the board is modelled.** Everything the board's own diagnostic exercises is emulated at register level and passes: counters, event latches, triggers, interrupt, acquisition. How the board is programmed to watch a target program, and what the TTA software wrote into it, is not known. That part, events and counters as the manual describes them, is modelled functionally. [ARCHITECTURE.md §8](ARCHITECTURE.md#8-inside-the-trigger-trace-analyzer) explains the split.
-- **Breaks.** DOS/50 V1.0 can only name RTPA triggers in its `<BREAK …>` line. So a TTA stop shows `<BREAK   >`, preceded by the TTA's own line, **TTA break: TRIGn**.
+- **Breaks.** With the Z80, DOS/50 V1.0 can't name a TTA trigger in its `<BREAK …>` line, so a stop shows `<BREAK   >`, preceded by the TTA's own line, **TTA break: TRIGn**. DOS/50's 8085 support names TRIG1 and TRIG2 itself.
 - **Bus symbols.** The manual lists the 8085's (`f nf m i rd wt`) and none for the Z80. The emulator uses the same set for the Z80 board, which has the same cycle types.
 - **The probe and the qualifier.** Nothing is clipped onto them, so the probe lines read 0 and the qualifier is low. TRIG OUT and ACQ CLK OUT are not modelled.
 - **The board's own diagnostic**, TTA.TST, runs in Select mode → 6. See [OPERATION.md §10](OPERATION.md#the-trigger-trace-analyzers-diagnostic).

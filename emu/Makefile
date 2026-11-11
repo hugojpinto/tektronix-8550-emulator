@@ -28,7 +28,7 @@ LDFLAGS += -static -static-libgcc -static-libstdc++
 endif
 BUILD ?= build
 
-DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o
+DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o $(BUILD)/cpu/i8085/8085dasm.o
 T11_OBJ  := $(BUILD)/cpu/t11/t11.o
 M8501    := $(BUILD)/machine/tek8501.o $(BUILD)/machine/tek8501_fdc.o $(BUILD)/machine/flexdrive.o
 M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/tta_run.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o

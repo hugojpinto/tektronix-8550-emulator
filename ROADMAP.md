@@ -4,6 +4,8 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 
 ## Hardware not yet emulated
 - **Trigger Trace Analyzer (TTA):** usable (`docs/TTA.md`): run mode is functional, and the command set is the emulator's stand-in for the lost later DOS/50. Open: run mode at register level (which input group addresses which comparator page, the range codes) and the probe fixture's polarity, which need the original software or its manual sections (`notes/tta.md`).
+- **TTA Data Acquisition Interface:** the probe's eight leads, the EVENT QUALIFIER input and the TRIG OUT / ACQ CLK OUT outputs as a separate connection (the real P6451 was a separate cable), so a target such as FUSE can feed the probe. Needs a small protocol agreed with target authors.
+- **User SVC exit under DOS/50 V1.0** hangs (function 1A at block 0040), on both emulator boards; see `notes/tta.md`.
 - **Extended Tekhex** (070-4478-00, Extended Hex Interface Users Manual, on bitsavers): symbol-carrying transfers for the host link (`tools/host_link.py`). 
 - **The 6800, 8080 and 8086 emulator processor boards.** An EMU.8086 disc survives; the boards' firmware does not.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
