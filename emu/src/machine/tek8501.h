@@ -7,6 +7,7 @@
 #ifndef TEK_TEK8501_H
 #define TEK_TEK8501_H
 #include "emu.h"
+#include "machine/imd.h"
 #include "cpu/t11/t11.h"
 #include "machine/serial.h"
 #include <vector>
@@ -75,7 +76,7 @@ private:
 	void update_irq();
 
 	// ---- flexible disc controller (HLE) ----
-	struct drive_t { std::vector<u8> data; std::string path, comment; bool present = false, changed = true, writeback = false, is_imd = false, dirty = false; u64 last_write = 0; };
+	struct drive_t { std::vector<u8> data; std::string path, comment; bool present = false, changed = true, writeback = false, is_imd = false, dirty = false; u64 last_write = 0; fd_geometry geom; };
 	drive_t m_drive[4];
 	u16  m_cbpr = 0;
 	bool m_fd_busy = false;

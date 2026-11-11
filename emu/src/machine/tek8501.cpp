@@ -16,7 +16,6 @@ constexpr offs_t CBPR_ADDR    = 0177160;
 constexpr offs_t HSI_BASE     = 0176510;   // I/O board, 8 words assumed (176510-176526)
 constexpr u16    FD_VECTOR    = 0230;
 constexpr u16    HSI_VECTOR   = 0360;
-constexpr u16    DSDD_RECORDS = 3991;
 constexpr u16    FD_FW_VERSION = 210;      // reported as version x 100 (unknown real value)
 
 bool read_file(const std::string &p, std::vector<u8> &v)
@@ -58,7 +57,12 @@ bool tek8501::mount(int drive, const std::string &path, std::string &err, bool w
 	drive_t &d = m_drive[drive & 3];
 	if (!load_imd_linear(path, d.data, err, &d.is_imd, &d.comment)) return false;
 	d.path = path; d.present = true; d.changed = true; d.writeback = writeback; d.dirty = false;
-	if (d.data.size() < size_t(DSDD_RECORDS) * 256) d.data.resize(size_t(DSDD_RECORDS) * 256, 0xe5);
+	// the image size gives the geometry (SSSD 1001, SSDD 1989, DSSD 2002, DSDD 3991
+	// records); anything else is taken as DSDD, padded with E5
+	if (d.data.size() % 256 || !fd_geometry::from_records(d.data.size() / 256, d.geom)) {
+		d.geom = fd_geometry();
+		d.data.resize(size_t(d.geom.records()) * 256, 0xe5);
+	}
 	return true;
 }
 
@@ -250,7 +254,8 @@ void tek8501::fd_execute()
 		drive_t &d = m_drive[drv];
 		u16 er = 0, sr = 0;
 
-		if (d.present) sr |= 0040000 | 0004000;                  // ready, two-sided
+		// ready; two-sided (media); active disc (density known); double density / present density
+		if (d.present) sr |= 0040000 | (d.geom.ds ? 0004000 : 0) | 0000010 | (d.geom.dd ? 0000005 : 0);
 		if (d.changed) { sr |= 0010000; if (cr & 010000) er |= 0000002; }
 		d.changed = false;
 
@@ -262,9 +267,10 @@ void tek8501::fd_execute()
 			if (g_iotrace) fprintf(stderr, "[8501 %.3fs fd cmd %02o drv %d rec %u words %u dma %06o]\n", m_cycles / CPU_HZ, cmd, drv, da, wc, dma);
 			if (!need_ready() || (er & 2)) break;
 			u32 words = wc;                          // 0 = seek
-			if (cmd == 045 && wc == 0177777) words = (DSDD_RECORDS - da) * 128u;
+			const u32 cap = u32(d.geom.records());
+			if (cmd == 045 && wc == 0177777) words = (cap - da) * 128u;
 			u32 recs = (words + 127) / 128;
-			if (u32(da) + recs > DSDD_RECORDS) { er |= 0110000; break; }
+			if (u32(da) + recs > cap) { er |= 0110000; break; }
 			if (cmd != 045 && words && u32(dma) + words * 2 > 0x10000) { er |= 0102000; break; }
 			for (u32 w = 0; w < words; w++) {
 				size_t off = size_t(da) * 256 + w * 2;
@@ -284,22 +290,41 @@ void tek8501::fd_execute()
 			}
 			break;
 		}
-		case 047: case 051: {                        // format DD / SD, FDDAR = track (0-153)
-			// DOS/50 FORMAT formats track 0, 1, 2 ... until the controller refuses
-			// a track past the end, so that must be an error (capacity overflow, as
-			// for records). Track 0 = cyl 0 side 0 (13 records), then 26 per track.
-			if (!need_ready()) break;
-			if (da >= 154) { er |= 0110000; break; }
-			size_t first = da == 0 ? 0 : 13 + size_t(da - 1) * 26, n = da == 0 ? 13 : 26;
-			std::fill(d.data.begin() + first * 256, d.data.begin() + (first + n) * 256, u8(0));
-			d.dirty = true; d.last_write = m_cycles;
-			if (cr & 020000) { mem_wr(blk + 2, 0); mem_wr(blk + 4, u16(da + 1)); }
+		case 047: case 051: {
+			// Format DD / SD (service manual 12-9, 12-10). FDDAR = first track (0-76 one-sided,
+			// 0-153 two-sided); FDWCR = number of tracks, clipped to the rest of the disc;
+			// FDWCR = 0 only seeks and sets the density the controller assumes. A first track
+			// past the end is "disc overflow" -- DOS/50 FORMAT formats one track at a time
+			// and relies on this error to find the end of the disc. Each sector is filled
+			// with the 8 bytes cylinder,0,side,0,sector,0,density,0 repeated; track 0 is
+			// always FM. A change of density re-lays the image out at the new capacity.
+			if (!need_ready() || (er & 2)) break;
+			bool dd = cmd == 047;
+			fd_geometry &g = d.geom;
+			if (da >= g.tracks()) { er |= 0110000; break; }
+			if (g.dd != dd) {
+				g.dd = dd;
+				d.data.resize(size_t(g.records()) * 256, 0);
+				d.dirty = true; d.last_write = m_cycles;
+			}
+			int n = wc == 0 ? 0 : std::min<int>(wc, g.tracks() - da);
+			if (g_iotrace) fprintf(stderr, "[8501 %.3fs fd format %s drv %d tracks %u-%d (%s)]\n", m_cycles / CPU_HZ, dd ? "DD" : "SD", drv, da, da + n - 1, g.name());
+			for (int t = da; t < da + n; t++) {
+				bool fm = g.fm(t);
+				size_t bs = fm ? 128 : 256, off = size_t(g.track_first(t)) * 256;
+				for (int sec = 1; sec <= 26; sec++, off += bs) {
+					const u8 pat[8] = { u8(g.cylinder(t)), 0, u8(g.side(t)), 0, u8(sec), 0, u8(fm ? 0 : 1), 0 };
+					for (size_t i = 0; i < bs; i++) d.data[off + i] = pat[i & 7];
+				}
+			}
+			if (n) { d.dirty = true; d.last_write = m_cycles; }
+			if (cr & 020000) { mem_wr(blk + 2, 0); mem_wr(blk + 4, u16(da + n)); }
 			break;
 		}
 		case 053: case 055:                          // status / slow status
 			mem_wr(blk + 2, FD_FW_VERSION);
 			mem_wr(blk + 6, 0);
-			mem_wr(blk + 4, d.present ? DSDD_RECORDS : 0);
+			mem_wr(blk + 4, d.present ? u16(d.geom.records()) : 0);
 			if (!d.present) er |= 0100001;
 			break;
 		case 057:                                    // initialize
@@ -546,7 +571,7 @@ bool tek8501::flush(std::string &err, bool force)
 		// unless forced, wait until writes have been quiet for ~2 s (a whole file save)
 		if (!force && m_cycles - d.last_write < u64(CPU_HZ * 2)) continue;
 		std::string e;
-		bool r = d.is_imd ? save_imd_8501(d.path, d.data, d.comment, e) : save_raw(d.path, d.data, e);
+		bool r = d.is_imd ? save_imd_8501(d.path, d.data, d.geom, d.comment, e) : save_raw(d.path, d.data, e);
 		if (r) d.dirty = false; else { ok = false; err = e; }
 	}
 	return ok;

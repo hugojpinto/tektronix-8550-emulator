@@ -13,6 +13,23 @@ build/tek8501 -0 ../sources/bitsavers/disks/System.imd
 Leaving: **Ctrl-]** opens the monitor; `q` + Enter quits (disks mounted with `-rw` are saved), `c` or Enter resumes.
 
 `-rw` writes disk changes back to the image (raw `.img` or `.imd`; atomic, on quiet periods and at exit).
+
+**Disc formats:** the 8501 drives take all four IBM-compatible 8" formats. An image's size identifies its format:
+
+| Format | Records | Image size |
+|---|---|---|
+| single-sided, single density (SSSD) | 1001 | 256 256 bytes |
+| single-sided, double density (SSDD) | 1989 | 509 184 bytes |
+| double-sided, single density (DSSD) | 2002 | 512 512 bytes |
+| double-sided, double density (DSDD, the standard 8501 disc) | 3991 | 1 021 696 bytes |
+
+Any other size is treated as DSDD.
+
+**A new disc:**
+1. Create a blank image of the right side count: `head -c 1021696 /dev/zero > new.img` for two-sided, or 509184 bytes for one-sided.
+2. Mount it with `-rw -1 new.img` and run `FORMAT /DEV/FLX1 [maxfiles] [name]` for double density, or `FORMAT:S` for single density. The image is re-laid out at the formatted density.
+
+`FORMAT:Z` only writes a fresh file system, without formatting the tracks. `../tekmato` can also make, read and write such volumes offline.
 `-pm ext` emulates the 1981+ program-memory boards with the extended-bank comparator. The 1983 diagnostic disk needs it;
 DOS/50 V1.0 needs the default (no comparator).
 
