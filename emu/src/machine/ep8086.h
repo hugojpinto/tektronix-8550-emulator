@@ -114,7 +114,7 @@ private:
 	void enter_kernel();
 	u8 user_read(u32 a, bool fetch = false);
 	void user_write(u32 a, u8 d);
-	void bus_wait(u32 a, bool fetch);
+	void bus_wait(u32 a, bool fetch, bool write);
 	u32 m_last_data = ~0u, m_last_fetch = ~0u;
 };
 #endif

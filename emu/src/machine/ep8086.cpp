@@ -126,14 +126,14 @@ u32 ep8086_board::user_addr(u32 a) const
 
 u8 ep8086_board::user_read(u32 a, bool fetch)
 {
-	bus_wait(a, fetch);
+	bus_wait(a, fetch, false);
 	const u32 pa = user_addr(a);
 	return mdu.prog_rd(u8(~(pa >> 16)), u16(pa));    // extended bank lines, active low as F4
 }
 
 void ep8086_board::user_write(u32 a, u8 d)
 {
-	bus_wait(a, false);
+	bus_wait(a, false, true);
 	const u32 pa = user_addr(a);
 	mdu.prog_wr(u8(~(pa >> 16)), u16(pa), d);
 }
@@ -144,7 +144,7 @@ void ep8086_board::user_write(u32 a, u8 d)
 // A bus cycle carries a word on the 80186 (an even address, or an odd byte alone), a byte
 // on the 80188. The 8086 board's tests pass without them (its jumper P3505 DYN: none unless
 // the memory is allocated slow).
-void ep8086_board::bus_wait(u32 a, bool fetch)
+void ep8086_board::bus_wait(u32 a, bool fetch, bool write)
 {
 	// slow memory (mapping RAM bit 3, AL -S): the jumper-selected wait states (P7005, up to 7;
 	// the number is not known, 1 here) on every cycle, fetches included (186.TST module 61
@@ -159,9 +159,15 @@ void ep8086_board::bus_wait(u32 a, bool fetch)
 	}
 	if (!wait_states && !slow) return;
 	u32 &last = m_last_data;
-	const bool new_cycle = is8088 || !(a & 1) || a != last + 1;
+	const bool second = a == last + 1;
+	const bool new_cycle = is8088 || !(a & 1) || !second;
 	last = a;
 	if (new_cycle) m_cpu->adjust_icount(-(wait_states + slow));
+	// the 80188 reads a word in two byte cycles and execution waits for the second; a write is
+	// posted (inferred: 186.TST module 60 sets 585 PUSH/POP/LOOP iterations on an 80188 where
+	// an 80186 gets 600 into the same window, 41 clocks against 40; module 61's fetch-only
+	// loop shows fetches and jumps cost nothing)
+	if (is186 && is8088 && !write && second && wait_states) m_cpu->adjust_icount(-1);
 }
 
 // Board I watches each bus cycle of the user's program. Breakpoints: three RAMs, one bit per

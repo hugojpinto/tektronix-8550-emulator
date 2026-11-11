@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **80188 timing:** an 8-bit word read costs a clock more than on the 80186 (inferred from the diagnostic's patched loop count). The 80188 now passes 186.TST like the 80186. Option 8 needs a MicroLab I trainer, which isn't preserved.
 - 2026-11-11: **Program memory boards, and the 80186 at full pass.**
   - **Program memory:** the 8301's two 32 KB boards are modelled with their relocation RAM, loaded through B8/B9 with a counter, plus the relocation and comparator latches. `-pm 32k` fits a single board with relocation enabled. The memory diagnostic's relocation tests (MEM.TST options 4 and 5) pass, and option 0 passes on 32K and 64K systems. An address nothing answers reads 00, as the power-up test assumes.
   - **80186:** the emulator boards drive their relocation output onto the extended address lines. 186.TST now passes every module but 31 (the lost PROM half), with and without the TTA. Earlier fixes for it: wait states, and three i186 peripheral bugs.
