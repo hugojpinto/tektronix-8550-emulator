@@ -127,7 +127,7 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	mdu->mode_switch = u8(opt.sw);
 	mdu->pm_ext_comparator = opt.pm_ext;
 	if (opt.no_ep) mdu->ep_present = false;
-	mdu->ep85_present = opt.ep85;
+	mdu->board8085().present = opt.ep85;
 	mdu->prom.present = opt.prom_on;
 	mdu->rtpa_board.present = opt.rtpa_on;
 	mdu->rtpa_board.probe_loopback = opt.rtpa_probe;

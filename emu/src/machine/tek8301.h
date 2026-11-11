@@ -27,17 +27,23 @@ extern "C" {
 #include "machine/rtpa.h"
 #include "machine/tta.h"
 #include "machine/emulator_specifics.h"
+#include "machine/ep8085.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
 #include <functional>
 
+class z80_slave;
+
 class tek8301 : public s2650_device::bus_interface
 {
 public:
 	static constexpr double CPU_HZ = 2'000'000.0;   // FAST clock (J5704)
+	// Emulator Controller interrupts (8301 Table 7-x)
+	static constexpr int INT_SVC1 = 16, INT_BP1 = 24, INT_BP2 = 25, INT_SCY = 26, INT_SLV_HALT = 27, INT_DIAG = 28, INT_RTPA = 29;
 
 	tek8301();
+	~tek8301();
 	bool load_roms(const std::string &dir, std::string &err);
 	void power_on();
 	void restart();
@@ -77,24 +83,15 @@ public:
 	// Language Processor / Emulator Controller
 	z80 lp;   // Language Processor (E7)
 	z80 ep;   // Z80 emulator processor board (E3) -- firmware high-level emulated
-	// 8085 emulator processor board (8300E06, control port E5) -- firmware high-level emulated
-	struct ep85_bus_t : i8085a_cpu_device::bus_interface {
-		tek8301 *m = nullptr;
-		u8 read(u16 a) override;
-		void write(u16 a, u8 d) override;
-		u8 fetch(u16 a) override;
-		u8 io_read(u8 port) override;
-		void io_write(u8 port, u8 d) override;
-		u8 inta() override { return 0xff; }
-	} m_ep85_bus;
-	i8085a_cpu_device ep85{m_ep85_bus};
-	bool ep85_present = false;
-	bool ep85_enabled() const { return ep85_present && (m_e5 & 0x80); }
-	u8 m_e5 = 0;
-	unsigned m_ep85_steps = 0;   // trace limiter
-	u16 m_ep85_resume = 0;       // user PC the firmware returns to after a restore
-	u64 m_ep85_t = 0;            // 8085 clock states run (the TTA's time base in run mode)
-	std::unique_ptr<emulator_specifics> m_spec_z80 = make_z80_specifics(ep), m_spec_8085 = make_i8085_specifics(ep85);
+	// the Emulator Controller's slaves: emulator processor boards and the Language Processor
+	// (machine/emulator_board.h); the Emulator Controller's behaviour around them is slave_run
+	friend class emulator_board; friend class ep8085_board; friend class z80_slave;
+	ep8085_board m_ep85{*this};               // 8085 board (8300E06, control port E5)
+	std::unique_ptr<z80_slave> m_slave_ep, m_slave_lp;   // Z80 board (E3), Language Processor (E7)
+	ep8085_board &board8085() { return m_ep85; }
+	emulator_board *active_slave() const;      // the one the Emulator Controller drives, if any
+	void slave_run(emulator_board &b, int cycles2650);
+	std::unique_ptr<emulator_specifics> m_spec_z80 = make_z80_specifics(ep);
 	prototype_bus *target = &m_no_target;   // probe side (modes 1/2)
 	// E3 (emulator board control), as DOS/50 V1.0 drives it: 80 firmware call / 92 run in mode 0,
 	// C0 firmware call / B2 run in modes 1-2 -> bit 6 or bit 5 selects the prototype
@@ -115,11 +112,9 @@ public:
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
 	bool ep_enabled() const { return ep_present && (m_e3 & 0x80); }
 	// the active emulator processor's specifics (disassembler, DOS/50 trace line, clock); none without a board
-	const emulator_specifics *emulator() const { return ep85_enabled() ? m_spec_8085.get() : ep_enabled() ? m_spec_z80.get() : nullptr; }
-	bool slave_enabled() const { return ep_enabled() || ep85_enabled() || (m_e7 & 0x80); }
-	bool slave_halted() const { return ep85_enabled() ? ep85.halted() : slave().halted; }
-	z80 &slave() { return ep_enabled() ? ep : lp; }
-	const z80 &slave() const { return ep_enabled() ? ep : lp; }
+	const emulator_specifics *emulator() const;
+	bool slave_enabled() const { return active_slave() != nullptr; }
+	bool slave_halted() const;
 	// slave runs while the master is halted and no debug interrupt is outstanding
 	bool lp_running() const { return slave_enabled() && cpu.halted() && !slave_halted() && m_lp_live && !m_ec_pend && !m_svc_stop && !(m_pending & 0x00ff0000u) && !rtpa_board.stopped() && !tta_board.stopped(); }
 	bool ep_trace = false;
@@ -145,8 +140,6 @@ private:
 	bool m_fr_pending = false, m_fj_pending = false, m_fi_pending = false;   // forced reset / jump / interrupt
 	u8 m_f5 = 0xff;
 	void ep_firmware(u16 entry);
-	void ep85_firmware(u16 entry);
-	void ep85_run(int cycles2650);
 	u8 m_ea = 0, m_ee = 0, m_d2 = 0, m_d3 = 0, m_e9 = 0, m_ec = 0, m_led = 0, m_e7 = 0;
 	u8 m_b8 = 0, m_b9 = 0, m_eb_out = 0;
 	u8 m_f4 = 0xff;               // Emulator Controller extended bank (A16-A23) for system-side accesses
@@ -170,8 +163,7 @@ private:
 		// the board is in firmware mode (E3<7> = 1, E3<4> = 0). Not dumped: reads FF unless
 		// -ep-prom supplies an image (Z80 diag 07/00D0 checksums it, expecting 0852).
 		if (ep_present && (m_e3 & 0x90) == 0x80 && (a & 0xfe00) == 0xf800) return ep_prom.empty() ? 0xff : ep_prom[(a - 0xf800) % ep_prom.size()];
-		// 8085 board: firmware PROM (not dumped) in F800-FBFF while E5<7> = 1, E5<4> = 0
-		if (ep85_present && (m_e5 & 0x90) == 0x80 && (a & 0xfc00) == 0xf800) return 0xff;
+		{ u8 v; if (m_ep85.prom_window(a, v)) return v; }   // other boards' firmware PROMs
 		return prog_present(ext, a) ? m_progmem[a] : 0xff;
 	}
 	void prog_wr(u8 ext, u16 a, u8 d) { if (prog_present(ext, a)) m_progmem[a] = d; }

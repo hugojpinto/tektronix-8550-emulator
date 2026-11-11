@@ -210,11 +210,14 @@ Events are reported in a fixed order, after the instruction completes: SVC immed
 ### Where it goes in the code
 
 1. **CPU core.** Port it from MAME into `emu/src/cpu/<name>/`, changed as little as possible. Mark each change `[tek8550]`, keep the BSD-3 headers, and record the MAME commit in `reference/mame/SOURCE.txt`. Run the core's own tests (the 8085 core passes TST8080 and 8080PRE).
-2. **Board state in `tek8301`.** Model it on the 8085 board:
-   - `ep85_present`/`ep85_enabled()` and the control register `m_e5`;
-   - the control port in `io_read`/`io_write`, returning the present and halted bits;
-   - the CPU's bus routed through `slave_rd`/`slave_wr`, so the memory map, write protection and breakpoints (`bp_check`) apply;
-   - `ep85_run` drives the CPU while the 2650 is halted, and raises Emulator Controller events through `ec_interrupt`.
+2. **The board class.** Derive from `emulator_board` (`emu/src/machine/emulator_board.h`), as the 8085 board does (`ep8085.{h,cpp}`); add it as a friend and a member of `tek8301`, and to `tek8301::active_slave()`. It supplies:
+   - `enabled()` from its control register, the control port's read and write in `io_read`/`io_write` (present and halted bits), and `prom_window()` for its firmware PROM;
+   - its processor: `step()`, `pc()`, `halted()`, `cycles()`, `clock_hz()`;
+   - what the Emulator Controller's F9 commands mean for it: `forced_reset()`, `forced_jump()` (including entries into its firmware), `forced_interrupt()` (NMI, TRAP...);
+   - its bus routed through the 8301's `slave_rd`/`slave_wr` and `bp_check`, so the memory map, write protection and breakpoints apply, and SVCs (`OUT` into the F3 block) through `ec_interrupt`;
+   - whether the RTPA and the TTA see it (`rtpa_visible`, `tta_visible`), with the TTA's `target_bus` calls in its bus.
+
+   `tek8301::slave_run` does the rest, the same for every board: the forced actions, running in step with the 2650, and every Emulator Controller event (SVC, breakpoints, single cycle, halt, RTPA/TTA breaks).
 3. **Firmware.** Write `<name>_firmware(entry)`, decoding the entries by address and answering with the debug SVC.
 4. **Modes 1 and 2.** Route the board's prototype cycles to `prototype_bus` (`emu/src/machine/prototype.h`). The prototype link carries Z80 pin semantics; a board with other pins (the 8085's RST 5.5–7.5, SID/SOD) needs a new protocol version first. This is why the 8085 board's modes 1 and 2 are still open.
 5. **Emulator Specifics.** Implement `emulator_specifics` (`emu/src/machine/emulator_specifics.*`) for the processor:
