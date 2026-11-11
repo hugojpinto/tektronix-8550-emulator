@@ -217,7 +217,11 @@ void tta_run::cycle(u32 addr, u8 data, cycle_t type, u64 t)
 			if (m_acq_left == 0) m_acq_done = true;
 		}
 	}
-	m_tr_instr |= trig;
+	// a break acts on a trigger's occurrence: a trigger stays true while its condition holds
+	// ("Events are tested and cleared on every processor cycle, while triggers are not cleared
+	// until the trigger condition is false ... 3 consecutive 00 ... 3 events and 1 trigger";
+	// TNIX 2.0's TTA help)
+	m_tr_instr |= u8(trig & ~m_trig_prev);
 	m_trig_prev = trig;
 	m_raw_prev = raw;
 }

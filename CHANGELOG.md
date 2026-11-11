@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **TTA checked against TNIX's TTA help** (the 8560's 1983 menu script for the same commands). The Z80/8085 bus symbols are now established rather than chosen. Breaks act on a trigger's occurrence, not on every instruction while it holds, per its "3 events and 1 trigger" rule. Its timing and counting recipes run unchanged and give the hand-computed results.
 - 2026-11-11: **TTA on the 8085 and on target systems.** The TTA watches the 8085 emulator board too: the manual's 8085 session reproduces its Display 1-2 exactly, and DOS/50's 8085 support prints `<BREAK TRIG1>` itself. Checked in emulation modes 1 and 2 against `tools/proto_target.py`: target I/O and code running from target RAM are seen and recorded like any other cycle.
 - 2026-11-11: **TTA in use.** The TTA now watches the program under test.
   - **Run mode** (`machine/tta_run.*`, functional): events, consecutive events, the four counters with their output modes, sources, gates and restart, breaks (stop/continue) and acquisition.
