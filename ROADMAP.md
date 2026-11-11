@@ -8,6 +8,7 @@ What is left, roughly in order of value. Done work is in [CHANGELOG.md](CHANGELO
 - **User SVC exit under DOS/50 V1.0** hangs (function 1A at block 0040), on both emulator boards; see `notes/tta.md`.
 - **Extended Tekhex** (070-4478-00, Extended Hex Interface Users Manual, on bitsavers): symbol-carrying transfers for the host link (`tools/host_link.py`). 
 - **The 6800 and 8080 emulator processor boards.** Their firmware does not survive.
+- **80186/80188 emulator, the rest** (`notes/8086.md`): 186.TST modules 42 (relocation onto the extended program-memory lines), 60 (CPU), 61 (wait states) and option 8 (MICROLAB modes 1/2).
 - **8086/8088 emulator, the rest** (`notes/8086.md`): prototype modes 1/2, the 8087, mapping RAM bits 1/3 and wait states. Its software is DOS/50 V2's (the EMU.8086 disc), which is lost. The 8540's OS/40 support in `roms/emulator_processor/8088/` (PDP-11) drives the same board and can be read for the command protocol.
 - **8085 target modes 1 and 2:** the prototype link carries Z80 pins only.
 

@@ -131,17 +131,22 @@ bool tek8550_system::start(bool feed_terminal, std::string &err)
 	if (opt.ep86) {
 		// the 8086/8088 emulator's kernel: two 1 KB PROMs, 160-1312-00 the even bytes and
 		// 160-1311-00 the odd ones (the same board set serves both processors; the probe differs)
+		// the 80186/80188 emulator: 160-2525-01 even, 160-2526-01 odd. Those are 2 KB parts of
+		// a 4 KB kernel dumped as 1 KB each: the upper half is lost (high level in ep8086.cpp)
 		std::vector<u8> ev, od;
-		const std::string d = opt.roms + "/../emulator_processor/8088/";
+		const bool k186 = opt.ep186;
+		const std::string d = opt.roms + (k186 ? "/../emulator_processor/80186/" : "/../emulator_processor/8088/");
 		auto rd = [](const std::string &f, std::vector<u8> &v) {
 			FILE *fp = fopen(f.c_str(), "rb"); if (!fp) return false;
 			v.resize(1024); size_t n = fread(v.data(), 1, v.size(), fp); fclose(fp); return n == 1024;
 		};
-		if (!rd(d + "160-1312-00_emul.bin", ev) || !rd(d + "160-1311-00_emul.bin", od)) { err = "missing 8086 emulator PROMs (160-1311-00, 160-1312-00) in " + d; return false; }
+		const char *fe = k186 ? "160-2525-01_emul.bin" : "160-1312-00_emul.bin", *fo = k186 ? "160-2526-01_emul.bin" : "160-1311-00_emul.bin";
+		if (!rd(d + fe, ev) || !rd(d + fo, od)) { err = std::string("missing emulator kernel PROMs (") + fe + ", " + fo + ") in " + d; return false; }
 		ep8086_board &b = mdu->m_ep86;
-		b.prom.resize(2048);
+		b.prom.assign(k186 ? 4096 : 2048, 0xff);
 		for (int i = 0; i < 1024; i++) { b.prom[2 * i] = ev[i]; b.prom[2 * i + 1] = od[i]; }
-		b.present = true; b.is8088 = opt.ep88;
+		b.prom_dumped = 2048;
+		b.present = true; b.is8088 = opt.ep88; b.is186 = k186;
 		b.trace = getenv("TEK_EP86TRACE") != nullptr;
 		b.restart();
 	}

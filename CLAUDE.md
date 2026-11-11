@@ -28,6 +28,7 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 
 ## Resuming work (state on 2026-11-11)
 Most recent first:
+0. **80186/80188 emulator: first pass** (`-ep 80186|80188`, `notes/8086.md` "80186"): the same board class (`ep8086.*`, `is186`), MAME's i186 core (`cpu/i86/i186.*`); half its kernel PROMs is lost (high level). Open: 186.TST modules 42, 60, 61, option 8.
 0. **8086/8088 emulator: first pass done** (`notes/8086.md`, `-ep 8086|8088`). It runs the real kernel (`roms/emulator_processor/8088/160-1311/1312`) on MAME's 8086 core. Diagnostic Select mode 17 option 0 and module 33 pass. Then the Z80 board was moved out of `tek8301` into a self-contained `epz80.*`, like the others (separate commit). The TTA interface (module 70) passes too. Open: prototype modes, the 8087.
 1. **GUI front end (SDL3): done** (`make gui`, `emu/README.md`): CT8500 window and the 8301/8501 front panels (`emu/artwork/*.lay`). All panel switches operate (POWER, DC, HALT/RUN, RESTART; `-input`/`-press` script them). The CT8500 keyboard is mapped from the Operators Manual 070-3737 (`make test` checks it). Open: a run on real Windows.
 2. **Floppy controller: done, low level** (`notes/8501-fdc.md`). The real board's Z80 runs ROM 160-0412-00; `flexdrive.*` models the Qume drives and byte-cell tracks. `-fdc hle` keeps the old shim (byte-identical to before). Runtime discs: `-mount T N=FILE`, `-eject T N`, monitor `m`/`e`.

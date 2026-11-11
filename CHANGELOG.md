@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **80186/80188 emulator, first pass** (`-ep 80186`, `-ep 80188`). MAME's 80186 core, with its on-chip timers, DMA, interrupt controller and chip selects, is ported. The board is the 8086 board's sibling: master control at 27, and a kernel decoding by address and I/O strobes, since the 80186 has no segment status. Only the lower half of its 4 KB kernel was ever dumped (its 2 KB PROMs were read as 1 KB); it runs as is, and the lost half's entries are high level. 186.TST passes 00–30, 32, 40, 41 and 50–57. Open: 31 (the lost half), 42, 60, 61, and MICROLAB option 8.
 - 2026-11-11: **8086 TTA interface.** The TTA watches the 8086 at register level. The bus status byte's layout comes from the decode table in the 8540's 8088 support ROM; run mode at register level comes from the 8086 diagnostic's TTA test. The diagnostic's module 70 now passes, and with it the whole of option 0, with `-tta`.
 - 2026-11-11: **tekmato 0.2.1:** names with DOS/50's abbreviation brackets (`ATT[RIBUTE]`, `DS[]`) can be created; quote them in the shell. DOS/50 itself applies abbreviations only to command lookup, not to paths.
 - 2026-11-11: **8086/8088 emulator.** The board set (`-ep 8086`, `-ep 8088`) runs its real kernel. The kernel is a 2 KB 8086 program in two PROMs that had been in `roms/emulator_processor/8088/` all along (160-1312-00 even bytes, 160-1311-00 odd).

@@ -15,7 +15,7 @@ struct tek8550_options
 	bool writeback = false;            // -rw
 	int sw = 0;                        // -sw HEX: 8301 mode DIP switch
 	bool pm_ext = false;               // -pm ext
-	bool no_ep = false, ep85 = false, ep86 = false, ep88 = false;  // -ep z80|8085|8086|8088|none
+	bool no_ep = false, ep85 = false, ep86 = false, ep88 = false, ep186 = false;  // -ep z80|8085|8086|8088|80186|80188|none
 	std::string ep_prom_file;          // -ep-prom
 	bool prom_on = false, prom_fix = false; std::string prom_dev;
 	bool rtpa_on = false, rtpa_probe = false, tta_on = false, tta_probe = false;
