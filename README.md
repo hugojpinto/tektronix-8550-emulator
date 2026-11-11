@@ -43,7 +43,6 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 | [notes/](notes/) | register-level hardware notes from reverse engineering: 8301, 8501, the floppy controller, RTPA, TTA, prototype and host links |
 | [docs/screenshots/](docs/screenshots/) | an edit → assemble → link → run session, and the diagnostics |
 | [ROADMAP.md](ROADMAP.md), [CHANGELOG.md](CHANGELOG.md) | what's left to do, and what was done when |
-| [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md) | the study that started the project (fulfilled) |
 | [CLAUDE.md](CLAUDE.md) | orientation for contributors and coding agents: layout, conventions, regression checks |
 
 ## Gallery
@@ -94,7 +93,6 @@ docs/        tutorials, architecture, screenshots
 roms/        ROM images (see roms/MANIFEST.md)
 disks/       working disk images (DOS/50 with a repaired HELP file; rebuild with tools/make_system_fixed.py)
 sources/     original material: disk images, manual OCR text (PDF scans and photos are not committed)
-docs/history/  the feasibility study that started the project
 reference/   the MAME source files the CPU cores and devices were ported from
 ```
 
