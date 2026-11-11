@@ -10,7 +10,7 @@ W="$(mktemp -d)"; trap 'rm -rf "$W"' EXIT
 PORT=$((18700 + RANDOM % 200))
 printf '\x3e\x41\xd3\x10\x76\x00\x11\x22\x33\x44\x55\x66\x77\x88\x99\xaa' > "$W/prog.bin"
 printf 'FIRST LINE FROM THE HOST\nSECOND LINE\n' > "$W/notes.txt"
-cp "$ROOT/disks/System_helpfix.img" "$W/sys.img"
+cp "$ROOT/disks/System_Fixed.img" "$W/sys.img"
 python3 -I "$ROOT/tools/host_link.py" --connect $PORT --dir "$W" > "$W/host.log" 2>&1 &
 HPID=$!
 types=('SEL Z80\r' 'COMM P=2420\r' 'send prog.bin@100\x00\r' 'recv up.hex\x00100 10F\r'

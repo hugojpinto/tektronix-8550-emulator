@@ -14,7 +14,7 @@ Five short recipes. Each takes a few minutes. For the long tour (every DOS/50 to
 
 ```
 make gui
-cp ../disks/System_helpfix.img ../disks/work.img
+cp ../disks/System_Fixed.img ../disks/work.img
 build/tek8550-gui -rw -0 ../disks/work.img
 ```
 Three windows open, sized together to fit your screen: the **CT8500** on the left, the **8301** and **8501** front panels on the right.
@@ -133,7 +133,7 @@ Run with `-rw`, and `blank.img` is now a copy of the system disc. Check it with 
 
 Every run can be scripted, which is how the regression checks and the screenshots are made. `-cycles` sets the length in 2650 cycles (2,000,000 per second of machine time), and a batch run goes about 100× faster than real time:
 ```
-build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((60*2000000)) \
+build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((60*2000000)) \
     -type 32 'LDIR\r' -snap 40 ldir.scr -screen final.txt </dev/null
 python3 ../tools/render_screens.py --crt ldir.scr ldir.png       # a CT8500-style PNG
 ```

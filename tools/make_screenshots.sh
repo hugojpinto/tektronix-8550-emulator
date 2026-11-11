@@ -8,7 +8,7 @@
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 W="${1:-$(mktemp -d)}"; mkdir -p "$W/shots" "$ROOT/docs/screenshots"
-cp "$ROOT/disks/System_helpfix.img" "$W/demo.img"
+cp "$ROOT/disks/System_Fixed.img" "$W/demo.img"
 PORT=18573
 python3 -I "$ROOT/tools/proto_target.py" --tcp $PORT < /dev/null > "$W/shots/08_target_console.txt" 2> "$W/target.log" &
 TPID=$!; sleep 1

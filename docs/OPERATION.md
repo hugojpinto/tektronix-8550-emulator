@@ -7,7 +7,7 @@ This takes you from a fresh checkout to editing, assembling, running and debuggi
 ```
 cd emu
 make
-cp ../disks/System_helpfix.img ../disks/work.img      # your own working copy
+cp ../disks/System_Fixed.img ../disks/work.img      # your own working copy
 build/tek8550 -rw -0 ../disks/work.img
 ```
 
@@ -272,7 +272,7 @@ build/tek8550 -term tty -0 ../disks/work.img -cycles $((90*2000000)) \
 | Symptom | Cause and fix |
 |---|---|
 | My files vanished after quitting | You ran without `-rw`. Writes are kept in memory only |
-| `HELP` prints "Error 06 Short or unterminated read" | You are using the original `System.imd`, whose HELP file is damaged. Use `disks/System_helpfix.img` |
+| `HELP` prints "Error 06 Short or unterminated read" | You are using the original `System.imd`, whose HELP file is damaged. Use `disks/System_Fixed.img` |
 | The program-memory test fails (error 02/0002) in the diagnostics | Add `-pm ext` |
 | DOS/50 misbehaves with `-pm ext` | Drop `-pm ext` for DOS/50 work |
 | Keys typed via `-type` are ignored | They arrived before the program was ready. Use a later timestamp (ACE needs several seconds to load) |

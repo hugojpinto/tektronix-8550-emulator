@@ -21,7 +21,7 @@ The **Tektronix 8550 MDL** pairs an **8301 Microprocessor Development Unit** (a 
 ## Quick start
 ```
 cd emu && make                                    # C++17, no dependencies
-cp ../disks/System_helpfix.img ../disks/work.img  # work on a copy
+cp ../disks/System_Fixed.img ../disks/work.img  # work on a copy
 build/tek8550 -rw -0 ../disks/work.img            # your terminal becomes the CT8500; > prompt after ~27 s
 ```
 To quit, press **Ctrl-]** then `q`.
@@ -92,7 +92,7 @@ tools/       helpers: IMD reader, reference target and host, screenshot/hero ren
 notes/       hardware notes and ROM disassembly listings
 docs/        tutorials, architecture, screenshots
 roms/        ROM images (see roms/MANIFEST.md)
-disks/       working disk images (DOS/50 with a repaired HELP file; rebuild with tools/make_system_helpfix.py)
+disks/       working disk images (DOS/50 with a repaired HELP file; rebuild with tools/make_system_fixed.py)
 sources/     original material: disk images, manual OCR text (PDF scans and photos are not committed)
 docs/history/  the feasibility study that started the project
 reference/   the MAME source files the CPU cores and devices were ported from

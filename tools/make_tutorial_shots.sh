@@ -16,13 +16,13 @@ compose() { python3 -I "$ROOT/tools/compose_gui.py" "$W/$1.bmp" "$OUT/$1.png" --
 crt() { python3 -I "$ROOT/tools/render_screens.py" --crt "$W/$1.scr" "$OUT/$1.png" >/dev/null; echo "$OUT/$1.png"; }
 
 # 1. first boot in the graphical lab
-cp ../disks/System_helpfix.img "$W/t1.img"
+cp ../disks/System_Fixed.img "$W/t1.img"
 GUI -0 "$W/t1.img" -cycles $((37*2000000)) -type 30 'LDIR\r' \
 	-shot 3 "$W/t1_selftest.bmp" -shot 29 "$W/t1_prompt.bmp" -shot 36 "$W/t1_ldir.bmp"
 compose t1_selftest; compose t1_prompt; compose t1_ldir
 
 # 2. a Z80 program from scratch (paced like typing)
-cp ../disks/System_helpfix.img "$W/t2.img"
+cp ../disks/System_Fixed.img "$W/t2.img"
 build/tek8550 -term tty -0 "$W/t2.img" -cycles $((306*2000000)) \
 	-type 32 'SEL Z80\r' -type 45 'EDIT T.ASM\r' -type 52 'INPUT\r' \
 	-type 54 '        ORG     100H\r' -type 56 'START   LD      B,10H\r' -type 58 'LOOP    INC     A\r' \
@@ -34,7 +34,7 @@ build/tek8550 -term tty -0 "$W/t2.img" -cycles $((306*2000000)) \
 crt t2_edit; crt t2_asm_link; crt t2_debug
 
 # 3. format a blank disc and duplicate the system disc
-cp ../disks/System_helpfix.img "$W/t3.img"; : > "$W/blank.img"
+cp ../disks/System_Fixed.img "$W/t3.img"; : > "$W/blank.img"
 GUI -0 "$W/t3.img" -mount 30 1="$W/blank.img" -cycles $((2560*2000000)) \
 	-type 34 'FORMAT /DEV/FLX1\r' -shot 50 "$W/t3_probe.bmp" -type 57 'Y\r' -shot 100 "$W/t3_format.bmp" \
 	-type 200 'VERIFY /DEV/FLX1\r' \

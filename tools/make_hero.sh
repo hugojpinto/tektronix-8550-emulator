@@ -8,6 +8,6 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 W="${1:-$(mktemp -d)}"; mkdir -p "$W"
 cd "$ROOT/emu"
-SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -scale 1.25 -0 ../disks/System_helpfix.img \
+SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -scale 1.25 -0 ../disks/System_Fixed.img \
 	-cycles $((46*2000000)) -type 30 'LDIR\r' -type 38 'LDIR 8301/COMMANDS\r' -shot ${HERO_T:-38.4} "$W/hero.bmp" </dev/null >/dev/null 2>&1
 python3 -I "$ROOT/tools/compose_gui.py" "$W/hero.bmp" "$ROOT/docs/screenshots/hero.png"

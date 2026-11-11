@@ -18,10 +18,10 @@ Start with `docs/ARCHITECTURE.md` (how the machine works) and `docs/OPERATION.md
 | `emu/src/main8550.cpp` | tty front end for the full system: ANSI CT8500, raw tty, monitor, real-time pacing (options are listed in `emu/README.md`) |
 | `notes/` | hardware findings: `8301.md`, `8501.md`, `8501-fdc.md`, `prototype-link.md`, `host-link.md`, `rtpa.md`, `tta.md`, and `dasm/` (ROM listings). **Facts established by reverse engineering live here** |
 | `roms/` | curated ROM set (`MANIFEST.md`). The 8550 set is `roms/8550/8301`, `roms/8550/8501` |
-| `disks/` | working disk images. `System_helpfix.img` = DOS/50 V1.0 with the HELP file repaired |
+| `disks/` | working disk images. `System_Fixed.img` = DOS/50 V1.0 with the HELP file repaired |
 | `sources/` | original material (bitsavers manuals with OCR `.txt`, disk images, photos, tekwiki). **Read-only; never modify** |
 | `reference/mame/` | MAME source files the cores and devices were ported from (commit in `SOURCE.txt`) |
-| `tools/` | `make_hero.sh` (README hero image from the GUI), `make_tutorial_shots.sh` (pictures in docs/TUTORIALS.md), `compose_gui.py` (composes GUI window captures), `gen_panels.py` (front-panel artwork), `make_system_helpfix.py` (rebuilds the working System disc), `gen_ct8500_font.py` (font table for the GUI), `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
+| `tools/` | `make_hero.sh` (README hero image from the GUI), `make_tutorial_shots.sh` (pictures in docs/TUTORIALS.md), `compose_gui.py` (composes GUI window captures), `gen_panels.py` (front-panel artwork), `make_system_fixed.py` (rebuilds the working System disc), `gen_ct8500_font.py` (font table for the GUI), `imd.py` (IMD reader), `proto_target.py` (reference target system), `host_link.py` (reference host for COMM/HOST) + `test_host_link.sh`, `render_screens.py` + `ct8500_font.py` (screenshots), `make_screenshots.sh` |
 | `docs/` | `TUTORIALS.md` (short recipes), `OPERATION.md` (long tour), `ARCHITECTURE.md`, `DESIGN-gui-and-fdc.md`; `screenshots/` (session, diagnostics, `hero.png`) |
 | `ROADMAP.md`, `CHANGELOG.md` | open work; dated status log (newest first) and the completed original plan. `docs/history/FEASIBILITY.md` is the study that started the project |
 | `../tekmato` | sibling tool for DOS/50 disc images (list/extract/write/check); the file-system format is in `../tekmato/FORMAT.md`. Use it to put files on a disc instead of typing them in through EDIT |
@@ -63,11 +63,11 @@ Windows builds: `make CROSS=x86_64-w64-mingw32-` (cross, verified to compile and
 ## Build and smoke test
 ```
 cd emu && make                                   # seconds; no dependencies
-build/tek8550 -0 ../disks/System_helpfix.img     # DOS/50 prompt after ~27 s; Ctrl-] then q quits
+build/tek8550 -0 ../disks/System_Fixed.img     # DOS/50 prompt after ~27 s; Ctrl-] then q quits
 ```
 Batch and scripted runs, with no terminal needed:
 ```
-build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -type 32 'LDIR\r' </dev/null
+build/tek8550 -term tty -0 ../disks/System_Fixed.img -cycles $((90*2000000)) -type 32 'LDIR\r' </dev/null
 ```
 `-cycles` counts 2650 cycles at 2 MHz, so 2,000,000 cycles is one emulated second. `-type T TEXT` types at emulated second T, and `-snap T FILE` saves the CT8500 screen. Interactive runs are paced to real time; batch runs (stdin not a terminal) run flat out, at roughly 100× real time (a 1000-second diagnostic run takes ~20 s).
 
@@ -77,7 +77,7 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 3. **RTPA:** `build/tek8550 -rtpa -pm ext -term tty -0 ../sources/bitsavers/disks/8550_DIAG.IMD -cycles $((200*2000000)) -type 31 '2\r' -type 41 '4\r' -type 51 '0\r' -type 56 '3\r' -type 61 '\r'` must show no `Error Code` (RTPA.TST option 0, all event and counter tests; option 6 for the trace buffer; option 7 with `-rtpa probe` and an extra `-type 66 '\r'`). ASV with `-rtpa` must complete.
 4. **Host link:** `tools/test_host_link.sh` must report 7 passed: DOS/50 COMM transfers against `tools/host_link.py`.
 5. **TTA (while in progress):** the same diagnostic command with `-tta` and `-type 41 '6\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -type 66 '\r'` (Select mode 6, all modules). Error codes 11/0000–11/0023 and 11/0040–11/0043 must not appear. Without `-tta`, nothing may change.
-6. **GUI (if SDL3 is installed):** `make gui`, then `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -0 ../disks/System_helpfix.img -cycles $((45*2000000)) -type 32 'LDIR\r' -shot 44 x.bmp` must show the LDIR listing.
+6. **GUI (if SDL3 is installed):** `make gui`, then `SDL_VIDEODRIVER=dummy SDL_RENDER_DRIVER=software build/tek8550-gui -0 ../disks/System_Fixed.img -cycles $((45*2000000)) -type 32 'LDIR\r' -shot 44 x.bmp` must show the LDIR listing.
 7. **Floppy:** `make test` (track build/decode round trip, all four geometries). After controller changes, also FORMAT a blank in drive 1 after boot (`-mount 30 1=blank.img -type 34 'FORMAT /DEV/FLX1\r' -type 40 'Y\r'`) and check it with `../tekmato/tekmato -open blank.img -check`; `-fdc hle` must stay byte-identical to the shim.
 8. **Z80 core:** zexdoc and zexall must stay cycle-exact (46734978649 cycles). The upstream harness `z80_tests.c` is not in the repo; port callbacks take `uint16_t`.
 
