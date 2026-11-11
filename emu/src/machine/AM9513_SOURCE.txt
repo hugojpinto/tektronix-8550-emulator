@@ -1,0 +1,6 @@
+am9513.{h,cpp}: generated from MAME's src/devices/machine/am9513.* (BSD-3-Clause,
+copyright AJR), mamedev/mame commit e0a5e1cad5d8dc72c15a609c6323651847f4fdcd,
+by emu/tools/port_am9513.py (originals in reference/mame/machine/). The device
+code is verbatim; the MAME framework is replaced: plain class, std::function
+outputs, frequency timers advanced by tick(clocks), no logging or save state.
+Regenerate with: cd emu && python3 -I tools/port_am9513.py

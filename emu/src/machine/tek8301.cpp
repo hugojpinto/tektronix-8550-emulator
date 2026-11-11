@@ -25,6 +25,7 @@ tek8301::tek8301()
 	lp_reset();
 	prom.present = false;      // option; -prom on fits it
 	rtpa_board.clock = &m_seconds;
+	tta_board.clock = &m_seconds;
 	// -prom fix, part 2: the later DOS/50's 'post event' (0304 there) delivers the target
 	// task id as the woken task's r1; V1.0's 02FA delivers the caller's r1 instead. The
 	// PROM framework (6002) stores that r1 as its own task id (60E7), so calls coming from
@@ -416,6 +417,7 @@ u8 tek8301::mem_rd(busaddr b, bool ovl)
 	const u8 ext = b.dma ? PROG_BANK : m_f4;   // 16-bit bus masters (DMA) don't use F4
 	if (b.sys) {
 		u16 a = u16(b.a);
+		if (!b.dma && tta_board.ram_decodes(a)) return tta_board.ram_read(a);   // TTA RAM inhibits system RAM
 		if (!b.dma && (m_ee & 0x08) && a >= 0xfe00)                        // memory map / WP RAM
 			return u8(m_map[((a & 0xff) << 1) | ((a >> 8) & 1)] | 0xfa);   // only D0/D2 exist
 		// System RAM parity: a byte written under one complement setting and read
@@ -436,6 +438,7 @@ void tek8301::mem_wr(busaddr b, u8 d)
 		m_map[((b.a & 0xff) << 1) | ((b.a >> 8) & 1)] = d & 0x05;
 		return;
 	}
+	if (b.sys && !b.dma && tta_board.ram_decodes(u16(b.a))) { tta_board.ram_write(u16(b.a), d); return; }
 	if (b.sys) { m_sysram[b.a & 0xffff] = d; m_par[b.a & 0xffff] = (m_d2 >> 2) & 1; }
 	else prog_wr(b.dma ? PROG_BANK : m_f4, u16(b.a), d);
 }
@@ -461,6 +464,7 @@ u8 tek8301::io_read(offs_t port)
 	u8 v = 0xff;
 	if (port >= 0x90 && port <= 0x9f) v = m_dma.read(port & 0x0f);
 	else if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; v = rtpa_board.read(port & 7); }
+	else if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = m_cycles / CPU_HZ; v = tta_board.read(port & 7); }
 	else switch (port) {
 	case 0xd0: v = prom.present ? prom.read(0) : 0x00; break;
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
@@ -504,6 +508,7 @@ void tek8301::io_write(offs_t port, u8 d)
 	if (trace_io) fprintf(stderr, "[%.3f io wr %02x <- %02x @%04x]\r\n", m_cycles / CPU_HZ, port, d, cpu.ppc());
 	if (port >= 0x90 && port <= 0x9f) { m_dma.write(port & 0x0f, d); dma_service(); update_irq(); return; }
 	if (port >= 0xc0 && port <= 0xc7 && rtpa_board.present) { m_seconds = m_cycles / CPU_HZ; rtpa_board.write(port & 7, d); update_irq(); return; }
+	if (port >= 0x70 && port <= 0x77 && tta_board.present) { m_seconds = m_cycles / CPU_HZ; tta_board.write(port & 7, d); update_irq(); return; }
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
 	case 0xb9: m_b9 = d; break;

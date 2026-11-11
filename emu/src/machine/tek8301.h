@@ -23,6 +23,7 @@ extern "C" {
 #include <vector>
 #include "machine/prom_programmer.h"
 #include "machine/rtpa.h"
+#include "machine/tta.h"
 #include "cpu/i8085/i8085.h"
 #include <deque>
 #include <string>
@@ -96,6 +97,7 @@ public:
 	bool ep_present = true;
 	prom_programmer prom;      // 8550F30 PROM programmer controller (ports D0/D1, ints 13/14)
 	rtpa rtpa_board;           // Real-Time Prototype Analyzer option (ports C0-C7)
+	tta tta_board;             // Trigger Trace Analyzer option (ports 70-77, RAM at E800-F9FF)
 	double m_seconds = 0;      // for traces
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
 	std::vector<u8> ep_prom;   // optional dump of the Z80 emulator board's firmware PROM (512 bytes)
