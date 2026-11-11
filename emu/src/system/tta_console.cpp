@@ -411,7 +411,20 @@ std::string tta_console::command(const std::string &line)
 	p.flags();
 	u8 touched = 0;                                // events to rewrite
 	bool breaks = false;
-	auto set_brk = [&](int k) { if (p.s) m_brk[k] = BRK_STOP; else if (p.c) m_brk[k] = BRK_CONT; breaks = true; };
+	// "the TTA stop or -s functions can be set only for the last event in a linked sequence"
+	// (users manual, cons): the earlier events only qualify it. The board latches their
+	// triggers all the same (TTA.TST module 31), so the rule is the software's
+	auto qualifying_only = [this]() {
+		u8 m = 0;
+		for (const std::vector<int> &s : m_cons) for (size_t j = 0; j + 1 < s.size(); j++) m |= u8(1 << s[j]);
+		return m;
+	};
+	const std::string last_only = "in a linked sequence (cons) only the last event can break";
+	auto set_brk = [&](int k) {
+		if ((p.s || p.c) && ((qualifying_only() >> k) & 1)) throw error{ last_only };
+		if (p.s) m_brk[k] = BRK_STOP; else if (p.c) m_brk[k] = BRK_CONT;
+		breaks = true;
+	};
 	auto finish = [&]() {
 		for (int k = 0; k < 4; k++) if ((touched >> k) & 1) apply_event(k);
 		if (breaks) apply_breaks();
@@ -528,7 +541,10 @@ std::string tta_console::command(const std::string &line)
 			else if (w == "cont" || w == "c") { p.i++; b = BRK_CONT; }
 			else if (w == "clr") { p.i++; b = BRK_NONE; }
 			else if (p.c) b = BRK_CONT;
-			each(all, k, [&](int j) { m_brk[j] = b; });
+			each(all, k, [&](int j) {
+				if (b != BRK_NONE && ((qualifying_only() >> j) & 1)) { if (all) return; throw error{ last_only }; }
+				m_brk[j] = b;
+			});
 		}
 		apply_breaks();
 		return "";
@@ -554,6 +570,9 @@ std::string tta_console::command(const std::string &line)
 			seqs.push_back(s);
 		}
 		if (seqs.empty()) throw error{ "missing sequence" };
+		for (const std::vector<int> &s : seqs)
+			for (size_t j = 0; j + 1 < s.size(); j++)
+				if (m_brk[s[j]] != BRK_NONE) throw error{ last_only + ": clear trigger " + std::to_string(s[j] + 1) + "'s break first" };
 		m_cons = seqs; m_cons_mode = mode;
 		apply_cons();
 		return "";

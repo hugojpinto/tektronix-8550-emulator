@@ -2,6 +2,11 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-11: **The 1982 catalogues** (the 1982 catalogue section and the Feb 1982 8500 Series Technical Catalog) read.
+  - **8085 board:** clocked at 3.125 MHz (X1 = 6.25 MHz in mode 0), not 3 MHz.
+  - **TTA:** a break can be set only on the last event of a linked sequence, as the users manual says. The console now refuses one on an earlier event; the board itself still latches the earlier triggers (TTA.TST module 31).
+  - **RTPA:** the catalogue confirms the trace word's layout, including the 5-bit start/stop tag we had found from DOS/50.
+  - **Clean-up:** the unused clock copy in `emulator_specifics` is removed.
 - 2026-11-11: **The 1983 Tektronix catalogue** (85xx section, a scan) read for detail.
   - **TTA:** its consecutive-event links act on the events, and `acq ev4` is qualified by event 4 rather than trigger 4. The emulator now does both; they differ only when a counter output is low. Its channel diagram's 11 micro-dependent comparator bits confirm OS/40's X/Y byte layout.
   - **Also recorded:** the 1983 PROM modules and the RT-11/50 option (README "Wanted").

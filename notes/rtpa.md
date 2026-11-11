@@ -19,7 +19,7 @@ How to reproduce:
 The board watches the **slave bus**: the emulator processor, or the Language Processor, since RTPA.TST runs its test program on the LP with E3 = 00.
 - **Events:** two event comparators.
 - **Counters:** two Intel **8253** counter/timers, one per channel, providing the pass count, the general-purpose counter and the delay.
-- **Trace:** a 128-transaction trace RAM.
+- **Trace:** a 128-transaction trace RAM. The 1982 technical catalogue (p. 30) describes each word as 48 bits: 16 address, 8 (or 16) data, 8 probe, 3 cycle type and "5 bit data used internally to identify last start/stop of the emulator processor". That is the run tag DOS/50 steps by 08 at every GO, in bits 7–3 of the entry's bus byte (below), found from DOS/50's DRT before this was known. It also says a display of the whole buffer separates the runs with a blank line, and that the trace can be kept pre-, centre- or post-trigger.
 - **Results:** PC latches and a status byte.
 - **Break:** on a trigger it stops the processor (SLV OPREQ) after the current instruction and raises **DBG INT 29**, which is vector 003A ("TTA/RTPA (INT 29)", diagnostic number 35).
   - **One break per trigger.** When the Emulator Controller takes over (F9), the hold ends. The status (C2: stopped, event) stays until a C2 write re-arms the board, but the same trigger does not break again.

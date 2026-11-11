@@ -233,7 +233,7 @@ Commands are typed at the `>` prompt.
 | `eve` | all of an event on one line: `a=` `an=` `d=` `dn=` `b=` `p=` `c=` `q=`, `clr` first to start over | `eve 1 clr a=0FFFF d=0FF b=m wt` · `eve 3 an=3000 4000 b=f -s` |
 | `cou` | counter: `v=` value, `s=` source, `o=` output mode, `g=` gate (counters 2-4), `r=on/off` restart | `cou 2 v=4 s=ev1 o=delay` · `cou 3 v=22 s=cyc o=delay` · `cou 4 o=arm` |
 | `bre` | the trigger's action: `stop` (or nothing), `cont`, `clr` | `bre 1` · `bre 2 cont` · `bre 1 clr 2 stop` · `bre all clr` |
-| `cons` | link events on consecutive cycles: `cyc` (any cycle), `fet` (fetches), `emu`; sequences 12 23 34 41 123 … 4123 | `cons cyc 12` · `cons cyc 12 34` · `cons clr` |
+| `cons` | link events on consecutive cycles: `cyc` (any cycle), `fet` (fetches), `emu`; sequences 12 23 34 41 123 … 4123. Only a sequence's last event can break | `cons cyc 12` · `cons cyc 12 34` · `cons clr` |
 | `acq` | what to record: `all` or `ev4`, optionally `for n source` and `aftertrig4` | `acq ev4` · `acq all for 10 cyc` · `acq all for 128 acq aftertrig4` |
 | `disp` | list the recording: since the last run, the last n, or `all` | `disp` · `disp 12` · `disp all` |
 | `ts` | the set-up and counter values; `-e` events only, `-c` counters only; channels | `ts` · `ts 4` · `ts -c 3` |

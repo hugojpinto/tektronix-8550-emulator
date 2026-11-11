@@ -21,7 +21,6 @@ public:
 	using memory = std::function<u8(u16)>;    // program memory as the processor sees it, no side effects
 	virtual ~emulator_specifics() = default;
 	virtual const char *name() const = 0;     // as SEL takes it: "Z80", "8085"
-	virtual double clock_hz() const = 0;      // the processor clock (the TTA's time base in run mode)
 	// the instruction at pc, decoded with its operands: mnemonic and operand fields
 	void decode(u16 pc, const memory &mem, std::string &mnem, std::string &oper, u32 &len) const;
 	// an opcode byte decoded alone, as an acquisition display does (operands that come from

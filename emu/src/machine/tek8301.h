@@ -112,7 +112,7 @@ public:
 	u8 bank_lines() const { return u8(~m_f4); }   // extended address A23-A16 as driven (F4 is written active low)
 	u64 now_cycles() const { return m_in_cpu ? m_cycles + u64(m_chunk - cpu.icount()) : m_cycles; }
 	bool prom_dos50_fix = false;   // -prom fix: adapt PROM software V2.1 to DOS/50 V1.0 (see notes)
-	// the active emulator processor's specifics (disassembler, DOS/50 trace line, clock); none without a board
+	// the active emulator processor's specifics (disassembler, DOS/50 trace line); none without a board
 	const emulator_specifics *emulator() const;
 	bool slave_enabled() const { return active_slave() != nullptr; }
 	bool slave_halted() const;

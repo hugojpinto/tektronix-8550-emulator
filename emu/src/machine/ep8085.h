@@ -27,7 +27,9 @@ public:
 
 	const char *name() const override { return "8085"; }
 	bool enabled() const override { return present && (control & 0x80); }
-	double clock_hz() const override { return 3e6; }
+	// X1 = 6.25 MHz in mode 0 (Tektronix catalogue 1982, 8085A emulator support package: "Mode 0
+	// (system clock) 6.25 MHz +-0.01%"); the 8085 divides X1 by two
+	double clock_hz() const override { return 3.125e6; }
 	const emulator_specifics *specifics() const override { return m_spec.get(); }
 	bool rtpa_visible() const override { return false; }
 	bool tta_visible() const override { return true; }

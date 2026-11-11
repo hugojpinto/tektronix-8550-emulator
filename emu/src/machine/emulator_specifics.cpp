@@ -59,7 +59,6 @@ class z80_specifics : public emulator_specifics
 public:
 	explicit z80_specifics(const z80 &c) : cpu(c) {}
 	const char *name() const override { return "Z80"; }
-	double clock_hz() const override { return 4e6; }
 	std::string trace_header() const override { return "LOC  INST     MNEM OPER        SP   F  A  B  C  D  E  H  L  IX  IY"; }
 	std::string trace_line(u16 pc, const memory &mem) const override
 	{
@@ -83,7 +82,6 @@ class i8085_specifics : public emulator_specifics
 public:
 	explicit i8085_specifics(const i8085a_cpu_device &c) : cpu(c) {}
 	const char *name() const override { return "8085"; }
-	double clock_hz() const override { return 3e6; }
 	std::string trace_header() const override { return "LOC  INST   MNEM  OPER      SP     F   A  B  C  D  E  H  L IM SOD"; }
 	std::string trace_line(u16 pc, const memory &mem) const override
 	{
