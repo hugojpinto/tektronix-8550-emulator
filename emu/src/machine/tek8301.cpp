@@ -28,7 +28,12 @@ tek8301::tek8301()
 	// task id as the woken task's r1; V1.0's 02FA delivers the caller's r1 instead. The
 	// PROM framework (6002) stores that r1 as its own task id (60E7), so calls coming from
 	// the relocated PROM driver get r1 = r0.
+	// TEK_PCTRACE=lo-hi[@seconds]: log every 2650 instruction in lo..hi (hex), after the time given
+	static unsigned pct_lo = 1, pct_hi = 0; static double pct_t = 0;
+	if (const char *e = getenv("TEK_PCTRACE")) sscanf(e, "%x-%x@%lf", &pct_lo, &pct_hi, &pct_t);
 	cpu.exec_hook = [this](u16 pc) {
+		if (pc >= pct_lo && pc <= pct_hi && m_cycles / CPU_HZ >= pct_t)
+			fprintf(stderr, "[%.4f 2650 %04x r0-3=%02x %02x %02x %02x]\n", m_cycles / CPU_HZ, pc, cpu.reg(0), cpu.reg(1), cpu.reg(2), cpu.reg(3));
 		if (prom_dos50_fix && pc == 0x02fa) {
 			u16 ret = cpu.ras_top();
 			if (ret >= 0x6000 && ret < 0x7000) cpu.set_reg_bank(1, cpu.reg(0));
@@ -115,6 +120,7 @@ void tek8301::ep_firmware(u16 entry)
 	}
 }
 
+static const bool rem_trace = getenv("TEK_REMTRACE") != nullptr;
 static const bool slave_io_trace = getenv("TEK_SLAVEIO") != nullptr;   // trace LP/EP port I/O that goes nowhere
 
 u8 tek8301::lp_in(z80 *z, u16 port)
@@ -449,7 +455,7 @@ u8 tek8301::io_read(offs_t port)
 	case 0xd1: v = prom.present ? prom.read(1) : 0x00; break;
 	case 0xb8: v = m_b8 & 0x5f; break;
 	case 0xb9: v = m_b9 & 0x5f; break;
-	case 0xca: case 0xcb: v = remote.read(port & 1); break;
+	case 0xca: case 0xcb: v = remote.read(port & 1); if (rem_trace && (port & 1)) fprintf(stderr, "[%.3f REM rx %02x '%c' pc=%04x]\n", m_cycles / CPU_HZ, v, v >= 0x20 && v < 0x7f ? v : '.', cpu.pc()); break;
 	case 0xcc: case 0xcd: v = aux.read(port & 1); break;
 	case 0xce: case 0xcf: v = term.read(port & 1); break;
 	case 0xd2: v = u8(m_par_addr); m_pending &= ~(1u << INT_PARITY); break;
@@ -488,7 +494,7 @@ void tek8301::io_write(offs_t port, u8 d)
 	switch (port) {
 	case 0xb8: m_b8 = d; break;
 	case 0xb9: m_b9 = d; break;
-	case 0xca: case 0xcb: remote.write(port & 1, d); break;
+	case 0xca: case 0xcb: remote.write(port & 1, d); if (rem_trace) fprintf(stderr, "[%.3f REM %s %02x '%c']\n", m_cycles / CPU_HZ, (port & 1) ? "tx" : "cr", d, d >= 0x20 && d < 0x7f ? d : '.'); break;
 	case 0xcc: case 0xcd: aux.write(port & 1, d); break;
 	case 0xce: case 0xcf: term.write(port & 1, d); break;
 	case 0xd2:

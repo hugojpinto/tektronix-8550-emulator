@@ -42,6 +42,7 @@ Background: `FEASIBILITY.md`. ROMs: `roms/` (with `roms/MANIFEST.md`). Disks: `s
 - CT8500 terminal behaviour (for ACE), emulator-processor boards (8085/Z80), PROM programmer, upstreaming to MAME.
 
 ## Status log
+- 2026-11-11: **Host link.** The 8301 REMOTE port is connected (`-remote`, `serial_link`), with a reference host `tools/host_link.py`. DOS/50 COMM V4.0 does all four general-host transfers: Tekhex download and upload, and ASCII download and upload of files. Two emulated labs exchange a Tekhex file with HOST/COMM. Findings (`notes/host-link.md`): COMM discards the host's echo of each line it sends, including its ACKs; and HOST needs human typing speed.
 - 2026-11-11: **DOS/50 file system + tekmato.** Decoded the 8501 file system from the disc collection and from image diffs around DOS/50 commands in the emulator. The new sibling tool `../tekmato` (tomato-style CLI) reads and writes it, and DOS/50 reads, writes, creates and deletes on volumes it makes. Findings:
   - DOS/50's calendar has twelve 31-day months;
   - "Error 12 Device I/O error on write" is V1.0's protection violation (no PW on a directory you don't own);

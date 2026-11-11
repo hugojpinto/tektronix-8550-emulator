@@ -119,3 +119,4 @@ The Z80 emulator processor board is emulated (its firmware at high level, see `n
 - `EM 1` / `EM 2` plus `-target tcp:HOST:PORT` (or `unix:PATH`) connects a user "prototype" process over IPC: U-mapped
   memory, I/O and interrupts go to it. A reference target with RAM and a console UART is `../tools/proto_target.py`.
   Protocol and details: `../notes/prototype-link.md`.
+- `-remote tcp:HOST:PORT | listen:PORT | unix:PATH` connects the 8301's REMOTE port (DOS/50 `COMM` and `HOST`) to a host program. `-remote-baud N` sets the REMOTE BAUD switch (default 2400). `tools/host_link.py` is a reference host with Tekhex and ASCII transfers. Two `tek8550`s can also be linked, one running HOST and the other COMM. See `notes/host-link.md`.

@@ -165,6 +165,32 @@ Then, on the 8550:
 
 The wire protocol (so you can write your own target, or use FUSE's Spectrum as one) is in `notes/prototype-link.md`.
 
+## 6¼. Talk to a host computer (COMM and HOST)
+The 8301's REMOTE port connects to a host over RS-232. Here it is a socket.
+
+```
+python3 tools/host_link.py --connect 8551 --dir ~/mdl-host      # terminal 1: a small "host computer"
+emu/build/tek8550 -remote listen:8551 -0 disks/<your>.img        # terminal 2
+> COMM P=2420                    -> COMM V4.0, then the host's banner and "$ " prompt
+$ ls                             -> host commands; type "help"
+$ send prog.hex^@<CR>            formatted download: Tekhex file -> program memory (prog.bin@100 for a binary)
+$ recv out.hex^@100 1FF 100<CR>  formatted upload: 0100-01FF -> Tekhex file, start address 0100
+$ cat notes.txt^@>NOTES<CR>      host text file -> DOS/50 file NOTES
+$ save list.txt^@<HELLO.LST<CR>  DOS/50 file -> host; when RIOT: appears, type Ctrl-D <CR>
+^@<Esc>                          leave COMM
+```
+
+- **NUL:** `^@` is Ctrl-@. COMM keeps what follows it for itself.
+- **Prompt:** `P=2420` tells COMM the host's prompt, "$ " in hex.
+- **Two labs:** the other direction works too. One 8550 runs `HOST` and another runs `COMM P=7E7E`:
+  - lab A: `tek8550 -remote listen:8552 …`;
+  - lab B: `tek8550 -remote tcp:127.0.0.1:8552 …`.
+
+  Type the request (`DHFILE.HEX`) at normal speed: HOST expects a person typing.
+- **Baud rate:** `-remote-baud` sets the rear-panel baud switch (default 2400).
+
+Details and protocol findings: `notes/host-link.md`. Regression: `tools/test_host_link.sh`.
+
 ## 6½. Program PROMs (the 8550F30 PROM programmer)
 
 The programmer is an option, so fit it with `-prom fix`. Then put a device in its socket with `-prom-dev FILE`: a raw image, created erased if it doesn't exist and saved at exit. The emulated characteristic module takes 2708, 2716 and 2732 EPROMs.
