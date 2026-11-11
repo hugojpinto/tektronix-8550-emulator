@@ -184,6 +184,7 @@ private:
 	bool m_wp_hit = false;
 	bool m_nmi_prev = false;
 	prototype_bus m_no_target;
+	bool m_trst_prev = false;   // v3 target RESET edge
 	static u8 lp_in(z80 *z, u16 port);     // full 16-bit address (A8-A15 from A or B)
 	static void lp_out(z80 *z, u16 port, u8 d);
 

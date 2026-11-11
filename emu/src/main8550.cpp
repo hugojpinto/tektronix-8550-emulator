@@ -81,8 +81,13 @@ int main(int argc, char **argv)
 	auto dmu = std::make_unique<tek8501>();
 	std::string err;
 	if (!mdu->load_roms(roms + "/8301", err) || !dmu->load_roms(roms + "/8501", err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
-	for (int d = 0; d < 4; d++)
-		if (!disks[d].empty() && !dmu->mount(d, disks[d], err, writeback)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+	for (int d = 0; d < 4; d++) {
+		if (disks[d].empty()) continue;
+		// -rw writes back every mounted image; originals under sources/ stay read-only
+		bool wb = writeback && disks[d].find("sources/") == std::string::npos;
+		if (writeback && !wb) fprintf(stderr, "[drive %d: %s is an original; mounted without write-back]\n", d, disks[d].c_str());
+		if (!dmu->mount(d, disks[d], err, wb)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
+	}
 
 	FILE *logf = logfile.empty() ? nullptr : fopen(logfile.c_str(), "wb");
 	FILE *hsif = hsilog.empty() ? nullptr : fopen(hsilog.c_str(), "w");

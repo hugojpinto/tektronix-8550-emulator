@@ -19,6 +19,9 @@ public:
 	void io_write(u16 port, u8 d) override { req('O', port, d); }
 	bool irq() override { return m_lines & 1; }
 	bool nmi() override { return m_lines & 2; }
+	bool reset_line() override { return m_lines & 4; }
+	unsigned take_wait() override { unsigned w = m_wait; m_wait = 0; return w; }
+	bool target_power() const { return m_power; }
 	u8   irq_vector() override { return req('V', 0, 0); }
 	void reset() override { req('Z', 0, 0); }
 	void poll(unsigned long z80_cycles) override;
@@ -31,6 +34,8 @@ private:
 	u8 m_lines = 0;
 	unsigned m_poll = 0;
 	int m_version = 1;
+	unsigned m_wait = 0;     // v3: WAIT T-states reported by the target, not yet charged
+	bool m_power = true;     // v3: target power/clock present (H reply)
 	bool m_cyc_valid = false;
 	unsigned long m_cyc_last = 0;
 	double m_us_frac = 0;

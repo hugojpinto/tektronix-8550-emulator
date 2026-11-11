@@ -30,12 +30,16 @@ bool ipc_target::open(const std::string &spec, std::string &err)
 		int one = 1; setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
 	} else { err = "target spec must be unix:PATH or tcp:HOST:PORT"; return false; }
 	// hello: offer our highest protocol version; the target answers the version it
-	// will speak (<= ours). v1 targets always answer 1. v2 adds 'F' (opcode fetch).
-	u8 ver = req('H', 0x0002, 0);
+	// will speak (<= ours). v1 targets always answer 1. v2 adds 'F' (opcode fetch);
+	// v3 adds WAIT / RESET in the reply lines and target power in the H reply.
+	u8 ver = req('H', 0x0003, 0);
 	if (m_fd < 0) { err = "target closed the connection"; return false; }
-	if (ver < 1 || ver > 2) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 or 2"; close(m_fd); m_fd = -1; return false; }
+	if (ver < 1 || ver > 3) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 to 3"; close(m_fd); m_fd = -1; return false; }
 	m_version = ver;
-	fprintf(stderr, "[prototype link: protocol v%d]\r\n", ver);
+	m_power = ver < 3 || (m_lines & 8);
+	m_lines &= 3;
+	m_wait = 0;
+	fprintf(stderr, "[prototype link: protocol v%d%s]\r\n", ver, m_power ? "" : ", NO TARGET POWER");
 	return true;
 }
 
@@ -48,7 +52,9 @@ u8 ipc_target::req(char op, u16 a, u8 d)
 	size_t got = 0;
 	if (write(m_fd, q, 4) != 4) goto fail;
 	while (got < 2) { ssize_t n = read(m_fd, r + got, 2 - got); if (n <= 0) goto fail; got += size_t(n); }
-	m_lines = r[1];
+	// lines: bit 0 INT, 1 NMI; v3: bit 2 RESET, bits 7-4 WAIT T-states of this cycle
+	m_lines = m_version >= 3 || op == 'H' ? r[1] : u8(r[1] & 3);
+	if (m_version >= 3 && op != 'H') m_wait += r[1] >> 4;
 	m_requests++;
 	return r[0];
 fail:

@@ -206,12 +206,18 @@ void tek8301::lp_run(int cycles2650)
 		m_bp_hit = 0;
 		if (&z == &ep && proto_mode()) {
 			target->poll(z.cyc);
+			// v3: RESET from the target (reset button, power-on) resets the emulator
+			// processor on its rising edge; this does not send 'Z' back to the target
+			bool rs = target->reset_line();
+			if (rs && !m_trst_prev) { z80 keep = z; z80_setup(z); z.read_byte = keep.read_byte; z.cyc = keep.cyc; }
+			m_trst_prev = rs;
 			bool n = target->nmi();
 			if (n && !m_nmi_prev) z80_gen_nmi(&z);
 			m_nmi_prev = n;
 			if (target->irq() && z.iff1) z80_gen_int(&z, target->irq_vector());
 		}
 		z80_step(&z);
+		if (&z == &ep && proto_mode()) z.cyc += target->take_wait();   // v3: target WAIT states
 		m_lp_frac -= double(z.cyc - c0);
 		if (m_pending != before) {              // SVC / write-protect violation (immediate): master takes over
 			// a breakpoint matched by the same instruction is pending as well (diag 07/0070-0075)

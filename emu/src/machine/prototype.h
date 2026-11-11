@@ -20,6 +20,8 @@ public:
 	virtual bool nmi() { return false; }                           // NMI line (edge seen as level)
 	virtual u8   irq_vector() { return 0xff; }                     // data bus during INTA (mode 0/2)
 	virtual void reset() {}
+	virtual bool reset_line() { return false; }                    // v3: target asserts RESET
+	virtual unsigned take_wait() { return 0; }                     // v3: WAIT T-states since the last call
 	virtual void poll(unsigned long z80_cycles) { (void)z80_cycles; }   // before each instruction; arg = Z80 T-state counter
 };
 #endif

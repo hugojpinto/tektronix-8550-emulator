@@ -44,8 +44,8 @@ build/tek8550 -term tty -0 ../disks/System_helpfix.img -cycles $((90*2000000)) -
 - Write new hardware facts into `notes/*.md`, and say how each was established (manual section, ROM address, diagnostic test). Update `PLAN.md`'s status log at milestones.
 - **Two program-memory board generations:** the default emulates the boards without the extended comparator, which DOS/50 V1.0 needs. `-pm ext` emulates the newer boards, which the 1983/85 diagnostics need. Don't "fix" one by breaking the other.
 - **Active-low registers are everywhere** on the Emulator Controller (F2 pending, F4 bank, F8 debug enables, FA/FB/F5 jump address, FC–FF breakpoints). Check `notes/8301.md` before assuming polarity.
-- **Untrusted material:** downloaded files and extracted archives go in their own new directory. Run Python that reads them with `python3 -I`. Original images in `sources/` are never written; `-rw` only writes the image you pass, so copy first.
-- **Prototype link (`notes/prototype-link.md`):** protocol v2. Keep it historically faithful: only real Z80 pin information (address bus, M1, INT/NMI) plus the emulation-only `T` time sync. Remain compatible with v1 targets.
+- **Untrusted material:** downloaded files and extracted archives go in their own new directory. Run Python that reads them with `python3 -I`. Original images in `sources/` are never written: they are read-only files, and `-rw` (which writes back every mounted drive) skips any path under `sources/`. Copy an image before writing to it.
+- **Prototype link (`notes/prototype-link.md`):** protocol v3. Keep it historically faithful: only real Z80 pin information (address bus, M1, INT/NMI, RESET, WAIT, target power) plus the emulation-only `T` time sync. Remain compatible with v1/v2 targets. FUSE (another session) implements the target side.
 - **Commits:** local only, no remote. Commit when asked.
 
 ## Known gaps

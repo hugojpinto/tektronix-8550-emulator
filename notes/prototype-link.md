@@ -43,12 +43,20 @@ Bit 6 or bit 5 selects the prototype; both set means all memory belongs to the p
 - **Write-protect violation:** the write is suppressed and the system processor gets interrupt 2. DOS/50 reports `<BREAK MEMWR>`.
 - **Syntax:** `MAP` shows the map; `MAP PRW|PRO|URW|URO lo [hi] …` sets it, e.g. `MAP URW 2000 27FF PRO 0 0FFF`.
 
-## Protocol (version 2; version 1 targets still work)
+## Protocol (version 3; version 1 and 2 targets still work)
 
-- **Version:** the emulator sends `H` with its highest version (2). The target answers the version it will speak, which must not exceed the client's. A v1 target answers 1, and the emulator then uses `R` for fetches too.
+- **Version:** the emulator sends `H` with its highest version (3). The target answers the version it will speak, which must not exceed the client's. A v1 target answers 1, and the emulator then uses `R` for fetches too. A v2 target answers 2; the emulator then ignores reply bits 2–7.
 - **Transport:** a stream socket. The target listens; the emulator connects (`-target tcp:HOST:PORT` or `-target unix:PATH`). It is synchronous: every request gets exactly one reply.
 - **Request**, 4 bytes: `op, addr_lo, addr_hi, data`.
-- **Reply**, 2 bytes: `data, lines`, where `lines` bit 0 = INT asserted (level) and bit 1 = NMI asserted (the emulator detects the rising edge). Every reply refreshes the line state.
+- **Reply**, 2 bytes: `data, lines`. Every reply refreshes the line state.
+
+| `lines` bit | Since | Meaning |
+|---|---|---|
+| 0 | v1 | INT asserted (level) |
+| 1 | v1 | NMI asserted (the emulator detects the rising edge) |
+| 2 | v3 | RESET asserted by the target (reset button, power-on). The emulator resets the emulator processor on the rising edge. It does **not** send `Z` back, and a target must not raise RESET in answer to `Z`, so the two can't ping-pong. Send it as a pulse, held until at least one `T` has gone by |
+| 3 | v3 | in the `H` reply only: target power/clock present (the probe senses target Vcc). Ignored in other replies |
+| 7–4 | v3 | WAIT: T-states of the emulator processor (4 MHz) that the target held /WAIT for during this cycle, 0–15. They are added to the Z80's T-state count, so they slow the program and show in the `T` messages. A target with a different clock converts (e.g. a 3.5 MHz Spectrum's contention × 8/7, keeping the fraction) |
 
 | op | meaning | reply data |
 |---|---|---|
@@ -62,7 +70,7 @@ Bit 6 or bit 5 selects the prototype; both set means all memory belongs to the p
 | `T` | time advance, addr = microseconds of elapsed Z80 time, computed from the real T-state count at 4 MHz with the fraction carried over. Sent about every 256 instructions, and only while the emulator processor runs | ignored |
 | `Z` | reset | ignored |
 
-Reference target: `tools/proto_target.py`. It has 64 KB RAM, `--rom FILE@ADDR`, and a console UART at port 10h (data) / 11h (status: bit 0 input ready, bit 1 output ready). `--tick MS` adds a periodic INT that is acknowledged with RST 38h and cleared by `OUT (12h)`. `--log` logs every access.
+Reference target: `tools/proto_target.py`. It has 64 KB RAM, `--rom FILE@ADDR`, and a console UART at port 10h (data) / 11h (status: bit 0 input ready, bit 1 output ready). `--tick MS` adds a periodic INT that is acknowledged with RST 38h and cleared by `OUT (12h)`. `--log` logs every access. v3 test aids: `--io-wait N` (WAIT states on every I/O cycle) and `--reset-at MS` (one RESET pulse).
 
 ## Try it
 
@@ -83,4 +91,8 @@ Any language works. Answer every 4-byte request with 2 bytes. Keep the INT level
 
 **Historical fidelity:** `F` and the 16-bit I/O address are real Z80 pins: M1 and A8–A15 during I/O cycles. A probe that replaces the CPU in its socket presents both to the target, and Z80-family peripherals rely on M1 (RETI decoding, interrupt acknowledge). `T` is not a hardware signal; it only keeps a simulated target's clock in step. None of this changes the 8550 side: DOS/50, the board firmware, mode 0 and the SVC decode (A0–A7) behave as before.
 
-**Not modelled:** bus timing and wait states, the probe's own status (target power or clock present), DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running).
+**v3 (2026-11-11), agreed with the FUSE target:** WAIT, RESET and target power are real probe pins, so they follow the "1980 probe" rule. Not done: a shared-memory RAM window (proposed for mode 2 speed and dropped: FUSE's paging, screen tracking, contention and watchpoints would all bypass it, and it isn't a probe capability). WAIT accuracy depends on how often `T` arrives (about every 256 instructions): a target whose waits depend on its own time, like the ULA's contention, gets them right on average rather than cycle by cycle. A target that stops answering (FUSE paused) just stalls the link: that is the stopped target clock.
+
+Verified with `tools/proto_target.py --io-wait 8` (an `OUT`/`JR` loop runs at 23/31 of full speed, exactly as expected) and `--reset-at 100` (the Z80 restarts at 0000 100 ms into `GO`).
+
+**Not modelled:** bus timing beyond WAIT, DMA from the target (BUSRQ), memory-space qualifiers, and the meaning of E3 bits 4 and 1 (DOS/50 sets them while running). A missing target power bit is only reported at connect time.
