@@ -254,6 +254,7 @@ void tek8501::fd_execute()
 		if (d.changed) { sr |= 0010000; if (cr & 010000) er |= 0000002; }
 		d.changed = false;
 
+		if (g_iotrace && !(cmd == 041 || cmd == 043 || cmd == 045 || cmd == 061)) fprintf(stderr, "[8501 %.3fs fd cmd %02o drv %d cr %06o wc %06o da %06o dma %06o]\n", m_cycles / CPU_HZ, cmd, drv, cr, wc, da, dma);
 		auto need_ready = [&]() { if (!d.present) { er |= 0100001; return false; } return true; };
 
 		switch (cmd) {
@@ -283,10 +284,18 @@ void tek8501::fd_execute()
 			}
 			break;
 		}
-		case 047: case 051:                          // format DD / SD
+		case 047: case 051: {                        // format DD / SD, FDDAR = track (0-153)
+			// DOS/50 FORMAT formats track 0, 1, 2 ... until the controller refuses
+			// a track past the end, so that must be an error (capacity overflow, as
+			// for records). Track 0 = cyl 0 side 0 (13 records), then 26 per track.
 			if (!need_ready()) break;
-			if (cr & 020000) { mem_wr(blk + 2, 0); mem_wr(blk + 4, 154); }
+			if (da >= 154) { er |= 0110000; break; }
+			size_t first = da == 0 ? 0 : 13 + size_t(da - 1) * 26, n = da == 0 ? 13 : 26;
+			std::fill(d.data.begin() + first * 256, d.data.begin() + (first + n) * 256, u8(0));
+			d.dirty = true; d.last_write = m_cycles;
+			if (cr & 020000) { mem_wr(blk + 2, 0); mem_wr(blk + 4, u16(da + 1)); }
 			break;
+		}
 		case 053: case 055:                          // status / slow status
 			mem_wr(blk + 2, FD_FW_VERSION);
 			mem_wr(blk + 6, 0);
