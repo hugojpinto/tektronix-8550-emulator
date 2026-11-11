@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // MAME .lay subset -- see layout.h
 #include "frontend/sdl/layout.h"
+#include <algorithm>
 #include "host/ct8500_raster.h"
 #include <cstdio>
 #include <cstdlib>
@@ -229,9 +230,14 @@ void draw(SDL_Renderer *r, const layout &l, const view &v,
 		}
 		std::string cap = caption(it);
 		if (!cap.empty()) {
-			rect b = { it.b.x + it.b.w * 0.63f, it.b.y + it.b.h * 0.64f, it.b.w * 0.34f, it.b.h * 0.13f };   // where the property sticker is
+			// a label centred under the latch bar, sized to the name: long names get up to
+			// three quarters of the drive's width before the text shrinks
+			const float th = it.b.h * 0.075f;                                  // text height (8 dot rows)
+			const float tw = std::min(float(cap.size()) * 6 * th / 8, it.b.w * 0.74f);
+			const float pad = th * 0.35f;
+			rect b = { it.b.x + (it.b.w - tw) / 2 - pad, it.b.y + it.b.h * 0.79f, tw + 2 * pad, th + 2 * pad };
 			fill_rect(r, b, { 0.93f, 0.91f, 0.84f, 1 }, 1);
-			draw_text(r, cap, { b.x + 3, b.y + 2, b.w - 6, b.h - 4 }, { 0.12f, 0.12f, 0.14f, 1 });
+			draw_text(r, cap, { b.x + pad, b.y + pad, b.w - 2 * pad, th }, { 0.12f, 0.12f, 0.14f, 1 });
 		}
 	}
 }
