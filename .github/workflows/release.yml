@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { platform: macos-universal, os: macos-14 }
+          - { platform: macos-universal, os: macos-latest }
           - { platform: linux-x86_64,    os: ubuntu-22.04 }
           - { platform: windows-x64,     os: ubuntu-24.04 }
     runs-on: ${{ matrix.os }}
