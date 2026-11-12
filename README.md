@@ -18,6 +18,8 @@ The **Tektronix 8550 MDL** pairs an **8301 Microprocessor Development Unit** (a 
   - **Lab options:** the RTPA real-time analyser and the PROM programmer are fitted.
 - 🧩 **Headless or graphical, macOS, Linux or Windows.** The core is dependency-free C++17. The GUI is a separate front end, and every run can be scripted (`-type`, `-snap`, `-cycles`).
 
+A sibling: the [Tektronix 8002A µProcessor Lab emulator](https://github.com/hugojpinto/tektronix-8002-emulator), the 8550's 1978 predecessor, built the same way and sharing its CPU cores and design.
+
 ## Quick start
 **Binaries:** the [releases](https://github.com/hugojpinto/tektronix-8550-emulator/releases) have every program, the graphical lab included, for macOS (universal), Linux (x86-64) and Windows (x64), with the ROMs, the DOS/50 disc and the panel artwork beside them: unpack and see `QUICKSTART.txt`. Every program answers `-version`.
 
