@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // Motorola MC6850 ACIA (programmer's model), host side as byte queues.
+// The transmitter is double-buffered, as on the chip: a byte written while the shift
+// register is idle moves into it at once and TDRE stays set, so a second byte can wait in
+// the data register while the first is sent. (Found with the 8002's TEKDOS, whose printer
+// driver writes ahead and lost every other byte with a single buffer; DOS/50 waits for
+// TDRE before every byte, so on the 8550 it only made output slower than the chip's.)
+// The same file serves the 8550 and 8002 emulators.
 #ifndef TEK_MC6850_H
 #define TEK_MC6850_H
 #include "emu.h"
@@ -22,10 +28,11 @@ public:
 	{
 		if (!rs) {
 			m_cr = d;
-			if ((d & 3) == 3) { m_reset = true; m_status = 0; m_tx_timer = 0; }
+			if ((d & 3) == 3) { m_reset = true; m_status = 0; m_tx_timer = 0; m_tdr_full = false; }
 			else if (m_reset) { m_reset = false; m_status |= TDRE; }
 		} else if (!m_reset) {
-			m_tdr = d; m_status &= ~TDRE; m_tx_timer = char_cycles;
+			if (m_tx_timer == 0) { m_shift = d; m_tx_timer = char_cycles; m_status |= TDRE; }   // straight into the shift register
+			else { m_tdr = d; m_tdr_full = true; m_status &= ~TDRE; }
 		}
 	}
 	u8 status() const
@@ -45,8 +52,10 @@ public:
 	{
 		if (m_reset) return;
 		if (m_tx_timer > 0 && (m_tx_timer -= cycles) <= 0) {
-			m_tx_timer = 0; m_status |= TDRE;
-			if (on_tx) on_tx(m_tdr);
+			m_tx_timer = 0;
+			if (on_tx) on_tx(m_shift);
+			if (m_tdr_full) { m_shift = m_tdr; m_tdr_full = false; m_tx_timer = char_cycles; }
+			m_status |= TDRE;
 		}
 		if (m_rx_gap > 0) m_rx_gap -= cycles;
 		if (!m_rxq.empty() && m_rx_gap <= 0) {
@@ -64,7 +73,8 @@ public:
 	bool pace_rx = true;       // host input waits for the program to read (no overruns)
 
 private:
-	u8 m_cr = 0, m_status = 0, m_rdr = 0, m_tdr = 0;
+	u8 m_cr = 0, m_status = 0, m_rdr = 0, m_tdr = 0, m_shift = 0;
+	bool m_tdr_full = false;
 	bool m_reset = true;
 	int m_tx_timer = 0, m_rx_gap = 0;
 	std::deque<u16> m_rxq;   // bit 8: break

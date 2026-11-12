@@ -2,6 +2,7 @@
 
 What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study that started the project is [docs/history/FEASIBILITY.md](docs/history/FEASIBILITY.md).
 
+- 2026-11-12: **MC6850 transmitter double-buffered**, as on the chip: a byte written while the shift register is idle moves into it at once, and TDRE stays set. Found with the sibling 8002A emulator, whose TEKDOS printer driver writes ahead and lost every other byte. DOS/50 waits for TDRE before each byte, so here it only made output slower than the chip's. `mc6850.h` is now the same file in both emulators. Checked: diagnostics 3.0 and 2.4 complete with no failures, the host link passes 7/7, and of the screenshots only `07_run_mode1` changes: the Z80's R register after BREAK (0A → 42), because the break now lands at another moment of the program's `JR` loop.
 - 2026-11-11: **The 1982 catalogues** (the 1982 catalogue section and the Feb 1982 8500 Series Technical Catalog) read.
   - **8085 board:** clocked at 3.125 MHz (X1 = 6.25 MHz in mode 0), not 3 MHz.
   - **TTA:** a break can be set only on the last event of a linked sequence, as the users manual says. The console now refuses one on an earlier event; the board itself still latches the earlier triggers (TTA.TST module 31).
