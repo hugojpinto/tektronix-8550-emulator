@@ -106,10 +106,11 @@ jobs:
           cat > notes.md <<NOTES
           Binaries of the Tektronix 8550 MDL emulator $V: the full lab (\`tek8550\`, and \`tek8550-gui\` with the CT8500 window and the front panels), the single units \`tek8301\` and \`tek8501\`, and \`dasm\`.
 
-          - **macOS** (universal: Apple Silicon and Intel; macOS 11 or later): \`tar xzf\`, then \`xattr -dr com.apple.quarantine .\` in the folder (the programs are not notarised).
+          - **macOS** (universal: Apple Silicon and Intel; macOS 11 or later): unpack, then see *not signed or notarised* below.
           - **Linux** (x86-64; glibc 2.35 or later).
           - **Windows** (x64): unzip; SDL3.dll is included.
 
-          Each archive holds the ROMs, the DOS/50 system disc and the panel artwork beside the programs: see QUICKSTART.txt. What changed: [CHANGELOG.md](CHANGELOG.md).
+          Each archive holds the ROMs, the DOS/50 system disc and the panel artwork beside the programs: see QUICKSTART.txt. What changed: [CHANGELOG.md](https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md).
           NOTES
+          tail -n +2 .github/release-notes-unsigned.md >> notes.md
           gh release create "$GITHUB_REF_NAME" dist/* --title "$V" --notes-file notes.md

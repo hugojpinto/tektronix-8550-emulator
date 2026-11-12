@@ -33,7 +33,8 @@ copy. ${X}tek8550$EXE -version prints the version. Options, tutorials and the ha
 https://github.com/hugojpinto/tektronix-8550-emulator
 TXT
 case "$PLATFORM" in
-macos*) echo "macOS: the programs are not notarised. Before the first run: xattr -dr com.apple.quarantine ." >> "$D/QUICKSTART.txt";;
+macos*) printf '\nmacOS: the programs are not signed or notarised, so Gatekeeper blocks them at first. Clear\nthe download quarantine once, in Terminal, in this folder: xattr -dr com.apple.quarantine .\n(or run a program, then System Settings > Privacy & Security > Open Anyway, for each one).\n' >> "$D/QUICKSTART.txt";;
+windows*) printf '\r\nWindows: the programs are not code-signed, so SmartScreen may warn: More info > Run anyway.\r\nUnblocking the zip before extracting avoids it (Properties > Unblock, or Unblock-File in PowerShell).\r\n' >> "$D/QUICKSTART.txt";;
 esac
 cd "$OUT"
 if [ -n "$EXE" ]; then rm -f "$NAME-$VERSION-$PLATFORM.zip"; zip -qr "$NAME-$VERSION-$PLATFORM.zip" "$NAME-$VERSION-$PLATFORM"; echo "$OUT/$NAME-$VERSION-$PLATFORM.zip"
