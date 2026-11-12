@@ -13,18 +13,31 @@ bool ipc_target::open(const std::string &spec, std::string &err)
 	// hello: offer our highest protocol version; the target answers the version it
 	// will speak (<= ours). v1 targets always answer 1. v2 adds 'F' (opcode fetch);
 	// v3 adds WAIT / RESET in the reply lines and target power in the H reply.
-	u8 ver = req('H', 0x0003, 0);
+	// v4: the prototype's clock, which the probe takes from the socket's clock pin
+	u8 ver = req('H', 0x0004, 0);
 	if (m_fd == net::BAD) { err = "target closed the connection"; return false; }
-	if (ver < 1 || ver > 3) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 to 3"; net::close(m_fd); m_fd = net::BAD; return false; }
+	if (ver < 1 || ver > 4) { err = "target speaks protocol version " + std::to_string(ver) + ", expected 1 to 4"; net::close(m_fd); m_fd = net::BAD; return false; }
 	m_version = ver;
 	m_power = ver < 3 || (m_lines & 8);
 	m_lines &= 3;
+	if (ver >= 4) { read_clock(); m_lines &= 3; }
 	m_wait = 0;
-	fprintf(stderr, "[prototype link: protocol v%d%s]\r\n", ver, m_power ? "" : ", NO TARGET POWER");
+	char clk[40] = "";
+	if (m_clock_hz > 0) snprintf(clk, sizeof clk, ", clock %.3f MHz", m_clock_hz / 1e6);
+	fprintf(stderr, "[prototype link: protocol v%d%s%s]\r\n", ver, clk, m_power ? "" : ", NO TARGET POWER");
 	return true;
 }
 
 ipc_target::~ipc_target() { net::close(m_fd); }
+
+// v4: the clock in kHz, low byte then high (0: not reported)
+void ipc_target::read_clock()
+{
+	const unsigned lo = req('K', 0, 0), hi = req('K', 1, 0);
+	const double hz = double(lo | hi << 8) * 1000.0;
+	if (hz != m_clock_hz && m_clock_hz > 0) fprintf(stderr, "[prototype link: clock %.3f MHz]\r\n", hz / 1e6);
+	m_clock_hz = hz;
+}
 
 u8 ipc_target::req(char op, u16 a, u8 d)
 {
@@ -35,7 +48,13 @@ u8 ipc_target::req(char op, u16 a, u8 d)
 	while (got < 2) { long n = net::recv_some(m_fd, r + got, 2 - got); if (n <= 0) goto fail; got += size_t(n); }
 	// lines: bit 0 INT, 1 NMI; v3: bit 2 RESET, bits 7-4 WAIT T-states of this cycle
 	m_lines = m_version >= 3 || op == 'H' ? r[1] : u8(r[1] & 3);
-	if (m_version >= 3 && op != 'H') m_wait += r[1] >> 4;
+	if (m_version >= 3 && op != 'H' && op != 'K') m_wait += r[1] >> 4;   // K is not a bus cycle
+	// v4: a RESET pulse may come with a new clock (a target switching machines): read K again
+	if (m_version >= 4 && op != 'H' && op != 'K') {
+		const bool rs = r[1] & 4;
+		if (rs && !m_reset_prev) m_clock_due = true;
+		m_reset_prev = rs;
+	}
 	m_requests++;
 	return r[0];
 fail:
@@ -49,6 +68,7 @@ void ipc_target::poll(unsigned long cyc)
 	// time advance about every 256 instructions, in microseconds of real elapsed
 	// Z80 time (T-states / 4 MHz); the fraction carries over so no time is lost.
 	// The first call after a pause (cycle counter jumped back or reset) only resyncs.
+	if (m_clock_due) { m_clock_due = false; read_clock(); }
 	if (!m_cyc_valid || cyc < m_cyc_last) { m_cyc_valid = true; m_cyc_last = cyc; return; }
 	if (++m_poll < 256) return;
 	m_poll = 0;

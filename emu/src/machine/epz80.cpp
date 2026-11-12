@@ -72,7 +72,11 @@ void epz80_board::pre_step()
 {
 	tek8301 &m = mdu;
 	if (!prototype_mode()) return;
-	m.target->poll(cpu.cyc);
+	// the link's time is in 4 MHz T-states (its microseconds); each stretch is converted at
+	// the clock it ran at
+	if (cpu.cyc >= m_link_last) m_link_cyc += double(cpu.cyc - m_link_last) * 4e6 / clock_hz();
+	m_link_last = cpu.cyc;
+	m.target->poll((unsigned long)m_link_cyc);
 	// v3: RESET from the target (reset button, power-on) resets the emulator
 	// processor on its rising edge; this does not send 'Z' back to the target
 	bool rs = m.target->reset_line();
@@ -82,6 +86,12 @@ void epz80_board::pre_step()
 	if (n && !m_nmi_prev) z80_gen_nmi(&cpu);
 	m_nmi_prev = n;
 	if (m.target->irq() && cpu.iff1) z80_gen_int(&cpu, m.target->irq_vector());
+}
+
+double epz80_board::clock_hz() const
+{
+	const double t = prototype_mode() ? mdu.target->clock_hz() : 0;
+	return t > 0 ? t : 4e6;
 }
 
 void epz80_board::post_step() { if (prototype_mode()) cpu.cyc += mdu.target->take_wait(); }   // v3: target WAIT states

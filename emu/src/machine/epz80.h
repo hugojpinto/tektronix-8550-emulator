@@ -27,7 +27,9 @@ public:
 
 	const char *name() const override { return "EP"; }
 	bool enabled() const override { return present && (control & 0x80); }
-	double clock_hz() const override { return 4e6; }
+	// J1 at 4 MHz in mode 0; in modes 1/2 the probe feeds the prototype's clock (070-3964 p. 7C-1),
+	// when the target reports it (link v4)
+	double clock_hz() const override;
 	const emulator_specifics *specifics() const override { return m_spec.get(); }
 	bool tta_visible() const override { return true; }
 	bool forced_jump(u16 target) override;
@@ -45,6 +47,8 @@ private:
 	std::unique_ptr<emulator_specifics> m_spec;
 	bool m_trst_prev = false;                  // v3 target RESET edge
 	bool m_nmi_prev = false;
+	u64 m_link_last = 0;                       // cpu.cyc at the last link poll
+	double m_link_cyc = 0;                     // link time so far, in 4 MHz T-states
 	void firmware(u16 entry);
 	bool firmware_mapped() const;              // E3<7> = 1, E3<1> = 0: the PROM answers at F800-F9FF
 };

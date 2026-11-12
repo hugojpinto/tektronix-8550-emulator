@@ -129,7 +129,11 @@ void draw_text(SDL_Renderer *r, const std::string &s, const rect &box, const col
 	float px = across / 8.f;                                     // dot size: 8 rows per line
 	if (s.size() * 6 * px > along) px = along / float(s.size() * 6);
 	const float a0 = (along - float(s.size()) * 6 * px + px) / 2, c0 = (across - 8 * px) / 2;
-	const float d = px < 3 ? px : px * 0.9f;                     // small text: solid dots stay visible
+	float d = px < 3 ? px : px * 0.9f;                           // small text: solid dots stay visible
+	// and never smaller than one output pixel, which a renderer would drop
+	int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode; SDL_FRect out;
+	if (SDL_GetRenderLogicalPresentation(r, &lw, &lh, &mode) && lw > 0 && SDL_GetRenderLogicalPresentationRect(r, &out) && out.w > 0)
+		d = std::max(d, float(lw) / out.w);
 	SDL_SetRenderDrawColorFloat(r, c.r, c.g, c.b, c.a);
 	for (size_t i = 0; i < s.size(); i++) {
 		const uint8_t *g = ct8500_raster::glyph(uint8_t(s[i]));

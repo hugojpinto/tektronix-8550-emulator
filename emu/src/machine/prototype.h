@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
-// The "prototype" (user target system) side of the Z80 emulator's probe.
+// The "prototype" (user target system) side of an emulator processor's probe.
 // In emulation modes 1 and 2 the emulator processor's memory accesses to
 // blocks mapped U (user) and all of its I/O go to the target; see
 // notes/prototype-link.md. The default implementation is "no target".
@@ -24,6 +24,7 @@ public:
 	virtual void reset() {}
 	virtual bool reset_line() { return false; }                    // v3: target asserts RESET
 	virtual unsigned take_wait() { return 0; }                     // v3: WAIT T-states since the last call
-	virtual void poll(unsigned long z80_cycles) { (void)z80_cycles; }   // before each instruction; arg = Z80 T-state counter
+	virtual void poll(unsigned long z80_cycles) { (void)z80_cycles; }   // before each instruction; arg = T-states in 4 MHz units
+	virtual double clock_hz() const { return 0; }                  // v4: the prototype's clock, which the probe feeds the processor (0: not known)
 };
 #endif
