@@ -3,6 +3,7 @@
 // tek8301: run the Tektronix 8301 MDU stand-alone; system terminal port on this terminal.
 //   tek8301 [-roms DIR] [-sw HEX] [-cycles N] [-trace FILE] [-io] [-log FILE]
 // Ctrl-] enters the monitor.
+#include "host/paths.h"
 #include "machine/tek8301.h"
 #include "cpu/s2650/2650dasm.h"
 #include "host/tty.h"
@@ -63,7 +64,8 @@ static bool monitor(tek8301 &m)
 
 int main(int argc, char **argv)
 {
-	std::string roms = "../roms/8550/8301", tracefile, logfile;
+	if (host::version_requested(argc, argv)) return 0;
+	std::string roms = host::data_path("../roms/8550/8301"), tracefile, logfile;
 	long long max_cycles = -1; int sw = 0; bool pm_ext = false; bool io = false;
 	for (int i = 1; i < argc; i++) {
 		std::string a = argv[i];

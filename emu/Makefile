@@ -28,23 +28,30 @@ LDFLAGS += -static -static-libgcc -static-libstdc++
 endif
 BUILD ?= build
 
+# the version (../VERSION), compiled into every program (-version)
+VERSION := $(shell cat ../VERSION 2>/dev/null || echo unknown)
+PATHS_OBJ := $(BUILD)/host/paths.o
+
 DASM_OBJ := $(BUILD)/cpu/t11/t11dasm.o $(BUILD)/cpu/s2650/2650dasm.o $(BUILD)/cpu/z80/z80dasm.o $(BUILD)/cpu/i8085/8085dasm.o $(BUILD)/cpu/i386/i386dasm.o
 I86_OBJ  := $(BUILD)/cpu/i86/i86.o $(BUILD)/cpu/i86/i186.o
 T11_OBJ  := $(BUILD)/cpu/t11/t11.o
 M8501    := $(BUILD)/machine/tek8501.o $(BUILD)/machine/tek8501_fdc.o $(BUILD)/machine/flexdrive.o
 M8301    := $(BUILD)/machine/tek8301.o $(BUILD)/machine/prom_programmer.o $(BUILD)/machine/rtpa.o $(BUILD)/machine/tta.o $(BUILD)/machine/emulator_specifics.o $(BUILD)/machine/ep8085.o $(BUILD)/machine/ep8086.o $(I86_OBJ) $(BUILD)/machine/z80_slave.o $(BUILD)/machine/epz80.o $(BUILD)/machine/am9513.o $(BUILD)/cpu/i8085/i8085.o $(BUILD)/cpu/s2650/s2650.o $(BUILD)/cpu/z80/superzazu/z80.o
-SYS8550  := $(BUILD)/system/tek8550.o $(BUILD)/system/tta_console.o $(BUILD)/system/tta_eve.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ct8500_ansi.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(BUILD)/host/net.o
+SYS8550  := $(PATHS_OBJ) $(BUILD)/system/tek8550.o $(BUILD)/system/tta_console.o $(BUILD)/system/tta_eve.o $(BUILD)/system/options.o $(BUILD)/host/ct8500.o $(BUILD)/host/ct8500_ansi.o $(BUILD)/host/ipc_target.o $(BUILD)/host/serial_link.o $(BUILD)/host/net.o
 
 all: $(BUILD)/dasm$(EXE) $(BUILD)/tek8501$(EXE) $(BUILD)/tek8301$(EXE) $(BUILD)/tek8550$(EXE)
 
-$(BUILD)/dasm$(EXE): $(BUILD)/tools/dasm.o $(DASM_OBJ)
+$(BUILD)/dasm$(EXE): $(BUILD)/tools/dasm.o $(DASM_OBJ) $(PATHS_OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-$(BUILD)/tek8501$(EXE): $(BUILD)/main8501.o $(M8501) $(BUILD)/cpu/z80/superzazu/z80.o $(T11_OBJ) $(BUILD)/cpu/t11/t11dasm.o
+$(BUILD)/tek8501$(EXE): $(BUILD)/main8501.o $(PATHS_OBJ) $(M8501) $(BUILD)/cpu/z80/superzazu/z80.o $(T11_OBJ) $(BUILD)/cpu/t11/t11dasm.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-$(BUILD)/tek8301$(EXE): $(BUILD)/main8301.o $(M8301) $(DASM_OBJ)
+$(BUILD)/tek8301$(EXE): $(BUILD)/main8301.o $(PATHS_OBJ) $(M8301) $(DASM_OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 $(BUILD)/tek8550$(EXE): $(BUILD)/main8550.o $(SYS8550) $(M8301) $(M8501) $(T11_OBJ) $(DASM_OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(PATHS_OBJ): ../VERSION
+$(PATHS_OBJ): CPPFLAGS += -DTEK_VERSION='"$(VERSION)"'
 
 # the 8K-entry opcode table makes -O2 very slow on this file; -O1 is plenty
 $(BUILD)/cpu/t11/t11.o: OPT = -O1

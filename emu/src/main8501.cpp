@@ -5,6 +5,7 @@
 //   tek8501 [-roms DIR] [-0 disk.imd] [-1 disk.imd] [-trace FILE] [-cycles N] [-log FILE]
 //
 // Ctrl-] enters the emulator monitor (type 'h' there for help).
+#include "host/paths.h"
 #include "machine/tek8501.h"
 #include "cpu/t11/t11dasm.h"
 #include <cstdio>
@@ -74,7 +75,8 @@ static bool monitor(tek8501 &m)
 
 int main(int argc, char **argv)
 {
-	std::string roms = "../roms/8550/8501", tracefile, logfile;
+	if (host::version_requested(argc, argv)) return 0;
+	std::string roms = host::data_path("../roms/8550/8501"), tracefile, logfile;
 	std::string disks[4];
 	long long max_cycles = -1; bool writeback = false;
 	bool odt_at_start = false, fdc_hle = false;

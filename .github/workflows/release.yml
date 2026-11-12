@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
+# Binary releases: pushing a tag vX.Y.Z (equal to VERSION) builds every program, the SDL3 front end
+# included, for macOS (universal), Linux (x86-64) and Windows (x64), and publishes them as a GitHub
+# release. Run by hand (workflow_dispatch), it builds and uploads the archives as artifacts only.
+# SDL3 is linked statically on macOS and Linux; on Windows SDL3.dll ships beside the programs.
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+env:
+  SDL_VERSION: 3.4.20
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: macos-universal, os: macos-14 }
+          - { platform: linux-x86_64,    os: ubuntu-22.04 }
+          - { platform: windows-x64,     os: ubuntu-24.04 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag against VERSION
+        if: startsWith(github.ref, 'refs/tags/')
+        run: test "${GITHUB_REF_NAME}" = "v$(cat VERSION)"
+
+      - name: macOS - SDL3 (static, universal) and the build
+        if: matrix.platform == 'macos-universal'
+        run: |
+          export MACOSX_DEPLOYMENT_TARGET=11.0
+          curl -sSLo sdl.tar.gz https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL3-$SDL_VERSION.tar.gz
+          tar xzf sdl.tar.gz
+          cmake -S SDL3-$SDL_VERSION -B sdlbuild -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF \
+                -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_INSTALL_PREFIX=$HOME/sdl3
+          cmake --build sdlbuild --parallel && cmake --install sdlbuild
+          export PKG_CONFIG_PATH=$HOME/sdl3/lib/pkgconfig
+          U="-arch arm64 -arch x86_64 -mmacosx-version-min=11.0"
+          make -C emu -j4 CXX="clang++ $U" CC="clang $U"
+          make -C emu gui -j4 CXX="clang++ $U" CC="clang $U" SDL_CFLAGS="$(pkg-config --cflags sdl3)" SDL_LIBS="$(pkg-config --static --libs sdl3)"
+          lipo -info emu/build/tek8550 emu/build/tek8550-gui
+
+      - name: Linux - SDL3 (static) and the build
+        if: matrix.platform == 'linux-x86_64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cmake ninja-build pkg-config libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+               libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev wayland-protocols libegl1-mesa-dev \
+               libgl1-mesa-dev libgles2-mesa-dev libasound2-dev libpulse-dev libdbus-1-dev libudev-dev libdrm-dev libgbm-dev
+          curl -sSLo sdl.tar.gz https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL3-$SDL_VERSION.tar.gz
+          tar xzf sdl.tar.gz
+          cmake -S SDL3-$SDL_VERSION -B sdlbuild -G Ninja -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TESTS=OFF \
+                -DSDL_EXAMPLES=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$HOME/sdl3 -DCMAKE_INSTALL_LIBDIR=lib
+          cmake --build sdlbuild && cmake --install sdlbuild
+          export PKG_CONFIG_PATH=$HOME/sdl3/lib/pkgconfig
+          make -C emu -j4
+          make -C emu gui -j4 SDL_CFLAGS="$(pkg-config --cflags sdl3)" SDL_LIBS="$(pkg-config --static --libs sdl3)"
+
+      - name: Windows - cross-built with MinGW-w64, SDL3's MinGW package
+        if: matrix.platform == 'windows-x64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mingw-w64 zip
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          curl -sSLo sdl.tar.gz https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL3-devel-$SDL_VERSION-mingw.tar.gz
+          tar xzf sdl.tar.gz
+          make -C emu -j4 CROSS=x86_64-w64-mingw32-
+          make -C emu gui -j4 CROSS=x86_64-w64-mingw32- SDL3_DIR=$PWD/SDL3-$SDL_VERSION/x86_64-w64-mingw32
+
+      - name: Smoke test (the version, and DOS/50 boots)
+        if: matrix.platform != 'windows-x64'
+        run: |
+          emu/build/tek8550 -version
+          cd /tmp && $GITHUB_WORKSPACE/emu/build/tek8550 -term tty -0 $GITHUB_WORKSPACE/disks/System_Fixed.img -cycles $((40*2000000)) -type 32 'LDIR\r' </dev/null | tr -d '\000' | grep -a "Files used"
+
+      - name: Package
+        run: |
+          B=emu/build; [ "${{ matrix.platform }}" = windows-x64 ] && B=emu/build-win
+          tools/package_release.sh ${{ matrix.platform }} $B dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: dist/*.*z*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(cat VERSION)
+          cat > notes.md <<NOTES
+          Binaries of the Tektronix 8550 MDL emulator $V: the full lab (\`tek8550\`, and \`tek8550-gui\` with the CT8500 window and the front panels), the single units \`tek8301\` and \`tek8501\`, and \`dasm\`.
+
+          - **macOS** (universal: Apple Silicon and Intel; macOS 11 or later): \`tar xzf\`, then \`xattr -dr com.apple.quarantine .\` in the folder (the programs are not notarised).
+          - **Linux** (x86-64; glibc 2.35 or later).
+          - **Windows** (x64): unzip; SDL3.dll is included.
+
+          Each archive holds the ROMs, the DOS/50 system disc and the panel artwork beside the programs: see QUICKSTART.txt. What changed: [CHANGELOG.md](CHANGELOG.md).
+          NOTES
+          gh release create "$GITHUB_REF_NAME" dist/* --title "$V" --notes-file notes.md

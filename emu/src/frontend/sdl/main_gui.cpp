@@ -11,6 +11,7 @@
 // units, Q quit.
 // Front panels: artwork/8301.lay and 8501.lay (MAME .lay subset, frontend/sdl/layout.h);
 // click RESTART, drop a disc image on a drive bay to insert it, click the bay to eject.
+#include "host/paths.h"
 #include "system/tek8550.h"
 #include "host/ct8500_raster.h"
 #include "frontend/sdl/layout.h"
@@ -142,6 +143,7 @@ std::string screen_text(const ct8500 &t)
 
 int main(int argc, char **argv)
 {
+	if (host::version_requested(argc, argv)) return 0;
 	// front-end options first; the rest are the system's
 	std::string style = "crt", artwork = "artwork"; double scale = 0; bool panels_on = true;   // scale 0: fit the screen
 	struct shot_t { double at; std::string file; };
@@ -156,6 +158,7 @@ int main(int argc, char **argv)
 		else if (a == "-shot" && i + 2 < argc) { double t = atof(argv[++i]); shots.push_back({ t, argv[++i] }); }
 		else rest.push_back(argv[i]);
 	}
+	artwork = host::data_path(artwork);              // beside the program in a release
 	tek8550_options opt;
 	std::string bad;
 	if (!opt.parse(int(rest.size()), rest.data(), bad)) {

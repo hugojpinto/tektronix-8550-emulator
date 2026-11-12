@@ -5,6 +5,7 @@
 // CT8500 model rendered with ANSI (default when interactive) or raw pass-through.
 // The machine itself lives in system/tek8550.*; options are in system/options.*.
 // Ctrl-] enters the monitor ('h' for help).
+#include "host/paths.h"
 #include "system/tek8550.h"
 #include "host/tty.h"
 #include "host/ct8500_ansi.h"
@@ -21,6 +22,7 @@ static void monitor_help()
 
 int main(int argc, char **argv)
 {
+	if (host::version_requested(argc, argv)) return 0;
 	tek8550_options opt;
 	std::string bad;
 	if (!opt.parse(argc, argv, bad)) { fprintf(stderr, "usage: %s %s\n", argv[0], tek8550_options::usage()); return 1; }

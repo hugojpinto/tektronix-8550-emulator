@@ -19,6 +19,9 @@ The **Tektronix 8550 MDL** pairs an **8301 Microprocessor Development Unit** (a 
 - 🧩 **Headless or graphical, macOS, Linux or Windows.** The core is dependency-free C++17. The GUI is a separate front end, and every run can be scripted (`-type`, `-snap`, `-cycles`).
 
 ## Quick start
+**Binaries:** the [releases](https://github.com/hugojpinto/tektronix-8550-emulator/releases) have every program, the graphical lab included, for macOS (universal), Linux (x86-64) and Windows (x64), with the ROMs, the DOS/50 disc and the panel artwork beside them: unpack and see `QUICKSTART.txt`. Every program answers `-version`.
+
+**From source:**
 ```
 cd emu && make                                    # C++17, no dependencies
 cp ../disks/System_Fixed.img ../disks/work.img  # work on a copy

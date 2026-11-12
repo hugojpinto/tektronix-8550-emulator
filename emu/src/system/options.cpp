@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 #include "system/options.h"
+#include "host/paths.h"
 #include <cstdlib>
 
 const char *tek8550_options::usage()
 {
-	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext|32k|ext,32k] [-ep z80|8085|8086|8088|80186|80188|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-aux8301 SPEC] [-aux8501 SPEC] [-printer SPEC] [-rtpa [probe]] [-tta [probe]] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE]";
+	return "[-0..-3 DISK] [-rw] [-roms DIR] [-sw HEX] [-pm ext|32k|ext,32k] [-ep z80|8085|8086|8088|80186|80188|none] [-ep-prom FILE] [-prom on|fix] [-prom-dev FILE] [-cycles N] [-log FILE] [-hsilog FILE] [-auxlog FILE] [-outputs FILE] [-dump FILE] [-type SECONDS TEXT] [-snap SECONDS FILE] [-poke SECONDS ADDR=HEX] [-mount SECONDS N=FILE] [-eject SECONDS N] [-input SECONDS NAME=VALUE] [-press SECONDS NAME] [-term ct8500|tty] [-screen FILE] [-target unix:PATH|tcp:HOST:PORT] [-remote tcp:HOST:PORT|listen:PORT|unix:PATH] [-remote-baud N] [-aux8301 SPEC] [-aux8501 SPEC] [-printer SPEC] [-rtpa [probe]] [-tta [probe]] [-fdc lle|hle] [-trace8301 SECONDS FILE] [-trace8501 START SECONDS FILE] [-version]";
 }
 
 bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
@@ -56,5 +57,6 @@ bool tek8550_options::parse(int argc, char **argv, std::string &unknown)
 		else if (a == "-type") { double t = atof(next().c_str()); typed.push_back({ t, next() }); }
 		else { unknown = a; return false; }
 	}
+	roms = host::data_path(roms);      // the default ../roms/8550, or beside the program in a release
 	return true;
 }

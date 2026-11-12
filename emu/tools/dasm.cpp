@@ -3,6 +3,7 @@
 // dasm: disassemble a raw binary for pdp11 | s2650 | z80 | i86 (8086/8088, 16-bit x86) | i186 (80186/80188).
 // usage: dasm <cpu> <file> [base(hex, or 0o-prefixed octal)] [start] [count]
 #include "emu.h"
+#include "host/paths.h"
 #include "cpu/t11/t11dasm.h"
 #include "cpu/s2650/2650dasm.h"
 #include "cpu/z80/z80dasm.h"
@@ -16,6 +17,7 @@ struct s2650cfg : s2650_disassembler::config { bool get_z80_mnemonics_mode() con
 struct i86cfg : i386_disassembler::config { int get_mode() const override { return 1; } };   // 16-bit, as the i86 core
 static u32 num(const char *s) { return !strncmp(s, "0o", 2) ? strtoul(s + 2, 0, 8) : strtoul(s, 0, 16); }
 int main(int argc, char **argv) {
+	if (host::version_requested(argc, argv)) return 0;
 	if (argc < 3) { fprintf(stderr, "usage: dasm pdp11|s2650|z80|i86|i8088|i186|i80188 file [base] [start] [count]\n"); return 1; }
 	std::string cpu = argv[1];
 	FILE *f = fopen(argv[2], "rb"); if (!f) { perror(argv[2]); return 1; }
