@@ -1,11 +1,12 @@
 # RTPA (Real-Time Prototype Analyzer)
 
-**Status:** emulated (`-rtpa`, `emu/src/machine/rtpa.{h,cpp}`).
+**Status:** emulated (`-rtpa`, `emu/src/machine/rtpa.{h,cpp}`). The same files serve the sibling 8002A emulator (`../tektronix-8002-emulator`), whose notes (`notes/rtpa.md` there) cover the 8002 side.
 - **Diagnostic:** RTPA.TST V1.2 options 0–6 pass. That's all 16 event tests, the counter test, both counter options and the trace-buffer option, over hundreds of iterations. Option 7 (probe) passes with `-rtpa probe`. Automatic System Verification with `-rtpa` completes with no failures.
-- **DOS/50:** `EVT`, `BIF`, `CNT`, `RTT` and `DRT` work.
-- **Not emulated:** the TTA (Trigger Trace Analyzer, Select mode 6).
+- **DOS/50:** `EVT`, `BIF`, `CNT`, `RTT` and `DRT` work. Tutorial: [docs/RTPA.md](../docs/RTPA.md).
+- **On the 8002:** the RTPA users guide's seven procedures (070-2785 §3, about 80 printed displays of a real 8002A) are reproduced by the 8002's `tests/rtpa_guide.sh`; its diagnostics' hardware analyzer tests (D3A21, D3A30) pass all but a few timing subtests.
+- **Not emulated:** the TTA (Trigger Trace Analyzer, Select mode 6) is a separate board (`notes/tta.md`).
 
-No register documentation exists. Everything below was established from:
+The 8550 has no register documentation of its own. The model was first established from the sources below, then checked against the 8001/8002 documentation of the same board (see "Documentation of the board" further down):
 - **the diagnostic** `RTPA.TST` on `8550_DIAG.IMD` (Select mode 4). It is table-driven: each of its 16 test records holds the register setup, the expected results and a description (record table at 2ABD);
 - **DOS/50 V1.0's command overlays** in `8301/Z80/`: `RTT`'s keyword/value table, the `GO` overlay's INT 29 handler at 681E, and `DRT`'s display loop;
 - **the 8301 service manual:** interrupt numbers, and the DBG INT 29/30 and SLV INOP/OPREQ signals.
@@ -38,12 +39,40 @@ STATUS") at 80–87, and its real-time analyzer source documents every register:
   diagnostics' hardware analyzer tests write all 16 after one C6 = 0), and status bit 3 at a
   break is the setting `stop_status_08` (on here; the 8002 turns it off). RTPA.TST options 0, 6
   and 7 and system verification pass as before.
-- **Open, from the 8002 diagnostics:** which events the status byte reports. Their expectations
-  fit "the events that match on the breaking cycle", except where an event has no address
-  compare (C7 = 00), which this model, from DOS/50, treats as "any address".
-- **To check:** the 9508's C2 status gives 04 "slave faulted" and 08 "slave clock missing"
-  (01/02 triggers, 10 card present); the model here reads 08 as "stopped", inferred from DOS/50
-  and RTPA.TST.
+- **Status bits:** the 9508 and the RTPA service manual both give C2's status as 01 trigger 1,
+  02 trigger 2, 04 slave fault, 08 slave clock missing, 10 module active. The model here sets 08
+  at a break (`stop_status_08`), as RTPA.TST and DOS/50 on the 8550 accept; the 8002 diagnostics
+  expect it clear, and the 8002 turns it off.
+
+## Documentation of the board (2026-11-15)
+The 8550's RTPA is the 8001/8002 board's design on the 8301's bus, and two Tektronix manuals for the 8001/8002 version survive (in the 8002 emulator's `sources/bitsavers/manuals/800x/`):
+- **070-2356, *Real-Time Prototype Analyzer Service* (1977):** theory of operation (§2: the comparison sequence R0–R3 per bus cycle, LIMit, ARM, the pass and delay counters) and the control, data and status bytes (§3), with the same register layout as here.
+- **070-2785, *8002 Real-Time Prototype Analyzer Users Guide* (1979):** the TEKDOS commands (`EVT`, `BIF`, `CNT`, `RTT`, `DRT`), seven step-by-step procedures on an 8080 sample program with the displays a real 8002A printed (§3), and each emulator processor's clock and wait states (Appendix A).
+
+With Millennium's 8002 diagnostics (DIP 4.4: the hardware analyzer tests D3A21 for the 8080 board and D3A30 for the 6800, each a table of register set-ups and expected results), they settled the rules below. Each changed the shared model; RTPA.TST options 0, 6 and 7 and system verification with `-rtpa` still pass here.
+
+| Rule | Source |
+|---|---|
+| **LIMit:** "If the LIMit requirement is on, R1 (EVT 2 address and Control bits) will also be ANDed with R0 and R2 for EVT 1". The break is event 1's whole comparison within event 2's address and bus-type requirements; event 2's data, probe pattern, pass count and delay take no part, and LIM triggers as event 1 only | 070-2356 §2 step 4b; 070-2785 6.C (event 2's P and C change nothing), 6.D (event 2's D=FFFF is ignored); D3A21 "TRACE ALL TEST" |
+| **Data compare modes:** the address codes (01 ≥, 02 8-bit equal, 04 16-bit equal, 08 ≤) apply to the data too (C7 index 2/3: "R2: Bus data >= EVT 1 required data ...") | 070-2356 §3, logical requirement file; D3A21 "TRACE FETCHES" (D ≥ C2, D ≤ C2) |
+| **Status event bits:** the events whose whole comparison matches on the breaking cycle, whatever C2 enables; an event with no address requirement (C7 = 00) is not reported | D3A21/D3A30 subtests 1, 3–6 |
+| **Delays count the CNT clock:** a delay counter is clocked by the source C3 selects (fetches, bus cycles, processor clocks, µs, ms, trace stores, the other event), not always by fetches. "When the event occurs, the counter is decremented by a software selected clock"; "The delay units are specified with the CNT command" | 070-2356 §2; 070-2785 2.B.1 (C=500 after `CNT C`: 739 = 239 + 500 bus cycles), 2.D |
+| **Delays share the G.P. counter's gate:** under ARM the clock runs only while armed, so a delay on event 1 never runs out: "If a delay count (option C) is added to the EVT1 command line ... an EVT1 trigger cannot be generated" | 070-2785 3.B.4, 5.A.2 (the program runs on to its halt, count 0) |
+| **A delay restarts at each occurrence** (after its pass count), unless one is already running | 070-2785 4.A.1: event 1 (P=10, C=20) breaks at passes 10, 20 and 30; event 2 (P=10, C=150 cycles, about 12 passes) at passes 22 and 42, not 32 |
+| **ARM: event 2 only on a later cycle.** "EVT RST is generated on the next bus cycle, resetting both event F.F.s" | 070-2356 §2; 070-2785 3.B.6 (both events at 0207: the break comes one pass later, count 12) |
+| **An event-2 trigger disarms (ARM and FRZ):** event 1 must come again, the G.P. counter stops, and under FRZ the trace runs again from the next instruction until event 1 freezes it: "the EVT2 trigger breaks the program execution and stops the general purpose counter. In addition, the EVT2 trigger arms the EVT1 comparator and enables the RTT buffer" | 070-2785 5.A.3–5.A.5 |
+| **FRZ** is C1 bit 5, "Stop on EVT 1 (Freeze)" (inferred here before) | 070-2356 §3 trace control byte; 070-2785 5.A.1 (`DR 11` ends at the event-1 fetch) |
+| **Counting stops at the break:** the bus-driven G.P. sources (bus cycles, fetches, trace stores, events) do not count the rest of the breaking instruction | 070-2785 2.B.1 (739, not 740); D3A21 "TRACE I/O WRITES ONLY" (8 entries traced, 7 counted) |
+| **G.P. counts an event's comparisons** (`CNT 1`/`CNT 2`) whether or not C2 lets that event break | D3A21 subtests 3, 4; 070-2785 2.E.3 (`CNT 2` with BIF cleared) |
+| **The PC latches follow every instruction** while the analyser runs, and hold the breaking one: TEKDOS shows a halt from them when the board is fitted | 070-2785 3.B.4 ("0301 76 HLT ... 0301 BREAK" in a run where the RTPA never triggers) |
+| **Time counts at cycle resolution** when the host gives its bus-cycle lengths (`states_fetch`/`states_mem`/`states_io`, set per instruction): a count then starts after the arming cycle and ends with the breaking one. The 8550's boards leave them 0, and count whole instructions as before | D3A21 subtest 0D (694 8080 clocks, exact) |
+| **A board's I/O page** (`io_page`): the 6800 has no I/O cycles, and its board marks FE00–FEFF, its SVC page, as I/O for the RTPA | 070-2349 §10 ("the 6800 microprocessor uses memory mapped I/O, the memory region FE00 through FEFF is reserved"); D3A30's trace expects FE00 as I/O cycles |
+
+**The 8550's verified DOS/50 combinations** (below) are unchanged by these rules except one: ARM with a delay on event 1 (`EVT 1 C=3`) now runs to the program's halt with a count of 0, where it broke at 0105 before.
+
+**Open:**
+- **The µs time base's phase.** Microsecond counts agree with the guide's displays to its own tolerance ("may vary one or two microseconds"), but in one run (070-2785 4.A.1 with `CNT U`) the delays expire one instruction earlier than the real lab's, and an extra event-2 break appears.
+- **The msec prescaler:** channel 2's counter 1 is a mode-1 one-shot (DOS/50, TEKDOS and the diagnostics all write 72) loaded with 1000 (990 by the diagnostics). D3A21 expects 1 ms counted over one 0.3 ms run and 0 over another programmed the same way; how the one-shot is triggered is unknown.
 
 ## What the board does
 The board watches the **slave bus**: the emulator processor, or the Language Processor, since RTPA.TST runs its test program on the LP with E3 = 00.
@@ -65,7 +94,7 @@ The board watches the **slave bus**: the emulator processor, or the Language Pro
 | C4 | comparator RAM byte at index C6 (bit 7 of C6 ignored) | PC-LAST low, inverted |
 | C5 | 8253 register at index C6 = 2·A + channel: A = 0 pass count, 1 G.P. counter, 2 delay, 3 control word. DOS/50 and the diagnostic write `34 72 B0` / `34 72 B4`: counter 0 mode 2, counter 1 mode 1, counter 2 mode 0 / 2 | PC-LAST high, inverted |
 | C6 | index | PC-NEXT low, inverted |
-| C7 | compare mode at index C6, auto-incrementing: [0/1] address mode of event 1/2: 02 low byte equal (`:`), 04 equal (`=`), 08 ≤ (`<`), 01 ≥ (`>`), 00 any; [2/3] data mode: 02 equal | PC-NEXT high, inverted |
+| C7 | compare mode at index C6, auto-incrementing: [0/1] address mode of event 1/2: 02 low byte equal (`:`), 04 equal (`=`), 08 ≤ (`<`), 01 ≥ (`>`), 00 any; [2/3] data mode, the same codes on the data (DOS/50 writes 02 equal) | PC-NEXT high, inverted |
 
 **Comparator RAM** (C4): 8 fields per event, at index 2·field + event:
 
@@ -91,9 +120,9 @@ Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inac
 | 01 | event 1 breaks |
 | 08 | event 2 breaks |
 | 09 | either breaks (IND) |
-| 03 (02 + 01) | LIM: both in the same cycle. The combined match is a channel-1 occurrence, so channel 1's pass count and delay apply, and then both events trigger |
-| 0C (04 + 08) | ARM: event 1 arms event 2, and the G.P. counter counts once armed. Event 1's pass count or delay applies before it arms; event 2's applies once armed |
-| 0C + C1 bit 20 | FRZ: as ARM, and the trace freezes at the arming event. This is inferred, see below |
+| 03 (02 + 01) | LIM: event 1's whole comparison and event 2's address and bus-type requirements on the same cycle (070-2356 §2). The combined match is a channel-1 occurrence: channel 1's pass count and delay apply, event 2's do not, and it triggers as event 1 |
+| 0C (04 + 08) | ARM: event 1 arms event 2 from the next cycle on, and the G.P. counter counts while armed. Event 1's pass count applies before it arms; a delay on event 1 never runs out (its clock is gated like the G.P. counter's); event 2's pass count and delay apply once armed. Event 2's trigger disarms |
+| 0C + C1 bit 20 | FRZ: as ARM, and the trace stops at the arming event ("Stop on EVT 1 (Freeze)"); event 2's trigger lets it run again from the next instruction |
 | 10 | channel 1 pass count |
 | 20 | channel 1 delay |
 
@@ -102,14 +131,16 @@ DOS/50's BIF writes C2 as follows: `1` 01, `2` 08, `IND` 09, `LIM` 03, `ARM` 0C,
 **8253 behaviour that the tests pin down:**
 - **Loading:** a count loads on the first clock after it is written; later clocks count down.
 - **Pass count** (mode 2, clocked by the channel's event occurrences): the trigger is its output's rising edge at reload, i.e. on the N-th occurrence, given the load strobe at arm.
-- **Delay** (clocked by fetches after the event):
+- **Delay** (clocked by the CNT source after the event: fetches in RTPA.TST's delay tests):
   - mode 0 triggers when the count reaches zero;
   - mode 2 triggers at its reload edge;
-  - DELAY1 (12) fires on the 13th fetch after the event, and DELAY2 (15) on the 16th.
+  - DELAY1 (12) fires on the 13th fetch after the event, and DELAY2 (15) on the 16th;
+  - each occurrence restarts it from its full count unless it is running (070-2785 4.A.1).
 - **G.P. counter:** counter 1 of channel 1. It is loaded with FFFF and counts down, so it reads back inverted as the count.
 - **msec:** channel 2's counter 1 prescales a 1 µs time base. DOS/50 loads it with 1000.
 
 **PC latches:**
+- they follow every instruction while the analyser runs (070-2785 3.B.4), and hold at a break;
 - PC-LAST is the start address of the instruction during which the trigger occurred;
 - PC-NEXT is the address after it;
 - the processor stops after that instruction.
@@ -147,14 +178,14 @@ The program is `LD HL,000A` followed by 10 passes of `DEC HL / LD A,H / OR L / J
 | Setup | Result |
 |---|---|
 | ARM, event 1 0103 with P=3, event 2 0105 | break at 0105, 2 fetches counted since arming |
-| ARM, event 1 with C=3 | break at 0105, count 3 |
+| ARM, event 1 with C=3 | no break: runs to the HALT, count 0 (an event-1 delay never runs out under ARM, as 070-2785 3.B.4 shows on the 8002; this broke at 0105 before 2026-11-15) |
 | ARM, event 2 with P=2 | break at 0105, count 6 |
 | LIM, A≥0104 with P=3, together with A≤0105 | break at 0104, count 7 |
 | FRZ, event 1 0104, event 2 0106 | break at 0106, and `DRT` shows only 0100, 0103 and 0104 |
 
 `-rtpa probe` with `EVT 1 T=11111010` breaks at 0105, and `DRT`'s EXTERNAL column shows each address's low byte, inverted.
 
-**FRZ is inferred.** Its only hardware difference from ARM is C1 bit 20, and no test pins down what that bit does. "The trace freezes at the arming event" is consistent with the diagnostic's ARM test, which runs with C1 = 38 and expects a trace of the writes before the arming fetch. It also gives FRZ a use of its own: keep what led up to event 1.
+**FRZ, now documented.** Its only hardware difference from ARM is C1 bit 20, which was inferred here as "the trace freezes at the arming event" (consistent with RTPA.TST's ARM test, C1 = 38, and its trace of the writes before the arming fetch). The service manual names the bit "Stop on EVT 1 (Freeze)", and the users guide's procedure 5 shows the rest: event 2 lets the trace run again until event 1 comes back (rules table above).
 
 ## INT 30 and INT 31
 The 8301 manual lists them as "RTPA (INT 30)" and "RTPA (INT 31)", with signal DBG INT 30(L) "provided by the RTPA". Nothing in our sources uses them:
@@ -165,5 +196,6 @@ The board model therefore never raises them. Their purpose (perhaps a counter ou
 
 ## Not modelled
 - **Probe:** only two states exist. Open (`-rtpa`), where the inputs read 00, or the diagnostic's loopback (`-rtpa probe`): A0–A7(L), qualified by SLVOP. There is no way to feed it a target's signals.
-- **Fields and lines:** comparator field 3, `XD`, INT 30/31 and SLV INOP.
-- **The TTA** (Trigger Trace Analyzer, `TTA.TST`, Select mode 6), the later analyser, is not emulated.
+- **Lines:** `XD` and SLV INOP.
+- **Fields and lines:** comparator field 3 is D15–D8 of the event data (9508), unused by 8-bit boards; data modes 04 (16-bit) compare the low byte only.
+- **The RTPA's own interrupt lines** INT 30/31 (above).

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
 // 8550 Real-Time Prototype Analyzer -- see rtpa.h and notes/rtpa.md.
 #include "machine/rtpa.h"
+#include <algorithm>
 
 // ---------------------------------------------------------------- 8253
 
@@ -88,7 +89,7 @@ void rtpa::write(int r, u8 d)
 	case 2:                                   // event enables; writing it re-arms
 		m_c2 = d;
 		m_status = 0; m_trig = false; m_stopped = false; m_armed = false; m_delay[0] = m_delay[1] = false;
-		m_tr_rd = 0; m_tr_byte = 0; m_frozen = false;
+		m_tr_rd = 0; m_tr_byte = 0; m_frozen = false; m_thaw = false;
 		break;
 	case 3:
 		// bit 4 (channel 2 pass count enable) also strobes channel 2's pass and G.P.
@@ -118,37 +119,61 @@ void rtpa::write(int r, u8 d)
 //   k=4 bus value, k=5 ~probe pattern (T), k=6 bus mask, k=7 probe mask (TM).
 // Bus bits: 01 memory (MNIO), 02 write (WNR), 04 fetch (F), F0 control lines (inactive high).
 // Address mode (C7 index e): 02 low byte equal, 04 equal, 08 <=, 01 >=, 0 don't care.
-// Data mode (C7 index 2+e): 02 equal, 0 don't care.
-bool rtpa::match(int e, u16 a, u8 d, u8 cyc, u8 probe) const
+// Data mode (C7 index 2+e): the same codes on the data byte (02 and 04 equal), 0 don't care.
+bool rtpa::ctl_match(int e, u8 cyc) const { return ((cyc ^ m_ram[8 + e]) & m_ram[12 + e]) == 0; }
+
+bool rtpa::addr_match(int e, u16 a) const
 {
 	u16 ea = u16(u8(~m_ram[0 + e]) | (u8(~m_ram[4 + e]) << 8));
-	u8 ed = u8(~m_ram[2 + e]);
-	u8 bv = m_ram[8 + e], bm = m_ram[12 + e];
-	if ((cyc & bm) != (bv & bm)) return false;
 	switch (m_mode[e]) {
-	case 0x02: if (u8(a) != u8(ea)) return false; break;
-	case 0x04: if (a != ea) return false; break;
-	case 0x08: if (a > ea) return false; break;
-	case 0x01: if (a < ea) return false; break;
+	case 0x02: return u8(a) == u8(ea);
+	case 0x04: return a == ea;
+	case 0x08: return a <= ea;
+	case 0x01: return a >= ea;
+	default: return true;
+	}
+}
+
+bool rtpa::match(int e, u16 a, u8 d, u8 cyc, u8 probe) const
+{
+	u8 ed = u8(~m_ram[2 + e]);
+	if (!ctl_match(e, cyc) || !addr_match(e, a)) return false;
+	switch (m_mode[2 + e]) {   // the address codes; >= and <= from the 8002 diagnostics' hardware
+	case 0x02: case 0x04: if (d != ed) return false; break;   // analyzer test (TRACE FETCHES: D >= C2, D <= C2)
+	case 0x08: if (d > ed) return false; break;
+	case 0x01: if (d < ed) return false; break;
 	default: break;
 	}
-	if (m_mode[2 + e] == 0x02 && d != ed) return false;
 	if ((probe ^ u8(~m_ram[10 + e])) & m_ram[14 + e]) return false;   // probe T (inverted) under mask TM
 	return true;
 }
 
-void rtpa::instr_begin(u16 pc) { m_cur_pc = pc; }
+void rtpa::clock_gp(bool gate)
+{
+	// the delays take the same clock, gated the same way: under ARM an event-1 delay never
+	// runs out ("If a delay count (option C) is added to the EVT1 command line ... an EVT1
+	// trigger cannot be generated", 070-2785 3.B.4: the program runs on to its halt)
+	if (!gate) return;
+	m_pit[0].c[1].clock();
+	for (int e = 0; e < 2; e++)
+		if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; qualified(e); }
+}
+
+void rtpa::instr_begin(u16 pc) { m_cur_pc = pc; m_pos = 0; m_open_at = m_stop_at = -1; m_gate_before = gp_gate(); }
 
 // An event occurred on channel e: count it (pass), start its delay, then act:
 // arm (channel 1 under ARM/FRZ), or trigger. Under LIM the combined match is a
-// channel-1 occurrence and triggers both events.
+// channel-1 occurrence.
 void rtpa::occurrence(int e, bool &hit)
 {
 	bool pass = e == 0 ? (m_c2 & 0x10) : (m_c3 & 0x10);
 	bool delay = e == 0 ? (m_c2 & 0x20) : (m_c3 & 0x20);
 	if (gp_source() == e) clock_gp(gp_gate());             // G.P. counts this channel's events
 	if (pass && !m_pit[e].c[0].clock()) return;
-	if (delay) { m_delay[e] = true; return; }
+	// a delay restarts from its full count at each (passed) occurrence, unless one is already
+	// running: 070-2785 4.A.1 (BIF IND C) shows event 1 (P=10 C=20) breaking every 10 passes,
+	// and event 2 (P=10 C=150, about 12 passes) at passes 22 and 42, not 32
+	if (delay) { if (!m_delay[e]) { m_delay[e] = true; m_pit[e].c[2].pending = true; } return; }
 	qualified(e);
 	hit = true;
 }
@@ -161,19 +186,46 @@ void rtpa::qualified(int e)
 		if (m_c1 & 0x20) m_frozen = true;                    // FRZ: the trace freezes at the arming event
 		return;
 	}
-	if (m_c2 & 0x02) { trigger(0); trigger(1); return; }    // LIM
+	if (e == 1 && (m_c2 & 0x04)) {
+		// "the EVT2 trigger breaks the program execution and stops the general purpose counter.
+		// In addition, the EVT2 trigger arms the EVT1 comparator and enables the RTT buffer"
+		// (070-2785 5.A.4): event 1 must come again, and under FRZ the trace runs again from the
+		// next instruction until it does (5.A.5's listing; 5.A.3: one break, the count stops at it)
+		m_armed = false;
+		if (m_c1 & 0x20) m_thaw = true;
+	}
+	// LIM breaks as event 1; the status shows event 2 only if its whole comparison matched too
+	// (the 8002 diagnostics' TRACE ALL TEST expects 11 when event 2's data differs)
 	trigger(e);
 }
 
 void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 {
 	if (m_stopped || !(m_c3 & 0x08)) return;   // C3 bit 3: analyser running (DOS/50 clears it after a break: the trace freezes)
+	if (!io && io_page >= 0 && (a >> 8) == io_page) io = true;
 	u8 cyc = u8(0xf0 | (io ? 0 : 0x01) | (write ? 0x02 : 0) | (fetch ? 0x04 : 0));
 	// probe inputs: open (00), or looped back to A0-A7(L) -- the low address byte, inverted
 	const u8 probe = probe_loopback ? u8(~a) : 0x00;
-	if (gp_source() == 4) clock_gp(gp_gate());                 // every bus cycle
+	const bool trig_before = m_trig;
+	// the status's event bits record which events match on the cycle that breaks, whatever C2
+	// enables; an event with no address compare (C7 00) does not count there (the 8002
+	// diagnostics' hardware analyzer test: its descriptors' expected status, subtests 1, 3-6)
+	const u8 now = u8((m_mode[0] && match(0, a, d, cyc, probe) ? 1 : 0) | (m_mode[1] && match(1, a, d, cyc, probe) ? 2 : 0));
+	struct snap { rtpa &r; bool before; u8 now; ~snap() { if (!before && r.m_trig) r.m_status |= now; } } on_break{ *this, trig_before, now };
+	// where this cycle ends within the instruction, for the time-based counts (see states_fetch)
+	const int len = fetch ? states_fetch : io ? states_io : states_mem;
+	struct place { rtpa &r; bool trig0, gate0; int end; ~place() {
+		r.m_pos = end;
+		if (!gate0 && r.gp_gate() && r.m_open_at < 0) r.m_open_at = end;
+		if (!trig0 && r.m_trig && r.m_stop_at < 0) r.m_stop_at = end;
+	} } on_end{ *this, trig_before, gp_gate(), m_pos + len };
+	// the G.P. counter's bus-driven sources stop at the break: the rest of the breaking
+	// instruction is not counted (070-2785 Procedure 2: CNT C reads 739 for a delay of 500 bus
+	// cycles after the 239th; the diagnostics' TRACE I/O WRITES ONLY: 8 entries traced, 7 counted)
+	const bool counting = !m_trig;
+	if (gp_source() == 4 && counting) clock_gp(gp_gate());     // every bus cycle
 	if (!m_frozen && traced(cyc)) {
-		if (gp_source() == 2) clock_gp(gp_gate());             // every stored trace entry
+		if (gp_source() == 2 && counting) clock_gp(gp_gate());   // every stored trace entry
 		// bus byte: cycle bits, plus the upper bits of event 1's bus-value register as a
 		// run tag (DOS/50 steps it by 08 at every GO; DRT shows the entries of the last run)
 		m_trace[m_tr_head] = { u8(a >> 8), u8(a), u8((cyc & 0x07) | (m_ram[8] & 0xf8)), 0, d, probe };
@@ -182,20 +234,31 @@ void rtpa::bus(u16 a, u8 d, bool fetch, bool write, bool io)
 	}
 	if (fetch) {
 		// counting first: a counter gated by this cycle's own event starts with the next fetch
-		if (gp_source() == 3) clock_gp(gp_gate());
-		for (int e = 0; e < 2; e++)
-			if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; qualified(e); }
+		if (gp_source() == 3 && counting) clock_gp(gp_gate());
 	}
 	bool en1 = (m_c2 & 0x07) != 0, en2 = (m_c2 & 0x0a) != 0;   // LIM (02) uses both events, ARM (04) event 1
 	bool m1 = en1 && match(0, a, d, cyc, probe), m2 = en2 && match(1, a, d, cyc, probe);
+	// the G.P. counter counts an event's comparisons (CNT 1/2) whether or not C2 lets that event
+	// break (the 8002 diagnostics' hardware analyzer test counts event 2 with C2 = 01, event 1
+	// with C2 = 08); an enabled event is counted in occurrence() as before
+	if (counting && gp_source() == 0 && !en1 && match(0, a, d, cyc, probe)) clock_gp(gp_gate());
+	if (counting && gp_source() == 1 && !en2 && match(1, a, d, cyc, probe)) clock_gp(gp_gate());
 	if (trace && (m1 || m2)) fprintf(stderr, "[%.4f RTPA match%s%s at %04x d=%02x cyc=%02x pc=%04x]\n", clock ? *clock : 0.0, m1 ? " E1" : "", m2 ? " E2" : "", a, d, cyc, m_cur_pc);
 	bool hit = false;
 	if (m_c2 & 0x02) {                        // LIM: both events in the same cycle (channel 1's pass/delay apply)
-		if (m1 && m2) occurrence(0, hit);
+		// "If the LIMit requirement is on, R1 (EVT 2 address and Control bits) will also be ANDed
+		// with R0 and R2 for EVT 1" (070-2356 §2, step 4b): event 2's data and probe do not take
+		// part (the 8002 diagnostics' TRACE ALL TEST limits A <= 0017, D = C3 by A >= 0014 with
+		// D <= C2 and expects the break at the C3 fetch, event 2 absent from the status)
+		if (m1 && addr_match(1, a) && ctl_match(1, cyc)) occurrence(0, hit);
 		return;
 	}
+	// under ARM, event 2 counts only on a cycle after the arming one: "EVT RST is generated on
+	// the next bus cycle, resetting both event F.F.s" (070-2356 §2); 070-2785 3.B.6 arms and
+	// breaks on the same address, and breaks one loop later
+	const bool armed_before = m_armed;
 	if (m1) occurrence(0, hit);
-	if (m2 && (!(m_c2 & 0x04) || m_armed)) occurrence(1, hit);
+	if (m2 && (!(m_c2 & 0x04) || armed_before)) occurrence(1, hit);
 }
 
 void rtpa::instr_end(u16 next_pc, int tstates, double hz)
@@ -204,16 +267,29 @@ void rtpa::instr_end(u16 next_pc, int tstates, double hz)
 	// msec through channel 2's counter 1 (DOS/50 loads it with 1000)
 	if (!m_stopped && (m_c3 & 0x08)) {
 		int src = gp_source();
-		if (src == 5) for (int i = 0; i < tstates; i++) clock_gp(gp_gate());
+		// the clocks of this instruction the G.P. counter sees: all of them, or with known cycle
+		// lengths only those between the gate opening and the break
+		int n = tstates; bool gate = gp_gate() || m_gate_before;   // an instruction that disarms counts whole, as one that arms
+		if (states_fetch) {
+			const int lo = m_gate_before ? 0 : m_open_at, hi = m_stop_at >= 0 ? std::min(m_stop_at, tstates) : tstates;
+			n = lo < 0 ? 0 : std::max(0, hi - lo);
+			gate = true;
+		}
+		if (src == 5) for (int i = 0; i < n; i++) clock_gp(gate);
 		if (src >= 6) {
-			m_us_frac += tstates * 1e6 / hz;
+			m_us_frac += n * 1e6 / hz;
 			for (; m_us_frac >= 1.0; m_us_frac -= 1.0) {
-				if (src == 7) { clock_gp(gp_gate()); continue; }
-				u16 n = m_pit[1].c[1].cr ? m_pit[1].c[1].cr : 1000;   // prescaler: one tick per n us
-				if (++m_prescale >= n) { m_prescale = 0; clock_gp(gp_gate()); }
+				if (src == 7) { clock_gp(gate); continue; }
+				const u16 per = m_pit[1].c[1].cr ? m_pit[1].c[1].cr : 1000;   // prescaler: one tick per n us
+				if (++m_prescale >= per) { m_prescale = 0; clock_gp(gate); }
 			}
 		}
 	}
+	// the PC latches follow every instruction while the analyser runs, and hold the breaking one:
+	// TEKDOS, with the board fitted, shows a halt from them (070-2785 3.B.4: "0301 76 HLT ...
+	// 0301 BREAK" after a run in which the RTPA never triggers)
+	if (!m_stopped && (m_c3 & 0x08)) { m_pc_last = m_cur_pc; m_pc_next = next_pc; }
+	if (m_thaw) { m_thaw = false; m_frozen = false; }
 	if (!m_trig || m_stopped) return;
 	m_pc_last = m_cur_pc; m_pc_next = next_pc;
 	if (stop_status_08) m_status |= 0x08;   // see rtpa.h

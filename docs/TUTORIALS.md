@@ -1,6 +1,6 @@
 # Tutorials
 
-Five short recipes. Each takes a few minutes. For the long tour (every DOS/50 tool, target systems, the host link, the RTPA, the PROM programmer, the diagnostics) see [OPERATION.md](OPERATION.md). Commands run from `emu/` unless noted.
+Five short recipes. Each takes a few minutes. For the long tour (every DOS/50 tool, target systems, the host link, the RTPA, the PROM programmer, the diagnostics) see [OPERATION.md](OPERATION.md). The two analysers have tutorials of their own: [RTPA.md](RTPA.md) (Real-Time Prototype Analyzer) and [TTA.md](TTA.md) (Trigger Trace Analyzer). Commands run from `emu/` unless noted.
 
 1. [First boot in the graphical lab](#1-first-boot-in-the-graphical-lab)
 2. [A Z80 program from scratch](#2-a-z80-program-from-scratch)

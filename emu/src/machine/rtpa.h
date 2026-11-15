@@ -24,6 +24,15 @@ public:
 	// Millennium's 9508 names the bit "slave clock missing" (bit 2 "slave faulted"), and the 8002
 	// diagnostics expect it clear after a break, where the master pauses the slave but its clock runs
 	bool stop_status_08 = true;
+	// the emulator processor's bus-cycle lengths in its clock periods (fetch, other memory, I/O),
+	// set by the host before each instruction; 0 = unknown, and time-based counts then take
+	// whole instructions. Known, a count stops at the end of the cycle that breaks and starts
+	// after the one that arms (the 8002 diagnostics' 8080 hardware analyzer test, subtest 0D,
+	// counts 694 clocks to the end of the breaking fetch)
+	int states_fetch = 0, states_mem = 0, states_io = 0;
+	// a memory page the emulator processor's board marks as I/O (its MNIO line), set by the host
+	// before each instruction; -1 none (the 6800 board: FE00-FEFF, 070-2349 §10)
+	int io_page = -1;
 
 	u8 read(int r);
 	void write(int r, u8 d);
@@ -58,6 +67,8 @@ private:
 	bool m_frozen = false;                    // FRZ: trace stopped at the arming event
 	bool m_armed = false, m_delay[2] = {}, m_trig = false, m_stopped = false, m_irq = false;
 	double m_us_frac = 0;                     // time base for CNT usec/msec
+	int m_pos = 0, m_open_at = -1, m_stop_at = -1;   // this instruction: clocks so far, where the gate opened, where it broke
+	bool m_gate_before = true, m_thaw = false;
 	u16 m_prescale = 0;
 
 	// ---- real-time trace buffer: the last 128 qualified transactions (C1 = RTT qualifier)
@@ -68,11 +79,17 @@ private:
 	bool traced(u8 cyc) const;
 	u8 trace_read();
 
+	bool ctl_match(int e, u8 cyc) const;     // bus value under its mask (M/IO, R/W, FETCH)
+	bool addr_match(int e, u16 a) const;     // R0/R1: the address requirement
 	bool match(int e, u16 a, u8 d, u8 cyc, u8 probe) const;
 	void occurrence(int e, bool &hit);
 	void qualified(int e);
 	void trigger(int e) { m_status |= u8(1 << e); m_trig = true; }
-	void clock_gp(bool gate) { if (gate) m_pit[0].c[1].clock(); }
+	// one clock of the source C3 selects (CNT): the G.P. counter (gated under ARM) and the delays
+	// of channels whose event has occurred: "When the event occurs, the counter is decremented by
+	// a software selected clock" (070-2356 §2); "The delay units are specified with the CNT
+	// command" (070-2785 §3, Procedure 2: C=500 after CNT C delays by 500 bus cycles)
+	void clock_gp(bool gate);
 	bool gp_gate() const { return (m_c2 & 0x04) ? m_armed : true; }   // ARM: G.P. counts once armed
 	int gp_source() const { return m_c3 & 7; }   // CNT: 0 evt1 1 evt2 2 trce 3 ftch 4 cycl 5 emul 6 msec 7 usec
 	void log(const char *what, int r, u8 v) { if (trace) fprintf(stderr, "[%.4f RTPA %s C%d %02x]\n", clock ? *clock : 0.0, what, r, v); }

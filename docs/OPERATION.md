@@ -200,12 +200,12 @@ Details and protocol findings: `notes/host-link.md`. Regression: `tools/test_hos
 > BIF 1                           break on event 1 (BIF 2, BIF ARM: event 1 arms event 2, BIF LIM, BIF CLR)
 > RTT MW                          trace only memory writes (ALL, F, MR, IW…)
 > CNT F                           count fetches (evt1 evt2 trce ftch cycl emul msec usec)
-> GO 100                          -> 0105 <BREAK TRIG1>
+> GO 100                          -> 0105   <BREAK     TRIG1>
 > DRT                             the traced transactions, with mnemonics and bus letters
 > CNT                             -> CNT=00042 ftch
 ```
 
-How the board works and how it was reverse-engineered: `notes/rtpa.md`. Its diagnostic is Select mode → 4.
+A value that starts with a letter needs a leading 0 (`D=0B9`). The tutorial [RTPA.md](RTPA.md) goes through every mode on the RTPA users guide's sample program. How the board works and how it was established: `notes/rtpa.md`. Its diagnostic is Select mode → 4.
 
 ## 9. Program PROMs (the 8550F30 PROM programmer)
 

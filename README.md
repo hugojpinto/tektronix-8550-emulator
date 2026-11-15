@@ -43,6 +43,7 @@ build/tek8550-gui -rw -0 ../disks/work.img        # terminal + 8301/8501 panels,
 |---|---|
 | [**docs/TUTORIALS.md**](docs/TUTORIALS.md) | short recipes: first boot in the graphical lab, a Z80 program from scratch, formatting and duplicating discs, scripted runs, building for Windows |
 | [**docs/TTA.md**](docs/TTA.md) | a tutorial on the Trigger Trace Analyzer: stop on conditions, watch, record, count and time a program, following the 1983 manual's own learning guide |
+| [**docs/RTPA.md**](docs/RTPA.md) | a tutorial on the Real-Time Prototype Analyzer under DOS/50: events, pass counts and delays, ARM, FRZ, LIM, the trace, following the 8002 RTPA users guide's procedures (the same board) |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | for implementers: connect another emulator as the target system, a host computer over the REMOTE port, or add an emulator processor board or panel lamps |
 | [docs/OPERATION.md](docs/OPERATION.md) | the long hands-on tour: DOS/50, editors, assembler, debugging, target systems, host link, RTPA, PROM programmer, diagnostics |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the 8550 works and how the emulator models it |
