@@ -15,6 +15,28 @@ How to reproduce:
 - **Diagnostic listing:** dump it while it waits at the display menu (`-type 31 '2\r' -type 41 '4\r' -type 51 '\r' -type 56 '3\r' -type 61 '\r' -dump F`), then `build/dasm s2650 F.8301 0 2000 6000`.
 - **Its Z80 test program:** `build/dasm z80 F.prog 0 0 40`, from a dump taken during a test.
 
+## An independent source: Millennium's 9508 (2026-11-15)
+Millennium Systems' 9508, a 6800 system on 8001/8002 boards, drives the same board ("READ RTPA
+STATUS") at 80–87, and its real-time analyzer source documents every register: S171RTA on the
+8002 Millennium discs (`../tektronix-8002-emulator/sources/bitsavers/disks/Millennium_internal_floppies/`,
+`99900823-01`), port equates at its start. Against the model here:
+- **Agrees:** C0 strobe; C1 trace qualifier bits (01 fetch, 02 I/O, 04 read, 08 write, 10 memory)
+  and the 6-byte trace entry (A7–A0, A15–A8 inverted; memory/write/fetch and a trace ID in bits
+  7–3; D7–D0, D15–D8, test clips inverted); C3 bit 3 ("hardware analyzer on"), bits 4/5
+  (channel 2 pass/delay counter active); the C5/C6 subaddresses; C7's compare modes (01 ≥, 02
+  8-bit equal, 04 16-bit equal, 08 ≤); C4 fields 4–7.
+- **Resolves:** C4 field 3, written FF, is D15–D8 of the event data (subaddresses 6/7, "D15-D8 FOR
+  EVT 1/2"), for 16-bit processors.
+- **Adds:** C1 bit 5 "stop on trigger 1", bit 6 "reset trace buf pointer"; C2 written as
+  breakpoint modes (01 break on trigger 1, 02 break on EVT1 & EVT2 "limit", 04 EVT1 arms EVT2,
+  08 break on trigger 2, 10 pass counter 1 active, 20 delay counter 1 active); C3 bits 2–0 a clock
+  select (000 EVT1, 001 EVT2, 010 RTT stores, 011 fetches, 100 OPREQ, 101 slave clocks, 110 1 ms,
+  111 1 µs); counter names: G.P. counter 1 "real time counter", counter 2 "divide by 1000";
+  C4 subaddresses 10/11 are T8–T0 (probe pattern, 9 bits).
+- **To check:** the 9508's C2 status gives 04 "slave faulted" and 08 "slave clock missing"
+  (01/02 triggers, 10 card present); the model here reads 08 as "stopped", inferred from DOS/50
+  and RTPA.TST.
+
 ## What the board does
 The board watches the **slave bus**: the emulator processor, or the Language Processor, since RTPA.TST runs its test program on the LP with E3 = 00.
 - **Events:** two event comparators.
