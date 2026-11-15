@@ -96,7 +96,12 @@ void rtpa::write(int r, u8 d)
 		if (!(m_c3 & 0x10) && (d & 0x10)) { m_pit[1].c[0].clock(); m_pit[1].c[1].clock(); }
 		m_c3 = d;
 		break;
-	case 4: m_ram[m_index & 15] = d; break;   // comparator field, index = 2*field + event
+	case 4:                                   // comparator field, index = 2*field + event; auto-increments
+		// over the 16 subaddresses ("16 SUB ADDRESSES (WRITE IN ORDER)", Millennium's 9508 RTPA
+		// equates; the 8002 diagnostics' hardware analyzer tests write all 16 after C6 = 0)
+		m_ram[m_index & 15] = d;
+		m_index = u8((m_index & 0xf0) | ((m_index + 1) & 15));
+		break;
 	case 5:                                   // 8253 register: index = 2*A + event
 		if ((m_index & 6) == 6) m_pit[m_index & 1].control(d);
 		else m_pit[m_index & 1].c[(m_index >> 1) & 3].write(d);
@@ -211,7 +216,7 @@ void rtpa::instr_end(u16 next_pc, int tstates, double hz)
 	}
 	if (!m_trig || m_stopped) return;
 	m_pc_last = m_cur_pc; m_pc_next = next_pc;
-	m_status |= 0x08;
+	if (stop_status_08) m_status |= 0x08;   // see rtpa.h
 	m_stopped = true;
 	m_trig = false;                           // one break per trigger: once the Emulator Controller releases the
 	                                          // hold (F9), the status keeps it, but nothing breaks again until a

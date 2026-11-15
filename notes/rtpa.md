@@ -33,6 +33,14 @@ STATUS") at 80–87, and its real-time analyzer source documents every register:
   select (000 EVT1, 001 EVT2, 010 RTT stores, 011 fetches, 100 OPREQ, 101 slave clocks, 110 1 ms,
   111 1 µs); counter names: G.P. counter 1 "real time counter", counter 2 "divide by 1000";
   C4 subaddresses 10/11 are T8–T0 (probe pattern, 9 bits).
+- **Changed (2026-11-15), for the 8002 port** (the same files serve both emulators): C4 writes
+  auto-increment the subaddress over 16 ("16 SUB ADDRESSES (WRITE IN ORDER)"; the 8002
+  diagnostics' hardware analyzer tests write all 16 after one C6 = 0), and status bit 3 at a
+  break is the setting `stop_status_08` (on here; the 8002 turns it off). RTPA.TST options 0, 6
+  and 7 and system verification pass as before.
+- **Open, from the 8002 diagnostics:** which events the status byte reports. Their expectations
+  fit "the events that match on the breaking cycle", except where an event has no address
+  compare (C7 = 00), which this model, from DOS/50, treats as "any address".
 - **To check:** the 9508's C2 status gives 04 "slave faulted" and 08 "slave clock missing"
   (01/02 triggers, 10 card present); the model here reads 08 as "stopped", inferred from DOS/50
   and RTPA.TST.

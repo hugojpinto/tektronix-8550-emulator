@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Hugo José Pinto <hugo.pinto@gmail.com>
-// 8550 Real-Time Prototype Analyzer (RTPA) option on the 8301: ports C0-C7.
+// Real-Time Prototype Analyzer (RTPA) option: ports C0-C7, on the 8550's 8301 and the 8002A.
+// The same file serves the 8550 and 8002 emulators (copied from the 8550's, 2026-11-15).
 // Reverse-engineered from the diagnostic RTPA.TST V1.2 (8550_DIAG.IMD) and DOS/50;
 // see notes/rtpa.md for the evidence. The board watches the emulator processor's
 // bus: two event comparators, two 8253 counter/timers (one per event channel: pass
@@ -19,6 +20,10 @@ public:
 	bool probe_loopback = false;              // -rtpa probe: Data Acquisition Probe on A0-A7(L), CQ on SLVOP(L) (RTPA.TST option 7)
 	bool trace = getenv("TEK_RTPATRACE") != nullptr;
 	double *clock = nullptr;                  // seconds, for the trace
+	// status bit 3 at a break: the 8550 model's "stopped" (inferred from RTPA.TST and DOS/50 there);
+	// Millennium's 9508 names the bit "slave clock missing" (bit 2 "slave faulted"), and the 8002
+	// diagnostics expect it clear after a break, where the master pauses the slave but its clock runs
+	bool stop_status_08 = true;
 
 	u8 read(int r);
 	void write(int r, u8 d);
