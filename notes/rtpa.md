@@ -72,9 +72,15 @@ With Millennium's 8002 diagnostics (DIP 4.4: the hardware analyzer tests D3A21 f
 
 **The 8550's verified DOS/50 combinations** (below) are unchanged by these rules except one: ARM with a delay on event 1 (`EVT 1 C=3`) now runs to the program's halt with a count of 0, where it broke at 0105 before.
 
+**The 8253s' counters, corrected (2026-11-15).** The 9508's real-time analyzer source maps the subaddresses to the 8253s' counters: "0 PASS 1 CTR (CTR 0 1ST GROUP)", "4 DELAY 1 CTR (CTR 1 1ST GROUP)", "2 REAL TIME CTR (CTR 2 1ST GROUP)", "3 DVD BY 1000 (CTR 2 2ND GROUP)", and programs them with 34 ("PASS CNT"), 72 ("DELAY CNT"), B0 ("G.P. CNTR") and B4 ("MSEC CNTR"). The model had counters 1 and 2 the other way round, so those mode words reached the wrong counters. Now:
+- the **delays are mode-1 one-shots**, started by their event (the restart rule above follows from it);
+- the **G.P. counter is mode 0**, loaded FFFF and counting down;
+- the **msec divider is a mode-2 rate generator** clocked by the free-running 1 µs time base, which restarts from its count when the count is written (DOS/50 and TEKDOS write 1000 at every GO, the diagnostics 990). Its phase when a run starts depends on how long the setup took, which is why two runs programmed alike can count 0 or 1 ms (Millennium's D3A21 subtests 09 and 0E, D3A30 0B and 10 now all pass, with two or four program memory boards).
+- The G.P. counter counts µs edges and msec pulses only while the program runs: the time an SVC stops it does not count (D3A21's TRACE I/O: 29 µs across three SVC stops).
+RTPA.TST's delay tests (DELAY1 12 firing on the 13th fetch, DELAY2 15 on the 16th) give the same result with mode 1.
+
 **Open:**
 - **The µs time base's phase.** Microsecond counts agree with the guide's displays to its own tolerance ("may vary one or two microseconds"), but in one run (070-2785 4.A.1 with `CNT U`) the delays expire one instruction earlier than the real lab's, and an extra event-2 break appears.
-- **The msec prescaler:** channel 2's counter 1 is a mode-1 one-shot (DOS/50, TEKDOS and the diagnostics all write 72) loaded with 1000 (990 by the diagnostics). D3A21 expects 1 ms counted over one 0.3 ms run and 0 over another programmed the same way; how the one-shot is triggered is unknown.
 
 ## What the board does
 The board watches the **slave bus**: the emulator processor, or the Language Processor, since RTPA.TST runs its test program on the LP with E3 = 00.
@@ -94,7 +100,7 @@ The board watches the **slave bus**: the emulator processor, or the Language Pro
 | C2 | trigger control (BIF); writing it re-arms | status: 10 board present (the diagnostic's presence test), 08 stopped, 01 / 02 event 1 / 2 fired |
 | C3 | bit 3 **run enable** (DOS/50 clears it after a break, freezing the trace); bit 4 channel 2 pass enable, whose rising edge also strobes channel 2's counters 0 and 1; bit 5 channel 2 delay enable; bits 2–0 **G.P. counter source** (CNT): 0 evt1, 1 evt2, 2 trce (stored entries), 3 ftch, 4 cycl (bus cycles), 5 emul (processor clocks), 6 msec, 7 usec | 8253 counter selected by C6, low byte then high byte |
 | C4 | comparator RAM byte at index C6 (bit 7 of C6 ignored) | PC-LAST low, inverted |
-| C5 | 8253 register at index C6 = 2·A + channel: A = 0 pass count, 1 G.P. counter, 2 delay, 3 control word. DOS/50 and the diagnostic write `34 72 B0` / `34 72 B4`: counter 0 mode 2, counter 1 mode 1, counter 2 mode 0 / 2 | PC-LAST high, inverted |
+| C5 | 8253 register at index C6 = 2·A + channel: A = 0 pass count (8253 counter 0), 1 G.P. counter / msec divider (counter 2), 2 delay (counter 1), 3 control word (Millennium's 9508 equates, below). DOS/50 and the diagnostic write `34 72 B0` / `34 72 B4`: pass counters mode 2, delays mode 1, the G.P. counter mode 0 and the msec divider mode 2 | PC-LAST high, inverted |
 | C6 | index | PC-NEXT low, inverted |
 | C7 | compare mode at index C6, auto-incrementing: [0/1] address mode of event 1/2: 02 low byte equal (`:`), 04 equal (`=`), 08 ≤ (`<`), 01 ≥ (`>`), 00 any; [2/3] data mode, the same codes on the data (DOS/50 writes 02 equal) | PC-NEXT high, inverted |
 

@@ -66,10 +66,11 @@ private:
 	u16 m_pc_last = 0, m_pc_next = 0, m_cur_pc = 0;
 	bool m_frozen = false;                    // FRZ: trace stopped at the arming event
 	bool m_armed = false, m_delay[2] = {}, m_trig = false, m_stopped = false, m_irq = false;
-	double m_us_frac = 0;                     // time base for CNT usec/msec
+	double m_abs_us = 0;                      // the 1 us time base's absolute time during a run
+	double m_msec_load_us = 0;                // when the msec divider was last loaded
+	double now_us() const { return clock ? *clock * 1e6 : m_abs_us; }
 	int m_pos = 0, m_open_at = -1, m_stop_at = -1;   // this instruction: clocks so far, where the gate opened, where it broke
 	bool m_gate_before = true, m_thaw = false;
-	u16 m_prescale = 0;
 
 	// ---- real-time trace buffer: the last 128 qualified transactions (C1 = RTT qualifier)
 	static constexpr int TRACE = 128;

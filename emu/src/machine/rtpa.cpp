@@ -3,6 +3,7 @@
 // 8550 Real-Time Prototype Analyzer -- see rtpa.h and notes/rtpa.md.
 #include "machine/rtpa.h"
 #include <algorithm>
+#include <cmath>
 
 // ---------------------------------------------------------------- 8253
 
@@ -28,13 +29,14 @@ u8 rtpa::counter::read()
 }
 
 // The count loads on the first clock after it is written; later clocks count down.
-// Mode 0: OUT rises at zero. Mode 2 (rate generator): OUT is low while the count
-// is 1, and rises when it reloads. Other modes just count.
+// Mode 0: OUT rises at zero. Mode 1 (the delays' one-shot): started by a trigger (the
+// load), OUT rises at zero. Mode 2 (rate generator): OUT is low while the count is 1, and
+// rises when it reloads. Other modes just count.
 bool rtpa::counter::clock()
 {
 	if (pending) { ce = cr; pending = false; out = mode == 2; return false; }
 	switch (mode) {
-	case 0:
+	case 0: case 1:
 		if (ce == 0 || out) return false;
 		if (--ce == 0) { out = true; return true; }
 		return false;
@@ -52,7 +54,11 @@ void rtpa::pit::control(u8 d)
 {
 	int sc = d >> 6;
 	if (sc == 3) return;
-	counter &k = c[sc];
+	// the 8253's counter 1 is the delay (subaddresses 4/5) and counter 2 the G.P. counter or the
+	// msec divider (subaddresses 2/3): Millennium's 9508 RTPA equates ("4 DELAY 1 CTR (CTR 1
+	// 1ST GROUP)", "2 REAL TIME CTR (CTR 2 1ST GROUP)", "3 DVD BY 1000 (CTR 2 2ND GROUP)") and its
+	// mode words (72 "DELAY CNT", B0 "G.P. CNTR", B4 "MSEC CNTR"). c[] is indexed by role
+	counter &k = c[sc == 1 ? 2 : sc == 2 ? 1 : 0];
 	if (((d >> 4) & 3) == 0) return;          // counter latch: not used
 	k.rl = (d >> 4) & 3; k.mode = (d >> 1) & 7; if (k.mode > 5) k.mode &= 3;
 	k.wr_msb = k.rd_msb = false; k.out = k.mode != 0;
@@ -95,6 +101,7 @@ void rtpa::write(int r, u8 d)
 		// bit 4 (channel 2 pass count enable) also strobes channel 2's pass and G.P.
 		// counters on its rising edge, as C0 does for channel 1 (counter test; PASS2 arm)
 		if (!(m_c3 & 0x10) && (d & 0x10)) { m_pit[1].c[0].clock(); m_pit[1].c[1].clock(); }
+		if (!(m_c3 & 0x08) && (d & 0x08)) m_abs_us = now_us();   // a run starts: the time base is the master's
 		m_c3 = d;
 		break;
 	case 4:                                   // comparator field, index = 2*field + event; auto-increments
@@ -105,7 +112,15 @@ void rtpa::write(int r, u8 d)
 		break;
 	case 5:                                   // 8253 register: index = 2*A + event
 		if ((m_index & 6) == 6) m_pit[m_index & 1].control(d);
-		else m_pit[m_index & 1].c[(m_index >> 1) & 3].write(d);
+		else {
+			counter &k = m_pit[m_index & 1].c[(m_index >> 1) & 3];
+			const bool was = k.pending;
+			k.write(d);
+			// the msec divider (subaddress 3, a mode-2 rate generator clocked by the 1 us time
+			// base) restarts from its count when one is written: its first output comes N us
+			// after the next 1 us edge, then one every N us
+			if ((m_index & 7) == 3 && k.pending && !was) m_msec_load_us = std::ceil(now_us());
+		}
 		break;
 	case 6: m_index = d; break;
 	case 7: m_mode[m_index & 3] = d; m_index = u8((m_index & 0xfc) | ((m_index + 1) & 3)); break;   // [0/1] address, [2/3] data compare mode; auto-increments (DOS/50 writes all four after C6 = 0)
@@ -159,7 +174,13 @@ void rtpa::clock_gp(bool gate)
 		if (m_delay[e] && m_pit[e].c[2].clock()) { m_delay[e] = false; qualified(e); }
 }
 
-void rtpa::instr_begin(u16 pc) { m_cur_pc = pc; m_pos = 0; m_open_at = m_stop_at = -1; m_gate_before = gp_gate(); }
+void rtpa::instr_begin(u16 pc)
+{
+	// the 1 us time base runs on while the program is stopped (an SVC, the master's work): follow
+	// the master across such gaps, not across the small lead it has within a scheduling slice
+	if (now_us() > m_abs_us + 20) m_abs_us = now_us();
+	m_cur_pc = pc; m_pos = 0; m_open_at = m_stop_at = -1; m_gate_before = gp_gate();
+}
 
 // An event occurred on channel e: count it (pass), start its delay, then act:
 // arm (channel 1 under ARM/FRZ), or trigger. Under LIM the combined match is a
@@ -269,21 +290,25 @@ void rtpa::instr_end(u16 next_pc, int tstates, double hz)
 		int src = gp_source();
 		// the clocks of this instruction the G.P. counter sees: all of them, or with known cycle
 		// lengths only those between the gate opening and the break
-		int n = tstates; bool gate = gp_gate() || m_gate_before;   // an instruction that disarms counts whole, as one that arms
+		int lo = 0, hi = tstates; bool gate = gp_gate() || m_gate_before;   // an instruction that disarms counts whole, as one that arms
 		if (states_fetch) {
-			const int lo = m_gate_before ? 0 : m_open_at, hi = m_stop_at >= 0 ? std::min(m_stop_at, tstates) : tstates;
-			n = lo < 0 ? 0 : std::max(0, hi - lo);
+			lo = m_gate_before ? 0 : m_open_at; hi = m_stop_at >= 0 ? std::min(m_stop_at, tstates) : tstates;
+			if (lo < 0 || hi < lo) lo = hi = 0;
 			gate = true;
 		}
+		const int n = hi - lo;
 		if (src == 5) for (int i = 0; i < n; i++) clock_gp(gate);
-		if (src >= 6) {
-			m_us_frac += n * 1e6 / hz;
-			for (; m_us_frac >= 1.0; m_us_frac -= 1.0) {
-				if (src == 7) { clock_gp(gate); continue; }
-				const u16 per = m_pit[1].c[1].cr ? m_pit[1].c[1].cr : 1000;   // prescaler: one tick per n us
-				if (++m_prescale >= per) { m_prescale = 0; clock_gp(gate); }
-			}
+		// usec and msec: edges of the free-running 1 us time base, and outputs of the msec divider,
+		// that fall within the counted part of this instruction (absolute time, in us)
+		const double t_lo = m_abs_us + lo * 1e6 / hz, t_hi = m_abs_us + hi * 1e6 / hz;
+		if (src == 7) for (long k = long(std::floor(t_hi)) - long(std::floor(t_lo)); k > 0; k--) clock_gp(gate);
+		if (src == 6) {
+			const double per = m_pit[1].c[1].cr ? m_pit[1].c[1].cr : 65536;
+			const double first = m_msec_load_us + per - 1;   // the output pulse, at count 1
+			auto pulses = [&](double t) { return t < first ? 0L : long(std::floor((t - first) / per)) + 1; };
+			for (long k = pulses(t_hi) - pulses(t_lo); k > 0; k--) clock_gp(gate);
 		}
+		m_abs_us += tstates * 1e6 / hz;
 	}
 	// the PC latches follow every instruction while the analyser runs, and hold the breaking one:
 	// TEKDOS, with the board fitted, shows a halt from them (070-2785 3.B.4: "0301 76 HLT ...

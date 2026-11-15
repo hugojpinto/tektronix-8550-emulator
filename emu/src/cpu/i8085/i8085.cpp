@@ -609,7 +609,8 @@ void i8085a_cpu_device::op_jmp(int cond)
 	}
 	else
 	{
-		m_PC.w.l += 2;
+		read_arg();   // [tek8550] not taken, the 8085 reads the low address byte and skips the high
+		m_PC.w.l += 1;   // one: 2 machine cycles, 7 states (Intel 8085 data sheet); upstream reads none
 	}
 }
 
@@ -624,7 +625,8 @@ void i8085a_cpu_device::op_call(int cond)
 	}
 	else
 	{
-		m_PC.w.l += 2;
+		read_arg();   // [tek8550] as op_jmp: CNZ etc. not taken read one byte, 2 machine cycles, 9 states
+		m_PC.w.l += 1;
 	}
 }
 

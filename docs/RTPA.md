@@ -82,6 +82,7 @@ LOC  INST     MNEM OPER        SP   F  A  B  C  D  E  H  L  IX  IY
 ```
 
 ![The first break on event 1](screenshots/rtpa/r1_break.png)
+
 *`EVT` shows the setting; `GO 200` stops after `LD DE`, and `TRIG1` names the event.*
 
 The program stopped **after** the instruction whose cycle matched: `LD DE` has run (DE = 0275). `TRIG1` says event 1 did it.
@@ -118,6 +119,7 @@ ADDR DATA MNEMONIC          EXTERNAL  BUS
 ```
 
 ![DRT 5 after the break on the NOP](screenshots/rtpa/r2_drt.png)
+
 *Event 2 stops on the `NOP` at 0300; `DRT 5` shows the `JP 0300` that led there.*
 
 The way into 0300: the `JP 0300` at 0382, its two address bytes, then the fetch at 0300. The bus column is **M**emory or **I**/O, **R**ead or **W**rite, **F**etch. EXTERNAL is the probe's eight clips.
@@ -153,13 +155,14 @@ CNT=00011 cycl
 > CNT U
 > GO 200
 > CNT
-CNT=00009 usec
+CNT=00010 usec
 ```
 
 ![Counting bus cycles, then microseconds](screenshots/rtpa/r3_count.png)
+
 *From `GO` to the break at 0209: 11 bus cycles, 10 µs.*
 
-**11 bus cycles**: DI (1), LD DE (3), LD HL (3), LD (HL) (3), and the fetch at 0209, as on the 8002A. The time is the 8550's, counted to the end of the fetch that breaks: 38 Z80 states at 4 MHz, 9.5 µs (the guide's 8080 board took 17 µs).
+**11 bus cycles**: DI (1), LD DE (3), LD HL (3), LD (HL) (3), and the fetch at 0209, as on the 8002A. The time is the 8550's, counted to the end of the fetch that breaks: 38 Z80 states at 4 MHz, 9.5 µs, which the free-running 1 µs time base counts as 9 or 10 depending on where it stands when the run starts (the guide's 8080 board took 17 µs).
 
 The counter's units: `F` fetches, `C` bus cycles, `E` emulator clocks, `U` microseconds, `M` milliseconds, `T` trace stores, `1`/`2` occurrences of event 1/2.
 
@@ -192,6 +195,7 @@ CNT=00739 cycl
 ```
 
 ![The delayed break at 037F](screenshots/rtpa/r4_delay.png)
+
 *The 20th pass at 239 cycles; with `C=500` the break comes 500 cycles later, at 037F.*
 
 239 + 500 = **739**, the guide's count and break address. The delay unit follows `CNT`: after `CNT U`, `C=20` means 20 µs.
@@ -228,6 +232,7 @@ CNT=00038 evt1
 ```
 
 ![Counting loop passes](screenshots/rtpa/r5_loops.png)
+
 *`CNT 1` counts event 1: LOOP1 ran 38 times before event 2 stopped the program.*
 
 LOOP1 ran **38** times. An event counts even when it is not allowed to break: with `BIF` cleared (`EVT CLR` clears it too; `EVT` then shows `IND`), the program stops only at its halt, and `CNT 1` still counts.
@@ -248,6 +253,7 @@ CNT=00461 cycl
 ```
 
 ![ARM: event 1 arms event 2](screenshots/rtpa/r6_arm.png)
+
 *461 bus cycles from LOOP1's first clear to LOOP2's.*
 
 From the first clear of LOOP1 to the first of LOOP2: **461** bus cycles. With `EVT 1 P=10` the measurement starts at the 10th pass (**353**); with `EVT 2 P=20` too, it ends at LOOP2's 20th (**581**).
@@ -294,6 +300,7 @@ CNT=00985 cycl
 ```
 
 ![FRZ: the trace frozen at event 1](screenshots/rtpa/r7_frz.png)
+
 *The program ran on to 0300, but the trace ends at 0209, where event 1 froze it.*
 
 The trace ends at 0209, event 1, though the program ran on for 985 cycles to 0300.
@@ -316,6 +323,7 @@ Move the window above 0300 (`EVT 2 A>300`), and the first `JP` there is LOOP2's:
 ```
 
 ![LIM: event 1 within event 2's limits](screenshots/rtpa/r8_lim.png)
+
 *The first `JP` below 0300 is at 0212; with the window above 0300, LOOP2's at 0386.*
 
 ## 11. Before, around or after the event

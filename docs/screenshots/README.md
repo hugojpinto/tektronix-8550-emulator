@@ -9,6 +9,7 @@ below). Upper case, digits and punctuation come from a genuine Tektronix charact
 matrix's 8th row (the CT8500 uses 6×8 versus the 4023/CT8100's 5×7).
 
 ![charset](charset.png) Shown here on a simulated CRT face: overscan, phosphor glow, rounded tube with a thin lip, vignette. The raster itself is unscaled, and the bare rasters are in `raw/`. Regenerate with `tools/make_screenshots.sh`
+
 (`tools/render_screens.py --style modern` gives the plain TrueType variant).
 
 1. ![boot](01_boot.png) Power-on: 8301 boot ROM, 8501 file server, **DOS/50 V1.0** prompt.
