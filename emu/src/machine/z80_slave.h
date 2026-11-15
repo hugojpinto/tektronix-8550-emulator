@@ -8,6 +8,7 @@
 #ifndef TEK_MACHINE_Z80_SLAVE_H
 #define TEK_MACHINE_Z80_SLAVE_H
 #include "machine/emulator_board.h"
+#include <cstdlib>
 extern "C" {
 #include "cpu/z80/superzazu/z80.h"
 }
@@ -19,9 +20,17 @@ public:
 	z80 cpu{};
 	void setup();                              // power-on state, bus callbacks
 	bool rtpa_visible() const override { return true; }   // the RTPA watches either
-	void forced_reset() override { setup(); }
+	// RESET clears PC, I, R, the IFFs and the interrupt mode and leaves the other registers (Zilog;
+	// the sibling 8002 emulator's Z80 DEBUG decode test relies on it); setup() is the power-on state
+	void forced_reset() override;
 	void step() override { z80_step(&cpu); }
 	u16 pc() const override { return cpu.pc; }
+	// a halted Z80 fetches at the HALT's own address (the sibling 8002 emulator's Z80 DEBUG decode
+	// test expects PC next there); the core holds the address after it
+	// Z80 machine cycles: an opcode fetch 4 states (with refresh), a memory cycle 3, an I/O cycle 4;
+	// no wait states at 4 MHz on the 8550 (070-3964, "4 MHz and Below")
+	void bus_states(int &f, int &m, int &io) const override { f = 4; m = 3; io = 4; }
+	u16 fetch_address() const override { return cpu.halted ? u16(cpu.pc - 1) : cpu.pc; }
 	bool halted() const override { return cpu.halted; }
 	u64 cycles() const override { return cpu.cyc; }
 protected:

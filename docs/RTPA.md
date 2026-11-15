@@ -153,13 +153,13 @@ CNT=00011 cycl
 > CNT U
 > GO 200
 > CNT
-CNT=00010 usec
+CNT=00009 usec
 ```
 
 ![Counting bus cycles, then microseconds](screenshots/rtpa/r3_count.png)
 *From `GO` to the break at 0209: 11 bus cycles, 10 µs.*
 
-**11 bus cycles**: DI (1), LD DE (3), LD HL (3), LD (HL) (3), and the fetch at 0209, as on the 8002A. The time is the 8550's: the guide's 8080 board took 17 µs.
+**11 bus cycles**: DI (1), LD DE (3), LD HL (3), LD (HL) (3), and the fetch at 0209, as on the 8002A. The time is the 8550's, counted to the end of the fetch that breaks: 38 Z80 states at 4 MHz, 9.5 µs (the guide's 8080 board took 17 µs).
 
 The counter's units: `F` fetches, `C` bus cycles, `E` emulator clocks, `U` microseconds, `M` milliseconds, `T` trace stores, `1`/`2` occurrences of event 1/2.
 

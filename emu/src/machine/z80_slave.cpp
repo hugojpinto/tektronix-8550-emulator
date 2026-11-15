@@ -18,6 +18,17 @@ void z80_slave::setup()
 	cpu.userdata = this;
 }
 
+void z80_slave::forced_reset()
+{
+	const z80 keep = cpu;
+	setup();
+	cpu.cyc = keep.cyc;                      // its clock keeps counting
+	cpu.sp = keep.sp; cpu.ix = keep.ix; cpu.iy = keep.iy; cpu.mem_ptr = keep.mem_ptr;
+	cpu.a = keep.a; cpu.b = keep.b; cpu.c = keep.c; cpu.d = keep.d; cpu.e = keep.e; cpu.h = keep.h; cpu.l = keep.l;
+	cpu.a_ = keep.a_; cpu.b_ = keep.b_; cpu.c_ = keep.c_; cpu.d_ = keep.d_; cpu.e_ = keep.e_; cpu.h_ = keep.h_; cpu.l_ = keep.l_; cpu.f_ = keep.f_;
+	cpu.sf = keep.sf; cpu.zf = keep.zf; cpu.yf = keep.yf; cpu.hf = keep.hf; cpu.xf = keep.xf; cpu.pf = keep.pf; cpu.nf = keep.nf; cpu.cf = keep.cf;
+}
+
 // forced jump: FA/FB/F5 are loaded active-low (DOS/50 writes FB:FA = FEFF to start a
 // program at 0100, and FF:07F9 for the board firmware at 00:F806)
 void z80_slave::jump(u16 target)

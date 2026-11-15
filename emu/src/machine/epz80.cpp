@@ -85,7 +85,10 @@ void epz80_board::pre_step()
 	bool n = m.target->nmi();
 	if (n && !m_nmi_prev) z80_gen_nmi(&cpu);
 	m_nmi_prev = n;
-	if (m.target->irq() && cpu.iff1) z80_gen_int(&cpu, m.target->irq_vector());
+	// E3 bit 4 lets the prototype's INT through (Millennium's 9508 names the latch bit INTEN, "a
+	// low disables interrupts", on the 8002's board family; DOS/50 sets it in every user run,
+	// 92/B2/F2, and clears it in the firmware's, 80/C0). Inferred for this board
+	if (m.target->irq() && cpu.iff1 && (control & 0x10)) z80_gen_int(&cpu, m.target->irq_vector());
 }
 
 double epz80_board::clock_hz() const
@@ -130,7 +133,7 @@ void epz80_board::firmware(u16 entry)
 		ep.sf = f & 0x80; ep.zf = f & 0x40; ep.yf = f & 0x20; ep.hf = f & 0x10; ep.xf = f & 0x08; ep.pf = f & 0x04; ep.nf = f & 0x02; ep.cf = f & 0x01;
 		ep.sp = u16(pm(24) | (pm(25) << 8));
 		ep.halted = false;
-		m.ec_interrupt(tek8301::INT_SVC1 + 6, false);   // Debug SVC 1 (dump/restore) = SVC 7, int 22 (8301 Table 7-x; Z80 diag 07/00E1)
+		if (m.m_f9 & 0x10) m.ec_interrupt(tek8301::INT_SVC1 + 6, false);   // Debug SVC 1 (dump/restore) = SVC 7, int 22 (8301 Table 7-x; Z80 diag 07/00E1); only while SVCs are enabled (F9 bit 4), as the firmware's OUT F1 goes through the SVC detection like a program's (the 8002's 6800 DEBUG test, DE211 subtest 0E)
 	} else if (entry == 0xf809) {                // dump (after a break)
 		put(0, ep.interrupt_mode); put(1, u8((ep.iff1 ? 0x80 : 0) | (ep.iff2 ? 0x40 : 0)));
 		put(2, ep.r); put(3, ep.i);
@@ -140,16 +143,16 @@ void epz80_board::firmware(u16 entry)
 		put(23, u8((ep.sf ? 0x80 : 0) | (ep.zf ? 0x40 : 0) | (ep.yf ? 0x20 : 0) | (ep.hf ? 0x10 : 0) |
 		           (ep.xf ? 0x08 : 0) | (ep.pf ? 0x04 : 0) | (ep.nf ? 0x02 : 0) | (ep.cf ? 0x01 : 0)));
 		put(24, u8(ep.sp)); put(25, u8(ep.sp >> 8));
-		m.ec_interrupt(tek8301::INT_SVC1 + 6, false);   // Debug SVC 1 (dump/restore) = SVC 7
+		if (m.m_f9 & 0x10) m.ec_interrupt(tek8301::INT_SVC1 + 6, false);   // Debug SVC 1 (dump/restore) = SVC 7
 	} else if (entry == 0xf800) {                // PUT: write block[0] at block[1]:block[2], verify -> block[3] = 0 ok
 		u16 a = u16((pm(1) << 8) | pm(2));
 		m.target->mem_write(a, pm(0));
 		put(3, (m.target->mem_read(a) == pm(0)) ? 0x00 : 0x01);   // DOS/50 MOV: nonzero = error 3C
-		m.ec_interrupt(tek8301::INT_SVC1 + 7, false);   // Debug SVC 2 (get/put) = SVC 8, int 23
+		if (m.m_f9 & 0x10) m.ec_interrupt(tek8301::INT_SVC1 + 7, false);   // Debug SVC 2 (get/put) = SVC 8, int 23
 	} else if (entry == 0xf803) {                // GET: read prototype memory at block[1]:block[2] into block[0]
 		put(0, m.target->mem_read(u16((pm(1) << 8) | pm(2))));
 		put(3, 0x00);
-		m.ec_interrupt(tek8301::INT_SVC1 + 7, false);   // Debug SVC 2 (get/put) = SVC 8
+		if (m.m_f9 & 0x10) m.ec_interrupt(tek8301::INT_SVC1 + 7, false);   // Debug SVC 2 (get/put) = SVC 8
 	} else if (m.ep_trace) fprintf(stderr, "[EP firmware entry %04x unknown]\n", entry);
 	if (entry == 0xf800 || entry == 0xf803 || entry == 0xf806 || entry == 0xf809)
 		m.m_svc_stop = true;                     // the firmware's SVC OUT stops the board like any SVC

@@ -43,6 +43,9 @@ public:
 	virtual void step() = 0;                   // one instruction
 	virtual void post_step() {}                // after it, after the analysers (prototype WAIT ...)
 	virtual u16 pc() const = 0;
+	virtual u16 fetch_address() const { return pc(); }
+	// its bus cycles' lengths in clock periods, for the RTPA's time counts (rtpa.h); 0 unknown
+	virtual void bus_states(int &fetch, int &mem, int &io) const { fetch = mem = io = 0; }   // the next fetch, which the Emulator Controller latches as PC-next
 	virtual bool halted() const = 0;
 	virtual u64 cycles() const = 0;            // its own clock cycles so far
 	// the firmware PROM as the 2650 sees it in program memory while the board is in firmware

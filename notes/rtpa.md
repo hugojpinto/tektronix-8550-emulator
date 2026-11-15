@@ -40,9 +40,11 @@ STATUS") at 80–87, and its real-time analyzer source documents every register:
   break is the setting `stop_status_08` (on here; the 8002 turns it off). RTPA.TST options 0, 6
   and 7 and system verification pass as before.
 - **Status bits:** the 9508 and the RTPA service manual both give C2's status as 01 trigger 1,
-  02 trigger 2, 04 slave fault, 08 slave clock missing, 10 module active. The model here sets 08
-  at a break (`stop_status_08`), as RTPA.TST and DOS/50 on the 8550 accept; the 8002 diagnostics
-  expect it clear, and the 8002 turns it off.
+  02 trigger 2, 04 slave fault, 08 slave clock missing, 10 module active. The model sets 08 at a
+  break here (`stop_status_08`): RTPA.TST needs it (with it clear, options 0 and 6 report 152 and
+  171 errors; checked 2026-11-15), while the 8002's diagnostics expect it clear. "Slave clock
+  missing" fits an 8550 that stops the emulator processor's clock while the analyzer holds it,
+  where the 8002's master pauses its slave with the clock running.
 
 ## Documentation of the board (2026-11-15)
 The 8550's RTPA is the 8001/8002 board's design on the 8301's bus, and two Tektronix manuals for the 8001/8002 version survive (in the 8002 emulator's `sources/bitsavers/manuals/800x/`):
@@ -65,7 +67,7 @@ With Millennium's 8002 diagnostics (DIP 4.4: the hardware analyzer tests D3A21 f
 | **Counting stops at the break:** the bus-driven G.P. sources (bus cycles, fetches, trace stores, events) do not count the rest of the breaking instruction | 070-2785 2.B.1 (739, not 740); D3A21 "TRACE I/O WRITES ONLY" (8 entries traced, 7 counted) |
 | **G.P. counts an event's comparisons** (`CNT 1`/`CNT 2`) whether or not C2 lets that event break | D3A21 subtests 3, 4; 070-2785 2.E.3 (`CNT 2` with BIF cleared) |
 | **The PC latches follow every instruction** while the analyser runs, and hold the breaking one: TEKDOS shows a halt from them when the board is fitted | 070-2785 3.B.4 ("0301 76 HLT ... 0301 BREAK" in a run where the RTPA never triggers) |
-| **Time counts at cycle resolution** when the host gives its bus-cycle lengths (`states_fetch`/`states_mem`/`states_io`, set per instruction): a count then starts after the arming cycle and ends with the breaking one. The 8550's boards leave them 0, and count whole instructions as before | D3A21 subtest 0D (694 8080 clocks, exact) |
+| **Time counts at cycle resolution** when the host gives its bus-cycle lengths (`states_fetch`/`states_mem`/`states_io`, set per instruction): a count then starts after the arming cycle and ends with the breaking one. On the 8550 the Z80s (board and Language Processor) give 4/3/4 states, with no wait states at 4 MHz (070-3964); RTPA.TST passes, and DOS/50's counts to a break end with the breaking fetch | D3A21 subtest 0D (694 8080 clocks, exact) |
 | **A board's I/O page** (`io_page`): the 6800 has no I/O cycles, and its board marks FE00–FEFF, its SVC page, as I/O for the RTPA | 070-2349 §10 ("the 6800 microprocessor uses memory mapped I/O, the memory region FE00 through FEFF is reserved"); D3A30's trace expects FE00 as I/O cycles |
 
 **The 8550's verified DOS/50 combinations** (below) are unchanged by these rules except one: ARM with a delay on event 1 (`EVT 1 C=3`) now runs to the program's halt with a count of 0, where it broke at 0105 before.

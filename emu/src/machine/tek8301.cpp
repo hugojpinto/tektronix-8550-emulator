@@ -87,7 +87,7 @@ void tek8301::ec_interrupt(int n, bool latch_pc)
 	case INT_RTPA: m_ec_pend |= 0x04; break;   // DBG INT 29 from the RTPA (DOS/50 GO handler 681E tests F2 bit 2)
 	default: break;
 	}
-	if (latch_pc) { const emulator_board *b = active_slave(); m_lp_pc_next = b ? b->pc() : lp.pc; }
+	if (latch_pc) { const emulator_board *b = active_slave(); m_lp_pc_next = b ? b->fetch_address() : m_slave_lp.fetch_address(); }
 	if (m_f9 & 0x08)                    // IM = 1: debug interrupts not masked
 		m_pending |= 1u << n;
 	update_irq();
@@ -144,7 +144,7 @@ void tek8301::slave_run(emulator_board &b, int cycles2650)
 		b.pre_step();
 		const bool watch = rtpa_board.present && b.rtpa_visible();
 		const bool twatch = b.tta_visible() && tta_board.target_watch();   // the TTA in run mode: the program under test
-		if (watch) { m_seconds = m_cycles / CPU_HZ; rtpa_board.instr_begin(b.pc()); m_rtpa_watch = true; }
+		if (watch) { m_seconds = m_cycles / CPU_HZ; b.bus_states(rtpa_board.states_fetch, rtpa_board.states_mem, rtpa_board.states_io); rtpa_board.instr_begin(b.pc()); m_rtpa_watch = true; }
 		if (twatch) m_tta_watch = true;
 		b.step();
 		if (watch) {
