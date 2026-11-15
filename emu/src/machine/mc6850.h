@@ -92,13 +92,18 @@ public:
 				m_rxq.pop_front(); m_ovrn_pending = true; m_rx_gap = char_cycles;   // lost
 				return;
 			}
-			u16 r = m_rxq.front(); m_rxq.pop_front();
+			u32 r = m_rxq.front(); m_rxq.pop_front();
+			u8 err = (r & 0x100) ? FE : 0;   // a BREAK arrives as a null character with a framing error (no stop bit)
 			m_rdr = u8(r);
-			// a BREAK arrives as a null character with a framing error (no stop bit)
-			m_status = u8((m_status & ~FE) | RDRF | ((r & 0x100) ? FE : 0)); m_rx_gap = char_cycles;
+			if (r & 0x200) m_rdr = decode(u8(r), u8((r >> 10) & 7), err);   // from another ACIA: its frame, read with ours
+			m_status = u8((m_status & ~(FE | PE)) | RDRF | err); m_rx_gap = char_cycles;
 		}
 	}
 	void host_rx(u8 c) { m_rxq.push_back(c); }
+	// a character from another ACIA (a cable between two ports): sent in the transmitter's word
+	// format, read in the receiver's, so a mismatch gives a parity or framing error, as on the
+	// line (the 8002 diagnostics' SYS COMM 2 parity tests)
+	void host_rx_from(u8 c, const mc6850 &tx) { m_rxq.push_back(u32(c) | 0x200 | (u32((tx.m_cr >> 2) & 7) << 10)); }
 	void host_break() { m_rxq.push_back(0x100); }   // the line held at spacing (BREAK key)
 	std::function<void(u8)> on_tx;
 	std::function<void()> on_control;   // after each control write (RTS, break)
@@ -112,6 +117,28 @@ private:
 	bool m_reset = true;
 	bool m_cts = false, m_dcd = false, m_dcd_irq = false, m_dcd_read = false, m_ovrn_pending = false;
 	int m_tx_timer = 0, m_rx_gap = 0;
-	std::deque<u16> m_rxq;   // bit 8: break
+	std::deque<u32> m_rxq;   // bit 8: break; bit 9: from an ACIA, with its word select in bits 12-10
+	// word select (control bits 4-2): data bits, parity (0 none, 1 even, 2 odd), stop bits
+	static void format(u8 ws, int &bits, int &parity, int &stops)
+	{
+		static const u8 tab[8][3] = { {7,1,2}, {7,2,2}, {7,1,1}, {7,2,1}, {8,0,2}, {8,0,1}, {8,1,1}, {8,2,1} };
+		bits = tab[ws][0]; parity = tab[ws][1]; stops = tab[ws][2];
+	}
+	// the bits the transmitter sends, read back in our format: data, parity (PE), stop bit (FE)
+	u8 decode(u8 c, u8 tx_ws, u8 &err) const
+	{
+		int tb, tp, ts, rb, rp, rs;
+		format(tx_ws, tb, tp, ts); format(u8((m_cr >> 2) & 7), rb, rp, rs);
+		int line[16], n = 0;
+		for (int i = 0; i < tb; i++) line[n++] = (c >> i) & 1;
+		if (tp) { int ones = 0; for (int i = 0; i < tb; i++) ones += (c >> i) & 1; line[n++] = (tp == 1) ? (ones & 1) : !(ones & 1); }
+		while (n < 16) line[n++] = 1;              // stop bits, then the idle line (mark)
+		u8 d = 0; int ones = 0;
+		for (int i = 0; i < rb; i++) { d |= u8(line[i] << i); ones += line[i]; }
+		int k = rb;
+		if (rp) { const int p = line[k++]; if (((ones + p) & 1) != (rp == 1 ? 0 : 1)) err |= PE; }
+		if (!line[k]) err |= FE;
+		return d;
+	}
 };
 #endif
