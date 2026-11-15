@@ -80,6 +80,10 @@ LOC  INST     MNEM OPER        SP   F  A  B  C  D  E  H  L  IX  IY
 0201 117502   LD   DE,0275    0000 00 00 00 00 02 75 00 00 0000 0000
 0201   <BREAK     TRIG1>
 ```
+
+![The first break on event 1](screenshots/rtpa/r1_break.png)
+*`EVT` shows the setting; `GO 200` stops after `LD DE`, and `TRIG1` names the event.*
+
 The program stopped **after** the instruction whose cycle matched: `LD DE` has run (DE = 0275). `TRIG1` says event 1 did it.
 
 `B=` restricts the kind of bus cycle: `F` fetch, `MR`/`MW` memory read/write, `IR`/`IW` I/O, `W` any write, `ALL`. With `EVT 1 B=W` nothing matches, since nobody writes to 0201, and the program runs on to its halt:
@@ -112,6 +116,10 @@ ADDR DATA MNEMONIC          EXTERNAL  BUS
 0384 03                     00000000  M R
 0300 00       NOP           00000000  M R F
 ```
+
+![DRT 5 after the break on the NOP](screenshots/rtpa/r2_drt.png)
+*Event 2 stops on the `NOP` at 0300; `DRT 5` shows the `JP 0300` that led there.*
+
 The way into 0300: the `JP 0300` at 0382, its two address bytes, then the fetch at 0300. The bus column is **M**emory or **I**/O, **R**ead or **W**rite, **F**etch. EXTERNAL is the probe's eight clips.
 
 `RTT` chooses what is stored. With only fetches, the same five lines reach further back:
@@ -147,6 +155,10 @@ CNT=00011 cycl
 > CNT
 CNT=00010 usec
 ```
+
+![Counting bus cycles, then microseconds](screenshots/rtpa/r3_count.png)
+*From `GO` to the break at 0209: 11 bus cycles, 10 µs.*
+
 **11 bus cycles**: DI (1), LD DE (3), LD HL (3), LD (HL) (3), and the fetch at 0209, as on the 8002A. The time is the 8550's: the guide's 8080 board took 17 µs.
 
 The counter's units: `F` fetches, `C` bus cycles, `E` emulator clocks, `U` microseconds, `M` milliseconds, `T` trace stores, `1`/`2` occurrences of event 1/2.
@@ -178,6 +190,10 @@ One pass of LOOP1 is 23 − 11 = **12 bus cycles**, so the 20th occurrence comes
 > CNT
 CNT=00739 cycl
 ```
+
+![The delayed break at 037F](screenshots/rtpa/r4_delay.png)
+*The 20th pass at 239 cycles; with `C=500` the break comes 500 cycles later, at 037F.*
+
 239 + 500 = **739**, the guide's count and break address. The delay unit follows `CNT`: after `CNT U`, `C=20` means 20 µs.
 
 Event 2 has its own pass count and delay. On the memory read of `CP C` in LOOP2:
@@ -210,6 +226,10 @@ CNT=00581 cycl
 > CNT
 CNT=00038 evt1
 ```
+
+![Counting loop passes](screenshots/rtpa/r5_loops.png)
+*`CNT 1` counts event 1: LOOP1 ran 38 times before event 2 stopped the program.*
+
 LOOP1 ran **38** times. An event counts even when it is not allowed to break: with `BIF` cleared (`EVT CLR` clears it too; `EVT` then shows `IND`), the program stops only at its halt, and `CNT 1` still counts.
 
 ## 8. Measure between two events: ARM
@@ -226,6 +246,10 @@ LOOP1 ran **38** times. An event counts even when it is not allowed to break: wi
 > CNT
 CNT=00461 cycl
 ```
+
+![ARM: event 1 arms event 2](screenshots/rtpa/r6_arm.png)
+*461 bus cycles from LOOP1's first clear to LOOP2's.*
+
 From the first clear of LOOP1 to the first of LOOP2: **461** bus cycles. With `EVT 1 P=10` the measurement starts at the 10th pass (**353**); with `EVT 2 P=20` too, it ends at LOOP2's 20th (**581**).
 
 Two rules:
@@ -268,6 +292,10 @@ ADDR DATA MNEMONIC          EXTERNAL  BUS
 > CNT
 CNT=00985 cycl
 ```
+
+![FRZ: the trace frozen at event 1](screenshots/rtpa/r7_frz.png)
+*The program ran on to 0300, but the trace ends at 0209, where event 1 froze it.*
+
 The trace ends at 0209, event 1, though the program ran on for 985 cycles to 0300.
 
 ## 10. Limits: LIM
@@ -286,6 +314,9 @@ Move the window above 0300 (`EVT 2 A>300`), and the first `JP` there is LOOP2's:
 0386 C37B03   JP   037B       0000 32 50 03 25 02 75 03 4F 0000 0000
 0386   <BREAK     TRIG1>
 ```
+
+![LIM: event 1 within event 2's limits](screenshots/rtpa/r8_lim.png)
+*The first `JP` below 0300 is at 0212; with the window above 0300, LOOP2's at 0386.*
 
 ## 11. Before, around or after the event
 
@@ -315,5 +346,6 @@ The trace holds 128 transactions. Where the event falls in them depends on when 
 
 - **Options:** `-rtpa` fits the board; `-rtpa probe` loops the probe back to A0–A7 (the diagnostic's fixture, RTPA.TST option 7). The probe cannot be fed from a target yet.
 - **Its diagnostic:** `8550_DIAG.IMD`, Select mode 4 (`RTPA.TST`); options 0–7 pass, and system verification with `-rtpa` completes.
+- **The pictures** are made by `tools/make_rtpa_shots.sh` from a scripted run of this session (the commands above, in order), so they come out the same on every run.
 - **Trace of a run:** `TEK_RTPATRACE=1` logs every register access, match and break on stderr.
 - **The same session on the 8002:** the sibling emulator follows the guide in TEKDOS, including the return option (`../tektronix-8002-emulator/docs/RTPA.md`).
