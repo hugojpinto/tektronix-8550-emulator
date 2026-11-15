@@ -626,13 +626,14 @@ inline uint8_t s2650_device::ARG()
 		m_psl &= ~(C + IDC);                                    \
 		dest = (before << 1) | c;                               \
 		m_psl |= (before >> 7) + (dest & IDC);                  \
+		/* [tek8550] OVF only when rotating through the carry */ \
+		m_psl = (m_psl & ~OVF) | (((dest ^ before) >> 5) & OVF); \
 	}                                                           \
 	else                                                        \
 	{                                                           \
 		dest = (before << 1) | (before >> 7);                   \
 	}                                                           \
 	SET_CC(dest);                                               \
-	m_psl = (m_psl & ~OVF) | (((dest ^ before) >> 5) & OVF);    \
 }
 
 /***************************************************************
@@ -649,13 +650,14 @@ inline uint8_t s2650_device::ARG()
 		m_psl &= ~(C + IDC);                                    \
 		dest = (before >> 1) | (c << 7);                        \
 		m_psl |= (before & C) + (dest & IDC);                   \
+		/* [tek8550] OVF only when rotating through the carry */ \
+		m_psl = (m_psl & ~OVF) | (((dest ^ before) >> 5) & OVF); \
 	}                                                           \
 	else                                                        \
 	{                                                           \
 		dest = (before >> 1) | (before << 7);                   \
 	}                                                           \
 	SET_CC(dest);                                               \
-	m_psl = (m_psl & ~OVF) | (((dest ^ before) >> 5) & OVF);    \
 }
 
 // bxd() not necessary

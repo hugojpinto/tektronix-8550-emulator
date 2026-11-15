@@ -96,6 +96,10 @@ What happened, newest first. Open work is in [ROADMAP.md](ROADMAP.md); the study
 - 2026-11-10: **8501 milestone.** Power-up diagnostics pass after calibrating the CPU budget to 4.5 M T11-cycles/s against the LTC test window. With no disk, the bootstrap sits at "waiting for a disc" (LEDs 30). With `System.imd` it boots DOS/50's 8501 side (LEDs "OS running") into its idle/scheduler loop, presumably waiting for the 8301 on HSI. ODT works.
 - 2026-11-10: plan written; MAME clone started.
 
+
+## 2026-11-15 — 2650 core: rotates and OVF
+- RRL and RRR set or clear OVF only when rotating through the carry (WC = 1). Found by the sibling 8002A emulator's run of Millennium's MASTER CPU diagnostic, written for real 2650s; MAME changes OVF on every rotate. Recorded in the new `emu/src/cpu/s2650/SOURCE.txt`, with the port's earlier changes.
+- Checked: `make test`, the screenshots byte-identical, system verification on both diagnostic discs (with the Z80 board, only 07/00D0), memory, RTPA, TTA (options 0 and 7), the 8086 board, host link (7 passed), GUI.
 ## The original plan (2026-11-10), completed
 
 Goal: boot DOS/50 on an emulated 8550 (8301 + 8501 + terminal) in a standalone, MAME-compatible emulator and run its editor and assemblers. Every phase below was done; P2.3's high-level floppy controller was later replaced by the real board's firmware, and the open P5 items moved to the roadmap.

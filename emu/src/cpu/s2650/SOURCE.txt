@@ -1,0 +1,12 @@
+MAME src/devices/cpu/s2650 (BSD-3-Clause), at the commit in reference/mame/SOURCE.txt, as a
+standalone port. Changes are marked [tek8550] in the code:
+  - the device boilerplate is removed; the IRQ line and SENSE come through the bus interface
+    (set_irq), sampled per instruction; icount() exposes the clocks left in run();
+    trace_hook and exec_hook run before each instruction (exec_hook with set_reg_bank, for
+    the machine's software compatibility fixes).
+  - RETC takes 3 cycles whether or not the return is taken.
+  - RRL/RRR set or clear OVF only when rotating through the carry (WC=1); with WC=0 OVF is
+    left alone. Upstream changes it on every rotate that flips bit 7, as the 1975 Signetics
+    manual's note reads (pp. 67-68). Millennium's MASTER CPU diagnostic for the 8002 (DIP 4.4,
+    D0141), written for real 2650s, checks both cases; found and verified first in the sibling
+    8002A emulator (commit 194f2c5), 2026-11-15.
